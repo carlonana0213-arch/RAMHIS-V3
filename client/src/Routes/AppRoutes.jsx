@@ -1,29 +1,21 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import ProtectedRoute from "./ProtectedRoute";
+import AppLayout from "../Layout/AppLayout";
+
 import Home from "../Pages/LandingPages/Home";
 import Organization from "../Pages/LandingPages/Organization";
 import AboutSystem from "../Pages/LandingPages/AboutSystem";
-/*
-|--------------------------------------------------------------------------
-| Authentication
-|--------------------------------------------------------------------------
-*/
-
 import Login from "../Pages/LandingPages/Login";
+
+import Dashboard from "../Pages/MainPages/Dashboard/Dashboard";
 
 /*
 |--------------------------------------------------------------------------
 | Placeholder Pages
-| Replace these imports with your real pages later.
+| Replace these imports with the real pages as we migrate them.
 |--------------------------------------------------------------------------
 */
-
-const Dashboard = () => (
-  <div className="flex h-screen items-center justify-center text-4xl font-bold">
-    Dashboard
-  </div>
-);
 
 const Registry = () => (
   <div className="flex h-screen items-center justify-center text-4xl font-bold">
@@ -83,49 +75,62 @@ export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
-
         {/* =======================================================
-                    Public
-                ======================================================== */}
+            Public
+        ======================================================== */}
+
+        <Route path="/" element={<Home />} />
 
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Home />} />
 
         <Route path="/organization" element={<Organization />} />
 
         <Route path="/ramhis" element={<AboutSystem />} />
+
         {/* =======================================================
-                    Protected
-                ======================================================== */}
+            Protected
+        ======================================================== */}
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
 
-          <Route path="/registry" element={<Registry />} />
+            <Route path="/registry" element={<Registry />} />
 
-          <Route path="/patient-queue" element={<PatientQueue />} />
+            <Route
+              path="/patient-queue"
+              element={<PatientQueue />}
+            />
 
-          <Route path="/doctor-sheet" element={<DoctorSheet />} />
+            <Route
+              path="/doctor-sheet"
+              element={<DoctorSheet />}
+            />
 
-          <Route path="/pharmacy" element={<Pharmacy />} />
+            <Route path="/pharmacy" element={<Pharmacy />} />
 
-          <Route path="/analytics" element={<Analytics />} />
+            <Route path="/analytics" element={<Analytics />} />
 
-          <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/audit-logs" element={<AuditLogs />} />
+          </Route>
         </Route>
 
         {/* =======================================================
-                    Admin Only
-                ======================================================== */}
+            Admin Only
+        ======================================================== */}
 
         <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
-          <Route path="/users" element={<UserManagement />} />
+          <Route element={<AppLayout />}>
+            <Route
+              path="/users"
+              element={<UserManagement />}
+            />
+          </Route>
         </Route>
 
         {/* =======================================================
-                    Error Pages
-                ======================================================== */}
+            Error Pages
+        ======================================================== */}
 
         <Route path="/unauthorized" element={<Unauthorized />} />
 

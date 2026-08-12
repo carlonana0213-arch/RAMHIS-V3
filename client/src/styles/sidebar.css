@@ -1,0 +1,210 @@
+/* ========================================
+   SIDEBAR
+======================================== */
+
+.app-sidebar {
+  width: 230px;
+  background: #3f5fbe;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  height: 100vh;
+  flex-shrink: 0;
+  transition: width 0.25s ease;
+}
+
+/* ========================================
+   SIDEBAR TOP / LOGO
+======================================== */
+
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.logo-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.logo {
+  width: 60px;
+}
+
+.app-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 6px;
+}
+
+/* ========================================
+   NAVIGATION
+======================================== */
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.nav-link {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+  color: #cce0ff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: 0.2s;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: inherit;
+  box-sizing: border-box;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.nav-link.active {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-icon {
+  font-size: 20px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ========================================
+   PHARMACY GROUP
+======================================== */
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-parent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.nav-submenu {
+  display: flex;
+  flex-direction: column;
+  margin-left: 28px;
+  margin-top: 6px;
+}
+
+.nav-sublink {
+  display: block;
+  padding: 6px 0;
+  font-size: 14px;
+  color: white;
+  text-decoration: none;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+}
+
+.nav-sublink.active {
+  color: white;
+  opacity: 1;
+  font-weight: 600;
+}
+
+.nav-sublink:hover {
+  opacity: 1;
+}
+
+.nav-subitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-subicon {
+  font-size: 0.9rem;
+}
+
+/* ========================================
+   LOGOUT
+======================================== */
+
+.logout-section {
+  margin-top: auto;
+}
+
+.logout-link:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* ========================================
+   COLLAPSED SIDEBAR
+======================================== */
+
+.app-layout.collapsed .app-sidebar {
+  width: 70px;
+}
+
+.app-layout.collapsed .sidebar-top {
+  justify-content: center;
+  gap: 0;
+}
+
+.app-layout.collapsed .nav-links {
+  align-items: center;
+}
+
+.app-layout.collapsed .nav-item {
+  justify-content: center;
+}
+
+.app-layout.collapsed .nav-link {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.app-layout.collapsed .nav-link.active {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+.app-layout.collapsed .nav-parent {
+  width: 40px;
+}
+
+.app-layout.collapsed .nav-submenu {
+  display: none;
+}

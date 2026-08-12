@@ -1,0 +1,146 @@
+/* ========================================
+   TOPBAR
+======================================== */
+
+.app-topbar {
+  height: 60px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 20px;
+
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+
+  position: relative;
+  z-index: 100;
+}
+
+/* ========================================
+   RIGHT SIDE
+======================================== */
+
+.topbar-right {
+  position: relative;
+}
+
+/* ========================================
+   USER BUTTON
+======================================== */
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  background: transparent;
+  border: none;
+
+  cursor: pointer;
+
+  color: #1e3a8a;
+  padding: 6px 8px;
+  border-radius: 10px;
+
+  transition: background 0.2s ease;
+}
+
+.topbar-user:hover {
+  background: #f3f4f6;
+}
+
+.topbar-user-icon {
+  font-size: 28px;
+}
+
+/* ========================================
+   USER INFORMATION
+======================================== */
+
+.topbar-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.topbar-user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.topbar-user-role {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ========================================
+   CHEVRON
+======================================== */
+
+.topbar-chevron {
+  font-size: 11px;
+  transition: transform 0.2s ease;
+}
+
+.topbar-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* ========================================
+   DROPDOWN
+======================================== */
+
+.topbar-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  min-width: 180px;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  overflow: hidden;
+}
+
+.topbar-dropdown button {
+  width: 100%;
+
+  padding: 12px 16px;
+
+  background: transparent;
+  border: none;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  font-size: 14px;
+  color: #334155;
+
+  transition: background 0.2s ease;
+}
+
+.topbar-dropdown button:hover {
+  background: #f3f4f6;
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+
+@media (max-width: 640px) {
+  .app-topbar {
+    padding: 0 12px;
+  }
+
+  .topbar-user-info {
+    display: none;
+  }
+}

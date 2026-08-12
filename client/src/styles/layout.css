@@ -1,0 +1,47 @@
+/* ========================================
+   APP LAYOUT
+======================================== */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* ========================================
+   SIDEBAR
+======================================== */
+
+.app-sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  transition: width 0.25s ease;
+}
+
+/* Collapsed sidebar */
+
+.app-layout.collapsed .app-sidebar {
+  width: 70px;
+}
+
+/* ========================================
+   MAIN AREA
+======================================== */
+
+.main-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========================================
+   CONTENT
+======================================== */
+
+.app-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  background: #f6f8fb;
+}
