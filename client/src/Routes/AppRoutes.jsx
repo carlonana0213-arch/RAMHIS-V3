@@ -1,131 +1,237 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
 
 import ProtectedRoute from "./ProtectedRoute";
-import Home from "../Pages/LandingPages/Home";
-import Organization from "../Pages/LandingPages/Organization";
-import AboutSystem from "../Pages/LandingPages/AboutSystem";
-import Dashboard from "../Pages/MainPages/Dashboard/Dashboard";
 
 /*
 |--------------------------------------------------------------------------
-| Authentication
+| Layout
 |--------------------------------------------------------------------------
 */
 
+import MainLayout from "../Components/layout/MainLayout";
+
+/*
+|--------------------------------------------------------------------------
+| Landing / Public Pages
+|--------------------------------------------------------------------------
+*/
+
+import Home from "../Pages/LandingPages/Home";
+import Organization from "../Pages/LandingPages/Organization";
+import AboutSystem from "../Pages/LandingPages/AboutSystem";
 import Login from "../Pages/LandingPages/Login";
 
 /*
 |--------------------------------------------------------------------------
+| Main Pages
+|--------------------------------------------------------------------------
+*/
+
+import Dashboard from "../Pages/MainPages/Dashboard/Dashboard";
+import Analytics from "../Pages/MainPages/Analytics/Analytics";
+
+/*
+|--------------------------------------------------------------------------
 | Placeholder Pages
-| Replace these imports with your real pages later.
+| Replace these with the real pages when they are ready.
 |--------------------------------------------------------------------------
 */
 
 const Registry = () => (
-  <div className="flex h-screen items-center justify-center text-4xl font-bold">
+  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
     Registry
   </div>
 );
 
 const PatientQueue = () => (
-  <div className="flex h-screen items-center justify-center text-4xl font-bold">
+  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
     Patient Queue
   </div>
 );
 
 const DoctorSheet = () => (
-  <div className="flex h-screen items-center justify-center text-4xl font-bold">
+  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
     Doctor Sheet
   </div>
 );
 
 const Pharmacy = () => (
-  <div className="flex h-screen items-center justify-center text-4xl font-bold">
+  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
     Pharmacy
   </div>
 );
 
-const Analytics = () => (
-  <div className="flex h-screen items-center justify-center text-4xl font-bold">
-    Analytics
-  </div>
-);
-
 const UserManagement = () => (
-  <div className="flex h-screen items-center justify-center text-4xl font-bold">
+  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
     User Management
   </div>
 );
 
 const AuditLogs = () => (
-  <div className="flex h-screen items-center justify-center text-4xl font-bold">
+  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
     Audit Logs
   </div>
 );
 
+/*
+|--------------------------------------------------------------------------
+| Error Pages
+|--------------------------------------------------------------------------
+*/
+
 const Unauthorized = () => (
-  <div className="flex h-screen items-center justify-center text-4xl font-bold text-red-600">
+  <div className="flex min-h-screen items-center justify-center text-4xl font-bold text-red-600">
     Unauthorized
   </div>
 );
 
 const NotFound = () => (
-  <div className="flex h-screen items-center justify-center text-4xl font-bold">
+  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
     404 - Page Not Found
   </div>
 );
+
+/*
+|--------------------------------------------------------------------------
+| Application Routes
+|--------------------------------------------------------------------------
+*/
 
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
 
-        {/* =======================================================
-                    Public
-                ======================================================== */}
+        {/* ==========================================================
+            PUBLIC ROUTES
+        =========================================================== */}
 
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Home />} />
+        <Route
+          path="/"
+          element={<Home />}
+        />
 
-        <Route path="/organization" element={<Organization />} />
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
-        <Route path="/ramhis" element={<AboutSystem />} />
-        {/* =======================================================
-                    Protected
-                ======================================================== */}
+        <Route
+          path="/organization"
+          element={<Organization />}
+        />
+
+        <Route
+          path="/ramhis"
+          element={<AboutSystem />}
+        />
+
+
+        {/* ==========================================================
+            PROTECTED APPLICATION
+        =========================================================== */}
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<Dashboard />} />
 
-          <Route path="/registry" element={<Registry />} />
+          {/* ========================================================
+              MAIN LAYOUT
 
-          <Route path="/patient-queue" element={<PatientQueue />} />
+              MainLayout contains:
+              - Sidebar
+              - Topbar
+              - Outlet for the current page
+          ========================================================= */}
 
-          <Route path="/doctor-sheet" element={<DoctorSheet />} />
+          <Route element={<MainLayout />}>
 
-          <Route path="/pharmacy" element={<Pharmacy />} />
+            {/* Dashboard */}
+            <Route
+              path="/dashboard"
+              element={<Dashboard />}
+            />
 
-          <Route path="/analytics" element={<Analytics />} />
+            {/* Analytics */}
+            <Route
+              path="/analytics"
+              element={<Analytics />}
+            />
 
-          <Route path="/audit-logs" element={<AuditLogs />} />
+            {/* Registry */}
+            <Route
+              path="/registry"
+              element={<Registry />}
+            />
+
+            {/* Patient Queue */}
+            <Route
+              path="/patient-queue"
+              element={<PatientQueue />}
+            />
+
+            {/* Doctor */}
+            <Route
+              path="/doctor-sheet"
+              element={<DoctorSheet />}
+            />
+
+            {/* Pharmacy */}
+            <Route
+              path="/pharmacy"
+              element={<Pharmacy />}
+            />
+
+            {/* Audit Logs */}
+            <Route
+              path="/audit-logs"
+              element={<AuditLogs />}
+            />
+
+          </Route>
+
         </Route>
 
-        {/* =======================================================
-                    Admin Only
-                ======================================================== */}
 
-        <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
-          <Route path="/users" element={<UserManagement />} />
+        {/* ==========================================================
+            ADMIN ONLY
+        =========================================================== */}
+
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]} />
+          }
+        >
+
+          <Route element={<MainLayout />}>
+
+            <Route
+              path="/users"
+              element={<UserManagement />}
+            />
+
+          </Route>
+
         </Route>
 
-        {/* =======================================================
-                    Error Pages
-                ======================================================== */}
 
-        <Route path="/unauthorized" element={<Unauthorized />} />
+        {/* ==========================================================
+            ERROR ROUTES
+        =========================================================== */}
 
-        <Route path="*" element={<NotFound />} />
+        <Route
+          path="/unauthorized"
+          element={<Unauthorized />}
+        />
+
+        <Route
+          path="*"
+          element={<NotFound />}
+        />
+
       </Routes>
     </BrowserRouter>
   );
