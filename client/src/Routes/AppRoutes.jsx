@@ -9,6 +9,7 @@ import AboutSystem from "../Pages/LandingPages/AboutSystem";
 import Login from "../Pages/LandingPages/Login";
 
 import Dashboard from "../Pages/MainPages/Dashboard/Dashboard";
+import Patient from "../Pages/MainPages/Patients/Patients";
 
 /*
 |--------------------------------------------------------------------------
@@ -94,13 +95,11 @@ export default function AppRoutes() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+             <Route path="/patient" element={<Patient />} />
 
             <Route path="/registry" element={<Registry />} />
 
-            <Route
-              path="/patient-queue"
-              element={<PatientQueue />}
-            />
+            <Route path="/patient-queue" element={<PatientQueue />} />
 
             <Route
               path="/doctor-sheet"
