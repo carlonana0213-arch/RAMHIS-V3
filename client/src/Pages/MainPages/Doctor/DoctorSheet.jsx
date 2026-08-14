@@ -4,12 +4,11 @@ import {
   searchPatients,
   updatePatient,
   getPatientQueue,
-} from "../services/patientService";
+} from "../../../Services/patientService";
 
-import { getMedicines } from "../services/pharmacyService";
-import { apiFetch } from "../services/api";
+import { getMedicines } from "../../../Services/pharmacyService";
+import { apiFetch } from "../../../Services/api";
 
-import "../styles/doctorSheet.css";
 
 function DoctorSheet() {
   const storedUser = JSON.parse(localStorage.getItem("user"));

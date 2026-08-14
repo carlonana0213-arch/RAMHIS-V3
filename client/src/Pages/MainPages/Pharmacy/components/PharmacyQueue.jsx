@@ -4,14 +4,12 @@ import {
   FiCheckCircle,
 } from "react-icons/fi";
 
-import { apiFetch } from "../../services/api";
-import { API_BASE_URL } from "../../services/apiConfig";
+import { apiFetch } from "../../../../Services/api";
+import { API_BASE_URL } from "../../../../Services/apiConfig";
 
-import "../../styles/pharmacy.css";
-
-import ConfirmModal from "../../components/ConfirmModal";
-import AlertModal from "../../components/AlertModal";
-import TableSkeleton from "../../components/loading/tableSkeleton";
+import ConfirmModal from "../../../../Components/ui/ConfirmModal";
+import AlertModal from "../../../../Components/ui/AlertModal";
+import TableSkeleton from "../../../../Components/ui/TableSkeleton";
 
 function PharmacyQueue() {
   const [prescriptions, setPrescriptions] =

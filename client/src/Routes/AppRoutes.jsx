@@ -7,100 +7,22 @@ import {
 
 import ProtectedRoute from "./ProtectedRoute";
 
-/*
-|--------------------------------------------------------------------------
-| Layout
-|--------------------------------------------------------------------------
-*/
-
 import MainLayout from "../Components/layout/MainLayout";
-
-/*
-|--------------------------------------------------------------------------
-| Landing / Public Pages
-|--------------------------------------------------------------------------
-*/
 
 import Home from "../Pages/LandingPages/Home";
 import Organization from "../Pages/LandingPages/Organization";
 import AboutSystem from "../Pages/LandingPages/AboutSystem";
 import Login from "../Pages/LandingPages/Login";
 
-/*
-|--------------------------------------------------------------------------
-| Main Pages
-|--------------------------------------------------------------------------
-*/
-
 import Dashboard from "../Pages/MainPages/Dashboard/Dashboard";
 import Analytics from "../Pages/MainPages/Analytics/Analytics";
-
-/*
-|--------------------------------------------------------------------------
-| Placeholder Pages
-| Replace these with the real pages when they are ready.
-|--------------------------------------------------------------------------
-*/
-
-const Registry = () => (
-  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
-    Registry
-  </div>
-);
-
-const PatientQueue = () => (
-  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
-    Patient Queue
-  </div>
-);
-
-const DoctorSheet = () => (
-  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
-    Doctor Sheet
-  </div>
-);
-
-const Pharmacy = () => (
-  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
-    Pharmacy
-  </div>
-);
-
-const UserManagement = () => (
-  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
-    User Management
-  </div>
-);
-
-const AuditLogs = () => (
-  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
-    Audit Logs
-  </div>
-);
-
-/*
-|--------------------------------------------------------------------------
-| Error Pages
-|--------------------------------------------------------------------------
-*/
-
-const Unauthorized = () => (
-  <div className="flex min-h-screen items-center justify-center text-4xl font-bold text-red-600">
-    Unauthorized
-  </div>
-);
-
-const NotFound = () => (
-  <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
-    404 - Page Not Found
-  </div>
-);
-
-/*
-|--------------------------------------------------------------------------
-| Application Routes
-|--------------------------------------------------------------------------
-*/
+import Patients from "../Pages/MainPages/Patients/Patients";
+import Doctor from "../Pages/MainPages/Doctor/Doctor";
+import DoctorSheet from "../Pages/MainPages/Doctor/DoctorSheet";
+import Events from "../Pages/MainPages/Events/EventManagement";
+import Pharmacy from "../Pages/MainPages/Pharmacy/Pharmacy";
+import UserManagement from "../Pages/MainPages/Users/UserManagement";
+import Account from "../Pages/MainPages/Account/Account";
 
 export default function AppRoutes() {
   return (
@@ -144,51 +66,93 @@ export default function AppRoutes() {
               MainLayout contains:
               - Sidebar
               - Topbar
-              - Outlet for the current page
+              - Outlet
           ========================================================= */}
 
           <Route element={<MainLayout />}>
 
-            {/* Dashboard */}
+            {/* ======================================================
+                DASHBOARD
+            ====================================================== */}
+
             <Route
               path="/dashboard"
               element={<Dashboard />}
             />
 
-            {/* Analytics */}
+
+            {/* ======================================================
+                ANALYTICS
+            ====================================================== */}
+
             <Route
               path="/analytics"
               element={<Analytics />}
             />
 
-            {/* Registry */}
+
+            {/* ======================================================
+                PATIENTS
+            ====================================================== */}
+
             <Route
-              path="/registry"
-              element={<Registry />}
+              path="/patient"
+              element={<Patients />}
             />
 
-            {/* Patient Queue */}
+
+            {/* ======================================================
+                DOCTOR
+            ====================================================== */}
+
             <Route
-              path="/patient-queue"
-              element={<PatientQueue />}
+              path="/doctor"
+              element={<Doctor />}
             />
 
-            {/* Doctor */}
             <Route
               path="/doctor-sheet"
-              element={<DoctorSheet />}
+              element={<Doctor />}
             />
 
-            {/* Pharmacy */}
+
+            {/* ======================================================
+                EVENTS
+            ====================================================== */}
+
+            <Route
+              path="/event"
+              element={<Events />}
+            />
+
+
+            {/* ======================================================
+                PHARMACY
+            ====================================================== */}
+
             <Route
               path="/pharmacy"
               element={<Pharmacy />}
             />
 
-            {/* Audit Logs */}
             <Route
-              path="/audit-logs"
-              element={<AuditLogs />}
+              path="/pharmacy/queue"
+              element={<Pharmacy />}
+            />
+
+            <Route
+              path="/pharmacy/inventory"
+              element={<Pharmacy />}
+            />
+
+
+            {/* ======================================================
+                ACCOUNT
+            ====================================================== */}
+
+            <Route
+              path="/account"
+              element={<Account />}
             />
 
           </Route>
@@ -219,17 +183,30 @@ export default function AppRoutes() {
 
 
         {/* ==========================================================
-            ERROR ROUTES
+            UNAUTHORIZED
         =========================================================== */}
 
         <Route
           path="/unauthorized"
-          element={<Unauthorized />}
+          element={
+            <div className="flex min-h-screen items-center justify-center text-4xl font-bold text-red-600">
+              Unauthorized
+            </div>
+          }
         />
+
+
+        {/* ==========================================================
+            FALLBACK
+        =========================================================== */}
 
         <Route
           path="*"
-          element={<NotFound />}
+          element={
+            <div className="flex min-h-screen items-center justify-center text-4xl font-bold">
+              404 - Page Not Found
+            </div>
+          }
         />
 
       </Routes>

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { registerUser } from "../../services/authService";
 import "../../styles/admin.css";
-import ConfirmModal from "../../components/ConfirmModal";
-import AlertModal from "../../components/AlertModal";
+import ConfirmModal from "../ui/ConfirmModal";
+import AlertModal from "../ui/AlertModal";
 
 function AddUserModal({ onClose, onSuccess }) {
   const [form, setForm] = useState({

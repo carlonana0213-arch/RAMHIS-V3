@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { updateUser } from "../../services/adminService";
-import ConfirmModal from "../../components/ConfirmModal";
-import AlertModal from "../../components/AlertModal";
+import ConfirmModal from "../ui/ConfirmModal";
+import AlertModal from "../ui/AlertModal";
 import { API_BASE_URL } from "../../services/apiConfig";
 
 function EditUserModal({ user, onClose, onSuccess }) {

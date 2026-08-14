@@ -1,26 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 
+// Services
 import {
   getAllUsers,
   approveUser,
   rejectUser,
   updateUser,
   updateUserStatus,
-} from "../services/adminService";
+} from "../../../Services/adminService";
 
-import { registerUser } from "../services/authService";
+import { registerUser } from "../../../Services/authService";
 
-import AlertModal from "../components/AlertModal";
-import ConfirmModal from "../components/ConfirmModal";
+// Components
+import ConfirmModal from "../../../Components/ui/ConfirmModal";
+import AlertModal from "../../../Components/ui/AlertModal";
+import TableSkeleton from "../../../Components/ui/TableSkeleton";
 
-import AddUser from "./adminModal/addUser";
-import EditUser from "./adminModal/editUser";
-import UserDashboard from "./analytics/userDashboard";
-
-import CardsSkeleton from "../components/loading/cardSkeleton";
-import TableSkeleton from "../components/loading/tableSkeleton";
-
-import "../styles/admin.css";
 
 function UserManagement() {
   const [users, setUsers] = useState([]);

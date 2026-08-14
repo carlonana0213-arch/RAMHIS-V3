@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import "../../styles/patientDoctorView.css";
-
-import { getMedicines } from "../../services/pharmacyService";
-import AlertModal from "../../components/AlertModal";
-import ConfirmModal from "../../components/ConfirmModal";
+import { getMedicines } from "../../../../Services/pharmacyService";
 
 import {
   loadPatientPrescriptions,
@@ -13,7 +9,10 @@ import {
   markMedicineGiven,
   updatePatientStatus,
   deleteDoctorRecord,
-} from "../../services/doctorService";
+} from "../../../../Services/doctorService";
+
+import AlertModal from "../../../../Components/ui/AlertModal";
+import ConfirmModal from "../../../../Components/ui/ConfirmModal";
 
 function PatientDoctorView({ patient, onClose, refreshQueue }) {
   const storedUser = JSON.parse(localStorage.getItem("user"));

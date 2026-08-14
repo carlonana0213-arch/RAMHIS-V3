@@ -5,12 +5,11 @@ import {
   addMedicine,
   deleteMedicine,
   updateMedicine,
-} from "../services/pharmacyService";
+} from "../../../../Services/pharmacyService";
 
-import { apiFetch } from "../services/api";
-import { API_BASE_URL } from "../services/apiConfig";
+import { apiFetch } from "../../../../Services/api";
+import { API_BASE_URL } from "../../../../Services/apiConfig";
 
-import "../styles/pharmacy.css";
 
 function PharmacyInventory() {
   const [medicines, setMedicines] = useState([]);

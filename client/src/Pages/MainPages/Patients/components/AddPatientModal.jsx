@@ -5,11 +5,10 @@ import {
   addPatient,
   updatePatient,
   searchPatients,
-} from "../../services/patientService";
+} from "../../../../Services/patientService";
 
-import AlertModal from "../../components/AlertModal";
-import ConfirmModal from "../../components/ConfirmModal";
-import DuplicatePatientModal from "../../components/DuplicatePatientModal";
+import AlertModal from "../../../../Components/ui/AlertModal";
+import ConfirmModal from "../../../../Components/ui/ConfirmModal";
 
 import GeneralStep from "../steps/GeneralStep";
 import HistoryStep from "../steps/HistoryStep";
@@ -17,8 +16,6 @@ import ExaminationStep from "../steps/ExaminationStep";
 import DepartmentStep from "../steps/DepartmentStep";
 import PerinatalStep from "../steps/PerinatalStep";
 import SummaryStep from "../steps/SummaryStep";
-
-import "../../styles/modal.css";
 
 const getSteps = (form) => {
   const baseSteps = [

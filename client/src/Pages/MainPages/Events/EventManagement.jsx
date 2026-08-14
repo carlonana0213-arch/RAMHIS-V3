@@ -6,12 +6,11 @@ import {
   deleteEvent,
   updateEvent,
   updateParticipantStatus,
-} from "../services/eventService";
+} from "../../../Services/eventService";
 
-import EventModal from "../components/EventModal";
-import EventViewModal from "../components/EventViewModal";
+import EventModal from "../../../Components/events/EventModal";
+import EventViewModal from "../../../Components/events/EventViewModal";
 
-import "../styles/EventManagement.css";
 
 const EventManagement = () => {
   const [events, setEvents] = useState([]);

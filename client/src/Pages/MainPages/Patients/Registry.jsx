@@ -7,13 +7,10 @@ import {
   updatePatient,
   deletePatient,
   getPatientById,
-} from "../../services/patientService";
+} from "../../../Services/patientService";
 
-import "../../styles/registry.css";
-import "../../styles/registry-modern.css";
-
-import AlertModal from "../../components/AlertModal";
-import ConfirmModal from "../../components/ConfirmModal";
+import AlertModal from "../../../Components/ui/AlertModal";
+import ConfirmModal from "../../../Components/ui/ConfirmModal";
 
 const HISTORY_OPTIONS = [
   "Diabetes",

@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { updateUser } from "../services/patientService";
-import "../styles/account.css";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import ConfirmModal from "../components/ConfirmModal";
-import { API_BASE_URL } from "../services/apiConfig";
+import { updateUser } from "../../../Services/patientService";
+import ConfirmModal from "../../../Components/ui/ConfirmModal";
+import { API_BASE_URL } from "../../../Services/apiConfig";
 
 function Account() {
   const [formData, setFormData] = useState(null);
