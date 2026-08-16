@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { registerUser } from "../../services/authService";
-import "../../styles/admin.css";
+import { registerUser } from "../../Services/authService";
 import ConfirmModal from "../ui/ConfirmModal";
 import AlertModal from "../ui/AlertModal";
 

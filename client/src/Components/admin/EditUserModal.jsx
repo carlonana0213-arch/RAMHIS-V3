@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { updateUser } from "../../services/adminService";
+import { updateUser } from "../../Services/adminService";
 import ConfirmModal from "../ui/ConfirmModal";
 import AlertModal from "../ui/AlertModal";
-import { API_BASE_URL } from "../../services/apiConfig";
+import { API_BASE_URL } from "../../Services/apiConfig";
 
 function EditUserModal({ user, onClose, onSuccess }) {
   const [isEditing, setIsEditing] = useState(false);

@@ -20,7 +20,8 @@ import Patients from "../Pages/MainPages/Patients/Patients";
 import Doctor from "../Pages/MainPages/Doctor/Doctor";
 import DoctorSheet from "../Pages/MainPages/Doctor/DoctorSheet";
 import Events from "../Pages/MainPages/Events/EventManagement";
-import Pharmacy from "../Pages/MainPages/Pharmacy/Pharmacy";
+import PharmacyQueue from "../Pages/MainPages/Pharmacy/components/PharmacyQueue";
+import PharmacyInventory from "../Pages/MainPages/Pharmacy/components/PharmacyInventory";
 import UserManagement from "../Pages/MainPages/Users/UserManagement";
 import Account from "../Pages/MainPages/Account/Account";
 
@@ -132,17 +133,17 @@ export default function AppRoutes() {
 
             <Route
               path="/pharmacy"
-              element={<Pharmacy />}
+              element={<Navigate to="/pharmacy/queue" replace />}
             />
 
             <Route
               path="/pharmacy/queue"
-              element={<Pharmacy />}
+              element={<PharmacyQueue />}
             />
 
             <Route
               path="/pharmacy/inventory"
-              element={<Pharmacy />}
+              element={<PharmacyInventory />}
             />
 
 

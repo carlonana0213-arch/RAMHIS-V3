@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  FiClock,
-  FiCheckCircle,
-} from "react-icons/fi";
+  ChevronDown,
+  ChevronRight,
+  Clock3,
+  Search,
+  CheckCircle2,
+  Package,
+  AlertTriangle,
+  XCircle,
+} from "lucide-react";
 
 import { apiFetch } from "../../../../Services/api";
 import { API_BASE_URL } from "../../../../Services/apiConfig";
@@ -10,45 +16,38 @@ import { API_BASE_URL } from "../../../../Services/apiConfig";
 import ConfirmModal from "../../../../Components/ui/ConfirmModal";
 import AlertModal from "../../../../Components/ui/AlertModal";
 import TableSkeleton from "../../../../Components/ui/TableSkeleton";
+import Button from "../../../../Components/ui/button";
 
 function PharmacyQueue() {
-  const [prescriptions, setPrescriptions] =
-    useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("Pending");
 
-  const [filter, setFilter] =
-    useState("Pending");
+  const [confirmState, setConfirmState] = useState(null);
+  const [alertMessage, setAlertMessage] = useState("");
 
-  const [confirmState, setConfirmState] =
-    useState(null);
-
-  const [alertMessage, setAlertMessage] =
-    useState("");
-
-  const [currentPage, setCurrentPage] =
-    useState(1);
-
+  const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [expandedPatients, setExpandedPatients] =
-    useState({});
+  const [loading, setLoading] = useState(true);
+  const [expandedPatients, setExpandedPatients] = useState({});
 
   const loadPrescriptions = async () => {
     try {
       setLoading(true);
 
       const data = await apiFetch(
-        `${API_BASE_URL}/api/prescriptions/pending`
+        `${API_BASE_URL}/api/prescriptions/pending`,
       );
 
-      setPrescriptions(data);
-    } catch (err) {
-      console.error(err);
+      setPrescriptions(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load prescription queue:", error);
+
+      setAlertMessage(
+        error.message || "Failed to load prescription queue.",
+      );
     } finally {
       setLoading(false);
     }
@@ -58,605 +57,679 @@ function PharmacyQueue() {
     loadPrescriptions();
   }, []);
 
-  const handleMarkAsGiven = async (
-    prescriptionId,
-    itemId
-  ) => {
+  const handleMarkAsGiven = async (prescriptionId, itemId) => {
     try {
       await apiFetch(
         `${API_BASE_URL}/api/prescriptions/${prescriptionId}/${itemId}`,
         {
           method: "PATCH",
-        }
+        },
       );
 
-      setAlertMessage(
-        "Prescription marked as given"
-      );
+      setConfirmState(null);
 
-      loadPrescriptions();
-    } catch (err) {
-      console.error("FULL ERROR:", err);
+      await loadPrescriptions();
 
-      if (err.response) {
-        console.log(
-          "STATUS:",
-          err.response.status
-        );
+      setAlertMessage("Prescription marked as given.");
+    } catch (error) {
+      console.error("Failed to mark prescription as given:", error);
 
-        console.log(
-          "DATA:",
-          err.response.data
-        );
-      }
+      setConfirmState(null);
 
       setAlertMessage(
-        "Failed to mark prescription as given"
+        error.message || "Failed to mark prescription as given.",
       );
     }
   };
 
-  const filteredPrescriptions =
-    prescriptions
-      .map((p) => {
-        const filteredItems =
-          p.items.filter((item) => {
-            const patientName =
-              p.patient?.generalInfo
-                ?.name || "";
+  const getPatientName = (prescription) => {
+    return (
+      prescription?.patient?.generalInfo?.name ||
+      "Unknown Patient"
+    );
+  };
 
-            const medicineNames =
-              item.medicine?.names?.join(
-                ", "
-              ) ||
-              item.medicine?.name ||
-              "";
+  const getMedicineName = (medicine) => {
+    if (Array.isArray(medicine?.names)) {
+      return medicine.names.join(", ");
+    }
+
+    return medicine?.name || "Unknown Medicine";
+  };
+
+  const getStockStatus = (medicine) => {
+    const stock = Number(medicine?.quantity ?? 0);
+
+    if (stock <= 0) {
+      return {
+        label: "Out of Stock",
+        type: "out",
+      };
+    }
+
+    if (stock <= 50) {
+      return {
+        label: "Low Stock",
+        type: "low",
+      };
+    }
+
+    return {
+      label: "Ready",
+      type: "ready",
+    };
+  };
+
+  const pendingCount = useMemo(() => {
+    return prescriptions
+      .flatMap((prescription) => prescription.items || [])
+      .filter((item) => !item.isGiven).length;
+  }, [prescriptions]);
+
+  const givenCount = useMemo(() => {
+    return prescriptions
+      .flatMap((prescription) => prescription.items || [])
+      .filter((item) => item.isGiven).length;
+  }, [prescriptions]);
+
+  const filteredPrescriptions = useMemo(() => {
+    const searchTerm = search.trim().toLowerCase();
+
+    return prescriptions
+      .map((prescription) => {
+        const filteredItems = (prescription.items || []).filter(
+          (item) => {
+            const patientName =
+              getPatientName(prescription).toLowerCase();
+
+            const medicineName =
+              getMedicineName(item.medicine).toLowerCase();
 
             const matchesSearch =
-              patientName
-                .toLowerCase()
-                .includes(
-                  search.toLowerCase()
-                ) ||
-              medicineNames
-                .toLowerCase()
-                .includes(
-                  search.toLowerCase()
-                );
+              !searchTerm ||
+              patientName.includes(searchTerm) ||
+              medicineName.includes(searchTerm);
 
             const matchesFilter =
               filter === "Pending"
                 ? !item.isGiven
                 : item.isGiven;
 
-            return (
-              matchesSearch &&
-              matchesFilter
-            );
-          });
+            return matchesSearch && matchesFilter;
+          },
+        );
 
         return {
-          ...p,
+          ...prescription,
           filteredItems,
         };
       })
       .filter(
-        (p) => p.filteredItems.length > 0
+        (prescription) =>
+          prescription.filteredItems.length > 0,
       );
-
-  const pendingCount = prescriptions
-    .flatMap((p) => p.items)
-    .filter(
-      (item) => !item.isGiven
-    ).length;
-
-  const givenCount = prescriptions
-    .flatMap((p) => p.items)
-    .filter(
-      (item) => item.isGiven
-    ).length;
-
-  const totalPrescriptions =
-    filteredPrescriptions.length;
-
-  const totalPages = Math.ceil(
-    totalPrescriptions /
-      ITEMS_PER_PAGE
-  );
-
-  const startIndex =
-    (currentPage - 1) *
-    ITEMS_PER_PAGE;
-
-  const endIndex =
-    startIndex + ITEMS_PER_PAGE;
-
-  const displayedPrescriptions =
-    filteredPrescriptions.slice(
-      startIndex,
-      endIndex
-    );
-
-  const displayedCount = Math.min(
-    endIndex,
-    totalPrescriptions
-  );
+  }, [prescriptions, search, filter]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [search, filter]);
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      filteredPrescriptions.length / ITEMS_PER_PAGE,
+    ),
+  );
+
+  const startIndex =
+    (currentPage - 1) * ITEMS_PER_PAGE;
+
+  const displayedPrescriptions =
+    filteredPrescriptions.slice(
+      startIndex,
+      startIndex + ITEMS_PER_PAGE,
+    );
+
+  const startDisplay =
+    filteredPrescriptions.length === 0
+      ? 0
+      : startIndex + 1;
+
+  const endDisplay = Math.min(
+    startIndex + ITEMS_PER_PAGE,
+    filteredPrescriptions.length,
+  );
+
+  const togglePatient = (id) => {
+    setExpandedPatients((previous) => ({
+      ...previous,
+      [id]: !previous[id],
+    }));
+  };
+
+  const renderStockBadge = (medicine) => {
+    const stock = getStockStatus(medicine);
+
+    if (stock.type === "out") {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700">
+          <XCircle size={14} />
+          Out of Stock
+        </span>
+      );
+    }
+
+    if (stock.type === "low") {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700">
+          <AlertTriangle size={14} />
+          Low Stock
+        </span>
+      );
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+        <CheckCircle2 size={14} />
+        Ready
+      </span>
+    );
+  };
+
+  const renderAction = (prescription, item) => {
+    if (item.isGiven) {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+          <CheckCircle2 size={14} />
+          Given
+        </span>
+      );
+    }
+
+    const stock = Number(
+      item.medicine?.quantity ?? 0,
+    );
+
+    if (stock <= 0) {
+      return (
+        <button
+          type="button"
+          disabled
+          className="inline-flex cursor-not-allowed items-center rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-400"
+        >
+          Unavailable
+        </button>
+      );
+    }
+
+    return (
+      <Button
+        size="sm"
+        onClick={() =>
+          setConfirmState({
+            message:
+              "Mark this prescription as given?",
+            onConfirm: () =>
+              handleMarkAsGiven(
+                prescription._id,
+                item._id,
+              ),
+          })
+        }
+      >
+        Mark as Given
+      </Button>
+    );
+  };
+
   return (
-    <div className="pharmacy-container">
-      <div className="pharmacy-header">
-        <h2>Prescription Queue</h2>
-      </div>
+    <div className="space-y-6">
+      {/* HEADER */}
 
-      <div className="queue-stats-grid">
-        {/* PENDING */}
-
-        <div className="queue-stat-card pending">
-          <div className="queue-stat-icon">
-            <FiClock />
+      <div>
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+            <Package size={22} />
           </div>
 
           <div>
-            <h4>
-              Prescriptions in Queue
-            </h4>
+            <h2 className="text-xl font-bold text-slate-900">
+              Prescription Queue
+            </h2>
 
-            <div className="queue-stat-value">
-              {pendingCount}
-            </div>
-          </div>
-        </div>
-
-        {/* GIVEN */}
-
-        <div className="queue-stat-card completed">
-          <div className="queue-stat-icon">
-            <FiCheckCircle />
-          </div>
-
-          <div>
-            <h4>
-              Prescriptions Given Out
-            </h4>
-
-            <div className="queue-stat-value">
-              {givenCount}
-            </div>
+            <p className="mt-1 text-sm text-slate-500">
+              Manage prescriptions and medicine distribution.
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="pharmacy-topbar">
-        <input
-          className="pharmacy-search"
-          type="text"
-          placeholder="Search patient or medicine..."
-          value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
-        />
+      {/* STAT CARDS */}
 
-        <div className="filter-group">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Prescriptions in Queue
+              </p>
+
+              <p className="mt-2 text-3xl font-extrabold text-slate-900">
+                {pendingCount}
+              </p>
+
+              <p className="mt-1 text-xs text-slate-400">
+                Waiting to be released
+              </p>
+            </div>
+
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+              <Clock3 size={22} />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Prescriptions Given
+              </p>
+
+              <p className="mt-2 text-3xl font-extrabold text-slate-900">
+                {givenCount}
+              </p>
+
+              <p className="mt-1 text-xs text-slate-400">
+                Successfully released
+              </p>
+            </div>
+
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <CheckCircle2 size={22} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SEARCH + FILTER */}
+
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative w-full lg:max-w-md">
+          <Search
+            size={18}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+
+          <input
+            type="text"
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
+            placeholder="Search patient or medicine..."
+            className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+          />
+        </div>
+
+        <div className="flex rounded-xl bg-slate-100 p-1">
           <button
-            className={
+            type="button"
+            onClick={() => setFilter("Pending")}
+            className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
               filter === "Pending"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setFilter("Pending")
-            }
+                ? "bg-white text-blue-700 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
           >
             Pending
           </button>
 
           <button
-            className={
+            type="button"
+            onClick={() => setFilter("Given")}
+            className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
               filter === "Given"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setFilter("Given")
-            }
+                ? "bg-white text-blue-700 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
           >
             Given
           </button>
         </div>
       </div>
 
-      <div className="pharmacy-section">
-        {prescriptions.length === 0 && (
-          <p>
-            No pending prescriptions
-          </p>
-        )}
+      {/* TABLE */}
 
-        <div className="inventory-table">
-          <h3 className="queue-section-title">
-            Prescriptions In Queue
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-6 py-5">
+          <h3 className="text-base font-bold text-slate-900">
+            {filter === "Pending"
+              ? "Prescriptions In Queue"
+              : "Prescriptions Given"}
           </h3>
 
-          {loading ? (
-            <TableSkeleton
-              rows={8}
-              columns={7}
-            />
-          ) : (
-            <>
-              <table>
+          <p className="mt-1 text-sm text-slate-500">
+            {filteredPrescriptions.length} prescription
+            {filteredPrescriptions.length === 1
+              ? ""
+              : "s"} found
+          </p>
+        </div>
+
+        {loading ? (
+          <TableSkeleton
+            rows={8}
+            columns={7}
+          />
+        ) : filteredPrescriptions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              <Package size={26} />
+            </div>
+
+            <h4 className="mt-4 font-semibold text-slate-800">
+              No prescriptions found
+            </h4>
+
+            <p className="mt-1 text-sm text-slate-500">
+              {search
+                ? "Try changing your search."
+                : filter === "Pending"
+                  ? "There are currently no pending prescriptions."
+                  : "No prescriptions have been marked as given."}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1050px]">
                 <thead>
-                  <tr>
-                    <th>Patient</th>
-                    <th>Medicine</th>
-                    <th>Dosage</th>
-                    <th>Quantity</th>
-                    <th>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Patient
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Medicine
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Dosage
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Quantity
+                    </th>
+
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                       Prescribed By
                     </th>
-                    <th>
-                      Stock Status
+
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Stock
                     </th>
-                    <th>Action</th>
+
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Action
+                    </th>
                   </tr>
                 </thead>
 
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {displayedPrescriptions.map(
-                    (p) => {
-                      const hasMultipleMedicines =
-                        p.filteredItems
-                          .length > 1;
+                    (prescription) => {
+                      const items =
+                        prescription.filteredItems;
 
-                      // SINGLE MEDICINE
-                      // → NORMAL ROW
+                      const patientName =
+                        getPatientName(
+                          prescription,
+                        );
 
-                      if (
-                        !hasMultipleMedicines
-                      ) {
-                        const item =
-                          p.filteredItems[0];
+                      const hasMultiple =
+                        items.length > 1;
+
+                      if (!hasMultiple) {
+                        const item = items[0];
 
                         return (
                           <tr
-                            key={item._id}
+                            key={`${prescription._id}-${item._id}`}
+                            className="transition hover:bg-slate-50"
                           >
-                            <td>
-                              {
-                                p.patient
-                                  .generalInfo
-                                  .name
-                              }
+                            <td className="px-6 py-4 font-semibold text-slate-800">
+                              {patientName}
                             </td>
 
-                            <td>
-                              {item.medicine
-                                ?.names?.join(
-                                  ", "
-                                ) ||
-                                item.medicine
-                                  ?.name ||
-                                "Unknown Medicine"}
-                            </td>
+                            <td className="px-6 py-4">
+                              <div className="font-medium text-slate-800">
+                                {getMedicineName(
+                                  item.medicine,
+                                )}
+                              </div>
 
-                            <td>
-                              {item.medicine
-                                ?.dosage ||
-                                "-"}
-                            </td>
-
-                            <td>
-                              {item.quantity}
-                            </td>
-
-                            <td>
-                              {p.doctor
-                                ?.name ||
-                                "Unknown Doctor"}
-                            </td>
-
-                            <td>
-                              {item.medicine
-                                ?.quantity <=
-                              0 ? (
-                                <span className="stock-pill out">
-                                  Out of Stock
-                                </span>
-                              ) : item.medicine
-                                  ?.quantity <=
-                                50 ? (
-                                <span className="stock-pill low">
-                                  Low Stock
-                                </span>
-                              ) : (
-                                <span className="stock-pill ready">
-                                  Ready
-                                </span>
+                              {item.directions && (
+                                <div className="mt-1 max-w-xs truncate text-xs text-slate-400">
+                                  {item.directions}
+                                </div>
                               )}
                             </td>
 
-                            <td>
-                              {!item.isGiven ? (
-                                item.medicine
-                                  ?.quantity <=
-                                0 ? (
-                                  <button
-                                    className="disabled-btn"
-                                    disabled
-                                  >
-                                    Unavailable
-                                  </button>
-                                ) : (
-                                  <button
-                                    className="mark-given-btn"
-                                    onClick={() => {
-                                      setConfirmState(
-                                        {
-                                          message:
-                                            "Mark this prescription as given?",
+                            <td className="px-6 py-4 text-sm text-slate-600">
+                              {item.medicine?.dosage ??
+                                "-"}
+                            </td>
 
-                                          onConfirm:
-                                            async () => {
-                                              await handleMarkAsGiven(
-                                                p._id,
-                                                item._id
-                                              );
+                            <td className="px-6 py-4 text-sm font-semibold text-slate-700">
+                              {item.quantity}
+                            </td>
 
-                                              setConfirmState(
-                                                null
-                                              );
-                                            },
-                                        }
-                                      );
-                                    }}
-                                  >
-                                    Mark as Given
-                                  </button>
-                                )
-                              ) : (
-                                <span className="given-pill">
-                                  Given
-                                </span>
+                            <td className="px-6 py-4 text-sm text-slate-600">
+                              {prescription.doctor?.name ||
+                                "Unknown Doctor"}
+                            </td>
+
+                            <td className="px-6 py-4">
+                              {renderStockBadge(
+                                item.medicine,
+                              )}
+                            </td>
+
+                            <td className="px-6 py-4 text-right">
+                              {renderAction(
+                                prescription,
+                                item,
                               )}
                             </td>
                           </tr>
                         );
                       }
 
-                      // MULTIPLE MEDICINES
-                      // → DROPDOWN
+                      const isExpanded =
+                        !!expandedPatients[
+                          prescription._id
+                        ];
 
                       return (
-                        <>
-                          <tr
-                            key={p._id}
-                            className="expandable-row"
-                            onClick={() =>
-                              setExpandedPatients(
-                                (prev) => ({
-                                  ...prev,
-                                  [p._id]:
-                                    !prev[
-                                      p._id
-                                    ],
-                                })
-                              )
-                            }
-                            style={{
-                              cursor:
-                                "pointer",
-                            }}
+                        <tr
+                          key={prescription._id}
+                          className="bg-white"
+                        >
+                          <td
+                            colSpan={7}
+                            className="p-0"
                           >
-                            <td>
-                              {expandedPatients[
-                                p._id
-                              ]
-                                ? "▼"
-                                : "▶"}{" "}
-                              {
-                                p.patient
-                                  .generalInfo
-                                  .name
+                            {/* PARENT ROW */}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                togglePatient(
+                                  prescription._id,
+                                )
                               }
-                            </td>
+                              className="flex w-full items-center gap-4 px-6 py-4 text-left transition hover:bg-slate-50"
+                            >
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                                {isExpanded ? (
+                                  <ChevronDown
+                                    size={17}
+                                  />
+                                ) : (
+                                  <ChevronRight
+                                    size={17}
+                                  />
+                                )}
+                              </div>
 
-                            <td colSpan="5">
-                              {
-                                p
-                                  .filteredItems
-                                  .length
-                              }{" "}
-                              medicine(s)
-                            </td>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-slate-800">
+                                  {patientName}
+                                </p>
 
-                            <td></td>
-                          </tr>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  {items.length} medicines
+                                </p>
+                              </div>
 
-                          {expandedPatients[
-                            p._id
-                          ] &&
-                            p.filteredItems.map(
-                              (item) => (
-                                <tr
-                                  key={
-                                    item._id
-                                  }
-                                  className="medicine-sub-row"
-                                >
-                                  <td></td>
+                              <div className="hidden text-sm text-slate-500 sm:block">
+                                Prescribed by{" "}
+                                <span className="font-medium text-slate-700">
+                                  {prescription.doctor?.name ||
+                                    "Unknown Doctor"}
+                                </span>
+                              </div>
+                            </button>
 
-                                  <td>
-                                    {item
-                                      .medicine
-                                      ?.names?.join(
-                                        ", "
-                                      ) ||
-                                      item
-                                        .medicine
-                                        ?.name ||
-                                      "Unknown Medicine"}
-                                  </td>
+                            {/* EXPANDED MEDICINES */}
 
-                                  <td>
-                                    {item
-                                      .medicine
-                                      ?.dosage ||
-                                      "-"}
-                                  </td>
+                            {isExpanded && (
+                              <div className="border-t border-slate-100 bg-slate-50/70">
+                                {items.map(
+                                  (item) => (
+                                    <div
+                                      key={item._id}
+                                      className="grid gap-4 border-b border-slate-100 px-6 py-4 last:border-b-0 md:grid-cols-[1fr_auto_auto_auto]"
+                                    >
+                                      <div className="pl-12">
+                                        <p className="font-medium text-slate-800">
+                                          {getMedicineName(
+                                            item.medicine,
+                                          )}
+                                        </p>
 
-                                  <td>
-                                    {
-                                      item.quantity
-                                    }
-                                  </td>
+                                        {item.directions && (
+                                          <p className="mt-1 text-xs text-slate-500">
+                                            {item.directions}
+                                          </p>
+                                        )}
+                                      </div>
 
-                                  <td>
-                                    {p.doctor
-                                      ?.name ||
-                                      "Unknown Doctor"}
-                                  </td>
+                                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                                        <span className="text-xs text-slate-400">
+                                          Qty
+                                        </span>
+                                        <span className="font-semibold">
+                                          {item.quantity}
+                                        </span>
+                                      </div>
 
-                                  <td>
-                                    {item
-                                      .medicine
-                                      ?.quantity <=
-                                    0 ? (
-                                      <span className="stock-pill out">
-                                        Out of Stock
-                                      </span>
-                                    ) : item
-                                        .medicine
-                                        ?.quantity <=
-                                      50 ? (
-                                      <span className="stock-pill low">
-                                        Low Stock
-                                      </span>
-                                    ) : (
-                                      <span className="stock-pill ready">
-                                        Ready
-                                      </span>
-                                    )}
-                                  </td>
+                                      <div>
+                                        {renderStockBadge(
+                                          item.medicine,
+                                        )}
+                                      </div>
 
-                                  <td>
-                                    {!item.isGiven ? (
-                                      item
-                                        .medicine
-                                        ?.quantity <=
-                                      0 ? (
-                                        <button
-                                          className="disabled-btn"
-                                          disabled
-                                        >
-                                          Unavailable
-                                        </button>
-                                      ) : (
-                                        <button
-                                          className="mark-given-btn"
-                                          onClick={() => {
-                                            setConfirmState(
-                                              {
-                                                message:
-                                                  "Mark this prescription as given?",
-
-                                                onConfirm:
-                                                  async () => {
-                                                    await handleMarkAsGiven(
-                                                      p._id,
-                                                      item._id
-                                                    );
-
-                                                    setConfirmState(
-                                                      null
-                                                    );
-                                                  },
-                                              }
-                                            );
-                                          }}
-                                        >
-                                          Mark as Given
-                                        </button>
-                                      )
-                                    ) : (
-                                      <span className="given-pill">
-                                        Given
-                                      </span>
-                                    )}
-                                  </td>
-                                </tr>
-                              )
+                                      <div className="flex justify-end">
+                                        {renderAction(
+                                          prescription,
+                                          item,
+                                        )}
+                                      </div>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
                             )}
-                        </>
+                          </td>
+                        </tr>
                       );
-                    }
+                    },
                   )}
                 </tbody>
               </table>
+            </div>
 
-              {totalPrescriptions > 0 && (
-                <div className="pharmacy-pagination">
-                  <button
-                    className="pharmacy-page-btn"
-                    disabled={
-                      currentPage === 1
-                    }
-                    onClick={() =>
-                      setCurrentPage(
-                        (prev) =>
-                          prev - 1
-                      )
-                    }
-                  >
-                    Previous
-                  </button>
+            {/* PAGINATION */}
 
-                  <span className="pharmacy-pagination-text">
-                    {displayedCount} of{" "}
-                    {
-                      totalPrescriptions
-                    }
-                  </span>
+            <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-500">
+                Showing{" "}
+                <span className="font-semibold text-slate-700">
+                  {startDisplay}
+                </span>{" "}
+                to{" "}
+                <span className="font-semibold text-slate-700">
+                  {endDisplay}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-slate-700">
+                  {filteredPrescriptions.length}
+                </span>
+              </p>
 
-                  <button
-                    className="pharmacy-page-btn"
-                    disabled={
-                      currentPage ===
-                      totalPages
-                    }
-                    onClick={() =>
-                      setCurrentPage(
-                        (prev) =>
-                          prev + 1
-                      )
-                    }
-                  >
-                    Next
-                  </button>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() =>
+                    setCurrentPage(
+                      (page) => page - 1,
+                    )
+                  }
+                >
+                  Previous
+                </Button>
+
+                <div className="flex items-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700">
+                  {currentPage} / {totalPages}
                 </div>
-              )}
-            </>
-          )}
-        </div>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={
+                    currentPage === totalPages
+                  }
+                  onClick={() =>
+                    setCurrentPage(
+                      (page) => page + 1,
+                    )
+                  }
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* CONFIRM */}
 
       {confirmState && (
         <ConfirmModal
-          message={
-            confirmState.message
-          }
-          onConfirm={
-            confirmState.onConfirm
-          }
+          message={confirmState.message}
+          onConfirm={confirmState.onConfirm}
           onCancel={() =>
             setConfirmState(null)
           }
         />
       )}
+
+      {/* ALERT */}
 
       {alertMessage && (
         <AlertModal

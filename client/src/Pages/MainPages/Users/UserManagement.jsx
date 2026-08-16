@@ -5,85 +5,56 @@ import {
   getAllUsers,
   approveUser,
   rejectUser,
-  updateUser,
   updateUserStatus,
 } from "../../../Services/adminService";
-
-import { registerUser } from "../../../Services/authService";
 
 // Components
 import ConfirmModal from "../../../Components/ui/ConfirmModal";
 import AlertModal from "../../../Components/ui/AlertModal";
 import TableSkeleton from "../../../Components/ui/TableSkeleton";
-
+import CardSkeleton from "../../../Components/ui/CardSkeleton";
+import UserDashboard from "../../../Components/admin/UserDashboard";
+import AddUserModal from "../../../Components/admin/AddUserModal";
+import EditUserModal from "../../../Components/admin/EditUserModal";
 
 function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [tab, setTab] = useState("pending");
-  const [alertMessage, setAlertMessage] =
-    useState("");
+  const [filter, setFilter] = useState("All");
+  const [search, setSearch] = useState("");
 
-  const [confirmAction, setConfirmAction] =
-    useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
 
-  const [confirmMessage, setConfirmMessage] =
-    useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const [filter, setFilter] =
-    useState("All");
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmMessage, setConfirmMessage] = useState("");
 
-  const [search, setSearch] =
-    useState("");
+  const [alertMessage, setAlertMessage] = useState("");
 
-  const [showModal, setShowModal] =
-    useState(false);
-
-  const [adminPassword, setAdminPassword] =
-    useState("");
-
-  const [selectedUserId, setSelectedUserId] =
-    useState(null);
-
-  const [selectedUser, setSelectedUser] =
-    useState(null);
-
-  const [isEditing, setIsEditing] =
-    useState(false);
-
-  const [editUser, setEditUser] =
-    useState(null);
-
-  const [showCreateModal, setShowCreateModal] =
-    useState(false);
-
-  const [newUser, setNewUser] =
-    useState({
-      name: "",
-      email: "",
-      password: "",
-      role: "Doctor",
-      specialization: "",
-      licenseNumber: "",
-    });
+  // =========================
+  // LOAD USERS
+  // =========================
 
   const loadUsers = async () => {
     try {
       setLoading(true);
 
-      const data = await getAllUsers();
+      const response = await getAllUsers();
 
-      setUsers(
-        Array.isArray(data?.data)
-          ? data.data
-          : Array.isArray(data)
-            ? data
-            : []
-      );
-    } catch (err) {
-      console.error(err);
+      const data = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : [];
+
+      setUsers(data);
+    } catch (error) {
+      console.error("Failed to load users:", error);
       setUsers([]);
+      setAlertMessage("Failed to load users.");
     } finally {
       setLoading(false);
     }
@@ -93,613 +64,691 @@ function UserManagement() {
     loadUsers();
   }, []);
 
+  // =========================
+  // FILTER USERS
+  // =========================
+
   const filteredUsers = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
     return users.filter((user) => {
       let matchesTab = false;
 
-      // PENDING
       if (tab === "pending") {
         matchesTab =
-          user.verificationStatus ===
-            "Pending" ||
+          user.verificationStatus === "Pending" ||
           user.status === "pending";
       }
 
-      // ACTIVE
-      else if (tab === "active") {
+      if (tab === "active") {
         matchesTab =
-          user.verificationStatus ===
-            "Approved" ||
+          user.verificationStatus === "Approved" ||
           user.status === "active";
       }
 
-      // DEACTIVATED
-      else if (tab === "deactivated") {
+      if (tab === "deactivated") {
         matchesTab =
-          user.verificationStatus ===
-            "Deactivated" ||
-          user.verificationStatus ===
-            "Rejected" ||
-          user.status ===
-            "deactivated";
+          user.verificationStatus === "Deactivated" ||
+          user.verificationStatus === "Rejected" ||
+          user.status === "deactivated";
       }
 
-      const matchesFilter =
-        filter === "All" ||
-        user.role === filter;
+      const matchesRole =
+        filter === "All" || user.role === filter;
 
       const matchesSearch =
-        user.name
-          ?.toLowerCase()
-          .includes(
-            search.toLowerCase()
-          ) ||
-        user.email
-          ?.toLowerCase()
-          .includes(
-            search.toLowerCase()
-          );
+        !normalizedSearch ||
+        user.name?.toLowerCase().includes(normalizedSearch) ||
+        user.email?.toLowerCase().includes(normalizedSearch) ||
+        user.role?.toLowerCase().includes(normalizedSearch);
 
-      return (
-        matchesTab &&
-        matchesFilter &&
-        matchesSearch
-      );
+      return matchesTab && matchesRole && matchesSearch;
     });
   }, [users, tab, filter, search]);
 
-  // CREATE USER
-  const handleCreateUser = async () => {
+  // =========================
+  // APPROVE USER
+  // =========================
+
+  const handleApprove = async (id) => {
     try {
-      const payload = {
-        name: newUser.name,
-        email: newUser.email,
-        password: newUser.password,
-        role: newUser.role,
-      };
+      await approveUser(id);
 
-      if (newUser.role === "Doctor") {
-        payload.doctorInfo = {
-          specialization:
-            newUser.specialization,
-          licenseNumber:
-            newUser.licenseNumber,
-        };
-      }
-
-      await registerUser(payload);
-
-      alert(
-        "User created successfully"
+      setAlertMessage(
+        "User approved successfully. A temporary password has been sent to the user's email.",
       );
 
-      setShowCreateModal(false);
+      await loadUsers();
+    } catch (error) {
+      console.error("Approve user error:", error);
 
-      loadUsers();
-    } catch (err) {
-      console.error(err);
-
-      alert(
-        err.message ||
-          "Failed to create user"
+      setAlertMessage(
+        error?.message || "Failed to approve user.",
       );
     }
   };
 
-  // APPROVE
-  const handleApproveClick = (id) => {
-    setSelectedUserId(id);
-    setShowModal(true);
-  };
+  // =========================
+  // REJECT USER
+  // =========================
 
-  const confirmApprove = async () => {
-    try {
-      await approveUser(
-        selectedUserId,
-        adminPassword
-      );
-
-      setShowModal(false);
-      setAdminPassword("");
-
-      setAlertMessage(
-        "User approved successfully"
-      );
-
-      loadUsers();
-    } catch (err) {
-      console.error(err);
-
-      setAlertMessage(
-        "Approval failed"
-      );
-    }
-  };
-
-  // REJECT
   const handleReject = async (id) => {
     try {
       await rejectUser(id);
 
-      setAlertMessage(
-        "User rejected successfully"
-      );
+      setAlertMessage("User rejected successfully.");
 
-      loadUsers();
-    } catch (err) {
-      console.error(err);
+      await loadUsers();
+    } catch (error) {
+      console.error("Reject user error:", error);
 
       setAlertMessage(
-        "Failed to reject user"
+        error?.message || "Failed to reject user.",
       );
     }
   };
 
-  // UPDATE USER
-  const handleUpdateUser = async () => {
+  // =========================
+  // DEACTIVATE USER
+  // =========================
+
+  const handleDeactivate = async (id) => {
     try {
-      await updateUser(editUser);
+      await updateUserStatus(id, "Deactivated");
 
-      alert("User updated");
+      setAlertMessage("User deactivated successfully.");
 
-      setIsEditing(false);
+      await loadUsers();
+    } catch (error) {
+      console.error("Deactivate user error:", error);
 
-      loadUsers();
-    } catch (err) {
-      console.error(err);
-
-      alert("Update failed");
+      setAlertMessage(
+        error?.message || "Failed to deactivate user.",
+      );
     }
   };
 
-  // DEACTIVATE
-  const handleDeactivate = async (
-    id
-  ) => {
+  // =========================
+  // REACTIVATE USER
+  // =========================
+
+  const handleReactivate = async (id) => {
     try {
-      await updateUserStatus(
-        id,
-        "Deactivated"
-      );
+      await updateUserStatus(id, "Approved");
+
+      setAlertMessage("User reactivated successfully.");
+
+      await loadUsers();
+    } catch (error) {
+      console.error("Reactivate user error:", error);
 
       setAlertMessage(
-        "User deactivated successfully"
-      );
-
-      loadUsers();
-    } catch (err) {
-      console.error(err);
-
-      setAlertMessage(
-        "Failed to deactivate user"
+        error?.message || "Failed to reactivate user.",
       );
     }
   };
 
-  // REACTIVATE
-  const handleReactivate = async (
-    id
-  ) => {
-    try {
-      await updateUserStatus(
-        id,
-        "Approved"
-      );
+  // =========================
+  // CONFIRM ACTION
+  // =========================
 
-      setAlertMessage(
-        "User reactivated successfully"
-      );
-
-      loadUsers();
-    } catch (err) {
-      console.error(err);
-
-      setAlertMessage(
-        "Failed to reactivate user"
-      );
-    }
+  const openConfirm = (message, action) => {
+    setConfirmMessage(message);
+    setConfirmAction(() => action);
   };
+
+  const closeConfirm = () => {
+    setConfirmAction(null);
+    setConfirmMessage("");
+  };
+
+  // =========================
+  // TAB LABEL
+  // =========================
+
+  const pageTitle =
+    tab === "pending"
+      ? "Pending Users"
+      : tab === "active"
+        ? "Active Users"
+        : "Deactivated Users";
 
   return (
-    <div className="admin-container">
+    <div className="w-full space-y-6 p-4 sm:p-6 lg:p-8">
+      {/* =========================
+          PAGE HEADER
+      ========================= */}
 
-      <div className="users-header">
-        <h2>Account Management</h2>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Account Management
+          </h1>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Manage system users, approvals, and account status.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowCreateModal(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          <span className="text-lg leading-none">+</span>
+          Add User
+        </button>
       </div>
 
+      {/* =========================
+          USER STATISTICS
+      ========================= */}
+
       {loading ? (
-        <CardsSkeleton />
+        <CardSkeleton count={4} />
       ) : (
         <UserDashboard users={users} />
       )}
 
-      {/* TOP BAR */}
+      {/* =========================
+          SEARCH + FILTERS
+      ========================= */}
 
-      <div className="topbar">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-4">
+          {/* Search */}
 
-        <input
-          className="search-input"
-          placeholder="Search users..."
-          value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
-        />
+          <div className="w-full">
+            <label
+              htmlFor="user-search"
+              className="mb-2 block text-sm font-semibold text-slate-700"
+            >
+              Search Users
+            </label>
 
-        {/* STATUS */}
+            <input
+              id="user-search"
+              type="text"
+              placeholder="Search by name, email, or role..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
 
-        <div className="filter-group">
-          <button
-            className={
-              tab === "active"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setTab("active")
-            }
-          >
-            Active
-          </button>
+          {/* Filters */}
 
-          <button
-            className={
-              tab === "pending"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setTab("pending")
-            }
-          >
-            Pending
-          </button>
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            {/* Status */}
 
-          <button
-            className={
-              tab === "deactivated"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setTab("deactivated")
-            }
-          >
-            Deactivated
-          </button>
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                Account Status
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                <FilterButton
+                  active={tab === "active"}
+                  onClick={() => setTab("active")}
+                >
+                  Active
+                </FilterButton>
+
+                <FilterButton
+                  active={tab === "pending"}
+                  onClick={() => setTab("pending")}
+                >
+                  Pending
+                </FilterButton>
+
+                <FilterButton
+                  active={tab === "deactivated"}
+                  onClick={() => setTab("deactivated")}
+                >
+                  Deactivated
+                </FilterButton>
+              </div>
+            </div>
+
+            {/* Role */}
+
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                Role
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                <FilterButton
+                  active={filter === "All"}
+                  onClick={() => setFilter("All")}
+                >
+                  All
+                </FilterButton>
+
+                <FilterButton
+                  active={filter === "Doctor"}
+                  onClick={() => setFilter("Doctor")}
+                >
+                  Doctors
+                </FilterButton>
+
+                <FilterButton
+                  active={filter === "Volunteer"}
+                  onClick={() => setFilter("Volunteer")}
+                >
+                  Volunteers
+                </FilterButton>
+
+                <FilterButton
+                  active={filter === "Pharmacist"}
+                  onClick={() => setFilter("Pharmacist")}
+                >
+                  Pharmacists
+                </FilterButton>
+
+                <FilterButton
+                  active={filter === "Admin"}
+                  onClick={() => setFilter("Admin")}
+                >
+                  Admins
+                </FilterButton>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* ROLE */}
-
-        <div className="filter-group">
-          <button
-            className={
-              filter === "All"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setFilter("All")
-            }
-          >
-            All
-          </button>
-
-          <button
-            className={
-              filter === "Doctor"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setFilter("Doctor")
-            }
-          >
-            Doctors
-          </button>
-
-          <button
-            className={
-              filter === "Volunteer"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setFilter("Volunteer")
-            }
-          >
-            Volunteers
-          </button>
-        </div>
-
-        <button
-          className="add-user-btn"
-          onClick={() =>
-            setShowCreateModal(true)
-          }
-        >
-          + Add User
-        </button>
       </div>
 
-      <h2>
-        {tab === "pending"
-          ? "Pending Users"
-          : tab === "deactivated"
-            ? "Deactivated Users"
-            : "Active Users"}
-      </h2>
+      {/* =========================
+          TABLE SECTION
+      ========================= */}
 
-      {/* TABLE */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {/* Table Header */}
 
-      {loading ? (
-        <TableSkeleton
-          rows={8}
-          columns={7}
-        />
-      ) : (
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Date Added</th>
-              <th>License Proof</th>
-              <th>Doctorate Proof</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+        <div className="border-b border-slate-200 px-5 py-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                {pageTitle}
+              </h2>
 
-          <tbody>
-            {filteredUsers.map((user) => (
-              <tr
-                key={user._id}
-                onClick={() => {
-                  setSelectedUser(user);
-                  setEditUser(user);
-                  setIsEditing(false);
-                }}
-              >
-                <td>{user.name}</td>
+              <p className="text-sm text-slate-500">
+                {filteredUsers.length} user
+                {filteredUsers.length !== 1 ? "s" : ""} found
+              </p>
+            </div>
+          </div>
+        </div>
 
-                <td>{user.role}</td>
+        {/* Loading */}
 
-                <td>
-                  {user.verificationStatus}
-                </td>
+        {loading ? (
+          <div className="p-4">
+            <TableSkeleton rows={8} columns={7} />
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          /* Empty State */
 
-                <td>
-                  {user.createdAt
-                    ? new Date(
-                        user.createdAt
-                      ).toLocaleDateString()
-                    : "N/A"}
-                </td>
+          <div className="flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl">
+              👥
+            </div>
 
-                <td>
-                  {user.role ===
-                    "Doctor" &&
-                  user.doctorInfo
-                    ?.proofOfLicense ? (
-                    <a
-                      href={
-                        user.doctorInfo
-                          .proofOfLicense
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      View
-                    </a>
-                  ) : (
-                    "-"
-                  )}
-                </td>
+            <h3 className="text-base font-bold text-slate-800">
+              No users found
+            </h3>
 
-                <td>
-                  {user.role ===
-                    "Doctor" &&
-                  user.doctorInfo
-                    ?.proofOfDoctorate ? (
-                    <a
-                      href={
-                        user.doctorInfo
-                          .proofOfDoctorate
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      View
-                    </a>
-                  ) : (
-                    "-"
-                  )}
-                </td>
+            <p className="mt-1 max-w-md text-sm text-slate-500">
+              There are no users matching the current status,
+              role, or search filters.
+            </p>
+          </div>
+        ) : (
+          /* Table */
 
-                <td
-                  onClick={(e) =>
-                    e.stopPropagation()
-                  }
-                >
-                  {/* PENDING */}
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[1050px] text-left">
+              <thead className="bg-slate-50">
+                <tr className="border-b border-slate-200">
+                  <TableHeader>Name</TableHeader>
+                  <TableHeader>Role</TableHeader>
+                  <TableHeader>Status</TableHeader>
+                  <TableHeader>Date Added</TableHeader>
+                  <TableHeader>License Proof</TableHeader>
+                  <TableHeader>Doctorate Proof</TableHeader>
+                  <TableHeader>Actions</TableHeader>
+                </tr>
+              </thead>
 
-                  {tab === "pending" && (
-                    <>
+              <tbody className="divide-y divide-slate-100">
+                {filteredUsers.map((user) => (
+                  <tr
+                    key={user._id}
+                    className="transition hover:bg-slate-50"
+                  >
+                    {/* Name */}
+
+                    <td className="px-5 py-4">
                       <button
-                        className="approve-btn"
-                        onClick={() =>
-                          handleApproveClick(
-                            user._id
-                          )
-                        }
+                        type="button"
+                        onClick={() => setSelectedUser(user)}
+                        className="text-left"
                       >
-                        Approve
+                        <p className="font-semibold text-slate-800 hover:text-blue-700">
+                          {user.name || "Unnamed User"}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          {user.email || "No email"}
+                        </p>
                       </button>
+                    </td>
 
-                      <button
-                        className="reject-btn"
-                        onClick={() => {
-                          setConfirmMessage(
-                            "Are you sure you want to reject this user?"
-                          );
+                    {/* Role */}
 
-                          setConfirmAction(
-                            () =>
-                              async () => {
-                                await handleReject(
-                                  user._id
-                                );
+                    <td className="px-5 py-4">
+                      <RoleBadge role={user.role} />
+                    </td>
+
+                    {/* Status */}
+
+                    <td className="px-5 py-4">
+                      <StatusBadge
+                        status={user.verificationStatus}
+                      />
+                    </td>
+
+                    {/* Date */}
+
+                    <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
+                      {user.createdAt
+                        ? new Date(
+                            user.createdAt,
+                          ).toLocaleDateString()
+                        : "N/A"}
+                    </td>
+
+                    {/* License */}
+
+                    <td className="px-5 py-4">
+                      {user.role === "Doctor" &&
+                      user.doctorInfo?.proofOfLicense ? (
+                        <a
+                          href={
+                            user.doctorInfo.proofOfLicense
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          View
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">
+                          -
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Doctorate */}
+
+                    <td className="px-5 py-4">
+                      {user.role === "Doctor" &&
+                      user.doctorInfo?.proofOfDoctorate ? (
+                        <a
+                          href={
+                            user.doctorInfo.proofOfDoctorate
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          View
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">
+                          -
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Actions */}
+
+                    <td className="px-5 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        {tab === "pending" && (
+                          <>
+                            <ActionButton
+                              variant="success"
+                              onClick={() =>
+                                openConfirm(
+                                  "Are you sure you want to approve this user?",
+                                  () =>
+                                    handleApprove(user._id),
+                                )
                               }
-                          );
-                        }}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
+                            >
+                              Approve
+                            </ActionButton>
 
-                  {/* ACTIVE */}
+                            <ActionButton
+                              variant="danger"
+                              onClick={() =>
+                                openConfirm(
+                                  "Are you sure you want to reject this user?",
+                                  () =>
+                                    handleReject(user._id),
+                                )
+                              }
+                            >
+                              Reject
+                            </ActionButton>
+                          </>
+                        )}
 
-                  {tab === "active" && (
-                    <button
-                      className="deactivate-btn"
-                      onClick={() => {
-                        setConfirmMessage(
-                          "Are you sure you want to deactivate this user?"
-                        );
-
-                        setConfirmAction(
-                          () =>
-                            async () => {
-                              await handleDeactivate(
-                                user._id
-                              );
+                        {tab === "active" && (
+                          <ActionButton
+                            variant="danger"
+                            onClick={() =>
+                              openConfirm(
+                                "Are you sure you want to deactivate this user?",
+                                () =>
+                                  handleDeactivate(
+                                    user._id,
+                                  ),
+                              )
                             }
-                        );
-                      }}
-                    >
-                      Deactivate
-                    </button>
-                  )}
+                          >
+                            Deactivate
+                          </ActionButton>
+                        )}
 
-                  {/* DEACTIVATED */}
-
-                  {tab ===
-                    "deactivated" && (
-                    <button
-                      className="reactivate-btn"
-                      onClick={() => {
-                        setConfirmMessage(
-                          "Are you sure you want to reactivate this user?"
-                        );
-
-                        setConfirmAction(
-                          () =>
-                            async () => {
-                              await handleReactivate(
-                                user._id
-                              );
+                        {tab === "deactivated" && (
+                          <ActionButton
+                            variant="success"
+                            onClick={() =>
+                              openConfirm(
+                                "Are you sure you want to reactivate this user?",
+                                () =>
+                                  handleReactivate(
+                                    user._id,
+                                  ),
+                              )
                             }
-                        );
-                      }}
-                    >
-                      Reactivate
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+                          >
+                            Reactivate
+                          </ActionButton>
+                        )}
 
-      {/* CONFIRM MODAL */}
+                        <ActionButton
+                          variant="secondary"
+                          onClick={() =>
+                            setSelectedUser(user)
+                          }
+                        >
+                          View / Edit
+                        </ActionButton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* =========================
+          CONFIRM MODAL
+      ========================= */}
 
       {confirmAction && (
         <ConfirmModal
           message={confirmMessage}
           onConfirm={async () => {
-            await confirmAction();
+            const action = confirmAction;
 
-            setConfirmAction(null);
-            setConfirmMessage("");
+            closeConfirm();
+
+            await action();
           }}
-          onCancel={() => {
-            setConfirmAction(null);
-            setConfirmMessage("");
-          }}
+          onCancel={closeConfirm}
         />
       )}
 
-      {/* EDIT MODAL */}
+      {/* =========================
+          EDIT USER MODAL
+      ========================= */}
 
       {selectedUser && (
-        <EditUser
+        <EditUserModal
           user={selectedUser}
-          onClose={() =>
-            setSelectedUser(null)
-          }
-          onSuccess={loadUsers}
+          onClose={() => setSelectedUser(null)}
+          onSuccess={async () => {
+            setSelectedUser(null);
+            await loadUsers();
+          }}
         />
       )}
 
-      {/* APPROVE MODAL */}
-
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>
-              Admin Password
-            </h3>
-
-            <input
-              type="password"
-              value={adminPassword}
-              onChange={(e) =>
-                setAdminPassword(
-                  e.target.value
-                )
-              }
-            />
-
-            <button
-              onClick={confirmApprove}
-            >
-              Confirm
-            </button>
-
-            <button
-              onClick={() =>
-                setShowModal(false)
-              }
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* CREATE MODAL */}
+      {/* =========================
+          ADD USER MODAL
+      ========================= */}
 
       {showCreateModal && (
-        <AddUser
-          onClose={() =>
-            setShowCreateModal(false)
-          }
-          onSuccess={loadUsers}
+        <AddUserModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={async () => {
+            setShowCreateModal(false);
+            await loadUsers();
+          }}
         />
       )}
+
+      {/* =========================
+          ALERT
+      ========================= */}
 
       {alertMessage && (
         <AlertModal
           message={alertMessage}
-          onClose={() =>
-            setAlertMessage("")
-          }
+          onClose={() => setAlertMessage("")}
         />
       )}
     </div>
+  );
+}
+
+/* =====================================================
+   SMALL UI COMPONENTS
+===================================================== */
+
+function FilterButton({ children, active, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+        active
+          ? "bg-blue-700 text-white shadow-sm"
+          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function TableHeader({ children }) {
+  return (
+    <th className="whitespace-nowrap px-5 py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+      {children}
+    </th>
+  );
+}
+
+function ActionButton({
+  children,
+  variant = "secondary",
+  onClick,
+}) {
+  const styles = {
+    success:
+      "bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+
+    danger:
+      "bg-red-50 text-red-700 hover:bg-red-100",
+
+    secondary:
+      "bg-slate-100 text-slate-700 hover:bg-slate-200",
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-lg px-3 py-2 text-xs font-bold transition ${styles[variant]}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function RoleBadge({ role }) {
+  const styles = {
+    Admin: "bg-purple-50 text-purple-700",
+    Doctor: "bg-blue-50 text-blue-700",
+    Volunteer: "bg-emerald-50 text-emerald-700",
+    Pharmacist: "bg-amber-50 text-amber-700",
+  };
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
+        styles[role] || "bg-slate-100 text-slate-600"
+      }`}
+    >
+      {role || "Unknown"}
+    </span>
+  );
+}
+
+function StatusBadge({ status }) {
+  const styles = {
+    Approved: "bg-emerald-50 text-emerald-700",
+    Pending: "bg-amber-50 text-amber-700",
+    Rejected: "bg-red-50 text-red-700",
+    Deactivated: "bg-red-50 text-red-700",
+  };
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
+        styles[status] || "bg-slate-100 text-slate-600"
+      }`}
+    >
+      {status || "Unknown"}
+    </span>
   );
 }
 
