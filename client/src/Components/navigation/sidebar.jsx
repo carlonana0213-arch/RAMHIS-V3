@@ -14,6 +14,7 @@ import {
   FaChevronRight,
   FaBars,
   FaCalendarAlt,
+  FaFileAlt,
 } from "react-icons/fa";
 
 import { useAuth } from "../../Context/AuthContext";
@@ -52,11 +53,31 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
   |--------------------------------------------------------------------------
   | ACCESS CONTROL
   |--------------------------------------------------------------------------
+  |
+  | Volunteer:
+  | Dashboard, Patients, Events, Pharmacy
+  |
+  | Doctor:
+  | Dashboard, Patients, Doctor, Events, Pharmacy
+  |
+  | Admin:
+  | Dashboard, Analytics, User Management, Audit Log,
+  | Events, Patients, Doctor, Pharmacy
+  |
   */
 
   const canAccess = (section) => {
     if (role === "Admin") {
-      return true;
+      return [
+        "dashboard",
+        "analytics",
+        "admin",
+        "auditLog",
+        "event",
+        "patient",
+        "doctorSheet",
+        "pharmacy",
+      ].includes(section);
     }
 
     if (role === "Doctor") {
@@ -64,8 +85,8 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
         "dashboard",
         "patient",
         "doctorSheet",
-        "pharmacy",
         "event",
+        "pharmacy",
       ].includes(section);
     }
 
@@ -74,6 +95,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
         "dashboard",
         "patient",
         "event",
+        "pharmacy",
       ].includes(section);
     }
 
@@ -137,7 +159,9 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
     marginTop: 4,
     marginLeft: collapsed ? 0 : 20,
     paddingLeft: collapsed ? 0 : 12,
-    borderLeft: collapsed ? "none" : `1px solid ${colors.border}`,
+    borderLeft: collapsed
+      ? "none"
+      : `1px solid ${colors.border}`,
   };
 
   const submenuLinkStyle = ({ isActive }) => ({
@@ -150,7 +174,9 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
     borderRadius: 9,
     textDecoration: "none",
     color: isActive ? colors.blue : colors.muted,
-    background: isActive ? colors.blueLight : "transparent",
+    background: isActive
+      ? colors.blueLight
+      : "transparent",
     fontSize: 13,
     fontWeight: isActive ? 600 : 500,
     transition: "all 0.2s ease",
@@ -174,7 +200,8 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
           width: collapsed ? 76 : 250,
           background: colors.white,
           borderRight: `1px solid ${colors.border}`,
-          boxShadow: "4px 0 20px rgba(15, 23, 42, 0.04)",
+          boxShadow:
+            "4px 0 20px rgba(15, 23, 42, 0.04)",
           display: "flex",
           flexDirection: "column",
           transition: "width 0.25s ease",
@@ -191,8 +218,12 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
             minHeight: 76,
             display: "flex",
             alignItems: "center",
-            justifyContent: collapsed ? "center" : "space-between",
-            padding: collapsed ? "0 12px" : "0 16px",
+            justifyContent: collapsed
+              ? "center"
+              : "space-between",
+            padding: collapsed
+              ? "0 12px"
+              : "0 16px",
             borderBottom: `1px solid ${colors.border}`,
             boxSizing: "border-box",
           }}
@@ -280,11 +311,13 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
           style={{
             flex: 1,
             overflowY: "auto",
-            padding: collapsed ? "18px 10px" : "20px 14px",
+            padding: collapsed
+              ? "18px 10px"
+              : "20px 14px",
             boxSizing: "border-box",
           }}
         >
-          {/* MAIN LABEL */}
+          {/* MAIN MENU LABEL */}
 
           {!collapsed && (
             <div
@@ -301,120 +334,185 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
             </div>
           )}
 
-          {/* DASHBOARD */}
+          {/* =====================================================
+              DASHBOARD
+          ====================================================== */}
 
           {canAccess("dashboard") && (
             <NavLink
               to="/dashboard"
               style={getNavStyle}
-              title={collapsed ? "Dashboard" : undefined}
+              title={
+                collapsed
+                  ? "Dashboard"
+                  : undefined
+              }
             >
               <FaChartLine style={iconStyle} />
 
-              {!collapsed && <span>Dashboard</span>}
+              {!collapsed && (
+                <span>Dashboard</span>
+              )}
             </NavLink>
           )}
 
-          {/* ANALYTICS */}
+          {/* =====================================================
+              ANALYTICS - ADMIN ONLY
+          ====================================================== */}
 
           {canAccess("analytics") && (
             <NavLink
               to="/analytics"
               style={getNavStyle}
-              title={collapsed ? "Analytics" : undefined}
+              title={
+                collapsed
+                  ? "Analytics"
+                  : undefined
+              }
             >
               <FaChartLine style={iconStyle} />
 
-              {!collapsed && <span>Analytics</span>}
+              {!collapsed && (
+                <span>Analytics</span>
+              )}
             </NavLink>
           )}
 
-          {/* PATIENT */}
+          {/* =====================================================
+              USER MANAGEMENT - ADMIN ONLY
+          ====================================================== */}
 
-          {canAccess("patient") && (
+          {canAccess("admin") && (
             <NavLink
-              to="/patient"
+              to="/users"
               style={getNavStyle}
-              title={collapsed ? "Patients" : undefined}
+              title={
+                collapsed
+                  ? "User Management"
+                  : undefined
+              }
             >
-              <FaClipboardList style={iconStyle} />
+              <FaUserShield style={iconStyle} />
 
-              {!collapsed && <span>Patients</span>}
+              {!collapsed && (
+                <span>User Management</span>
+              )}
             </NavLink>
           )}
 
-          {/* DOCTOR */}
+          {/* =====================================================
+              AUDIT LOG - ADMIN ONLY
+          ====================================================== */}
 
-          {canAccess("doctorSheet") && (
+          {canAccess("auditLog") && (
             <NavLink
-              to="/doctor-sheet"
+              to="/audit-log"
               style={getNavStyle}
-              title={collapsed ? "Doctor" : undefined}
+              title={
+                collapsed
+                  ? "Audit Log"
+                  : undefined
+              }
             >
-              <FaUserMd style={iconStyle} />
+              <FaFileAlt style={iconStyle} />
 
-              {!collapsed && <span>Doctor</span>}
+              {!collapsed && (
+                <span>Audit Log</span>
+              )}
             </NavLink>
           )}
 
-          {/* EVENT */}
+          {/* =====================================================
+              EVENT
+          ====================================================== */}
 
           {canAccess("event") && (
             <NavLink
               to="/event"
               style={getNavStyle}
-              title={collapsed ? "Events" : undefined}
+              title={
+                collapsed
+                  ? "Events"
+                  : undefined
+              }
             >
               <FaCalendarAlt style={iconStyle} />
 
-              {!collapsed && <span>Events</span>}
+              {!collapsed && (
+                <span>Events</span>
+              )}
             </NavLink>
           )}
 
-          {/* USER MANAGEMENT */}
+          {/* =====================================================
+              PATIENT
+          ====================================================== */}
 
-          {canAccess("admin") && (
-            <>
+          {canAccess("patient") && (
+            <NavLink
+              to="/patient"
+              style={getNavStyle}
+              title={
+                collapsed
+                  ? "Patients"
+                  : undefined
+              }
+            >
+              <FaClipboardList style={iconStyle} />
+
               {!collapsed && (
-                <div
-                  style={{
-                    padding: "22px 10px 9px",
-                    color: "#94a3b8",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: "1px",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Administration
-                </div>
+                <span>Patients</span>
               )}
-
-              <NavLink
-                to="/users"
-                style={getNavStyle}
-                title={collapsed ? "User Management" : undefined}
-              >
-                <FaUserShield style={iconStyle} />
-
-                {!collapsed && <span>User Management</span>}
-              </NavLink>
-            </>
+            </NavLink>
           )}
 
-          {/* PHARMACY */}
+          {/* =====================================================
+              DOCTOR
+          ====================================================== */}
+
+          {canAccess("doctorSheet") && (
+            <NavLink
+              to="/doctor-sheet"
+              style={getNavStyle}
+              title={
+                collapsed
+                  ? "Doctor"
+                  : undefined
+              }
+            >
+              <FaUserMd style={iconStyle} />
+
+              {!collapsed && (
+                <span>Doctor</span>
+              )}
+            </NavLink>
+          )}
+
+          {/* =====================================================
+              PHARMACY
+          ====================================================== */}
 
           {canAccess("pharmacy") && (
             <div style={{ marginTop: 2 }}>
               <button
                 type="button"
-                onClick={() => setOpenPharmacy((prev) => !prev)}
-                title={collapsed ? "Pharmacy" : undefined}
+                onClick={() =>
+                  setOpenPharmacy(
+                    (prev) => !prev
+                  )
+                }
+                title={
+                  collapsed
+                    ? "Pharmacy"
+                    : undefined
+                }
                 style={{
                   ...getNavStyle({
                     isActive:
                       openPharmacy ||
-                      window.location.pathname.startsWith("/pharmacy"),
+                      window.location.pathname.startsWith(
+                        "/pharmacy"
+                      ),
                   }),
                   justifyContent: collapsed
                     ? "center"
@@ -426,41 +524,60 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: collapsed ? 0 : 13,
+                    gap: collapsed
+                      ? 0
+                      : 13,
                   }}
                 >
-                  <FaPills style={iconStyle} />
+                  <FaPills
+                    style={iconStyle}
+                  />
 
-                  {!collapsed && <span>Pharmacy</span>}
+                  {!collapsed && (
+                    <span>Pharmacy</span>
+                  )}
                 </span>
 
                 {!collapsed &&
                   (openPharmacy ? (
-                    <FaChevronDown size={11} />
+                    <FaChevronDown
+                      size={11}
+                    />
                   ) : (
-                    <FaChevronRight size={11} />
+                    <FaChevronRight
+                      size={11}
+                    />
                   ))}
               </button>
 
-              {!collapsed && openPharmacy && (
-                <div style={submenuStyle}>
-                  <NavLink
-                    to="/pharmacy/queue"
-                    style={submenuLinkStyle}
+              {!collapsed &&
+                openPharmacy && (
+                  <div
+                    style={submenuStyle}
                   >
-                    <FaClock size={13} />
-                    <span>Queue</span>
-                  </NavLink>
+                    <NavLink
+                      to="/pharmacy/queue"
+                      style={
+                        submenuLinkStyle
+                      }
+                    >
+                      <FaClock size={13} />
+                      <span>Queue</span>
+                    </NavLink>
 
-                  <NavLink
-                    to="/pharmacy/inventory"
-                    style={submenuLinkStyle}
-                  >
-                    <FaBoxes size={13} />
-                    <span>Inventory</span>
-                  </NavLink>
-                </div>
-              )}
+                    <NavLink
+                      to="/pharmacy/inventory"
+                      style={
+                        submenuLinkStyle
+                      }
+                    >
+                      <FaBoxes size={13} />
+                      <span>
+                        Inventory
+                      </span>
+                    </NavLink>
+                  </div>
+                )}
             </div>
           )}
         </nav>
@@ -471,7 +588,9 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
 
         <div
           style={{
-            padding: collapsed ? "12px 10px" : "12px 14px 16px",
+            padding: collapsed
+              ? "12px 10px"
+              : "12px 14px 16px",
             borderTop: `1px solid ${colors.border}`,
           }}
         >
@@ -481,7 +600,8 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                padding: "10px 10px 12px",
+                padding:
+                  "10px 10px 12px",
                 marginBottom: 5,
               }}
             >
@@ -490,17 +610,21 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                   width: 36,
                   height: 36,
                   borderRadius: 10,
-                  background: colors.blueLight,
+                  background:
+                    colors.blueLight,
                   color: colors.blue,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  justifyContent:
+                    "center",
                   fontWeight: 700,
                   fontSize: 14,
                   flexShrink: 0,
                 }}
               >
-                {(user?.name || user?.email || "U")
+                {(user?.name ||
+                  user?.email ||
+                  "U")
                   .charAt(0)
                   .toUpperCase()}
               </div>
@@ -509,19 +633,25 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                 style={{
                   minWidth: 0,
                   display: "flex",
-                  flexDirection: "column",
+                  flexDirection:
+                    "column",
                 }}
               >
                 <strong
                   style={{
                     color: colors.text,
                     fontSize: 12,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    whiteSpace:
+                      "nowrap",
+                    overflow:
+                      "hidden",
+                    textOverflow:
+                      "ellipsis",
                   }}
                 >
-                  {user?.name || user?.email || "User"}
+                  {user?.name ||
+                    user?.email ||
+                    "User"}
                 </strong>
 
                 <span
@@ -539,30 +669,47 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
 
           <button
             type="button"
-            onClick={() => setConfirmLogout(true)}
-            title={collapsed ? "Logout" : undefined}
+            onClick={() =>
+              setConfirmLogout(true)
+            }
+            title={
+              collapsed
+                ? "Logout"
+                : undefined
+            }
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: collapsed ? "center" : "flex-start",
+              justifyContent:
+                collapsed
+                  ? "center"
+                  : "flex-start",
               gap: collapsed ? 0 : 13,
               width: "100%",
               height: 44,
-              padding: collapsed ? "0 10px" : "0 14px",
+              padding: collapsed
+                ? "0 10px"
+                : "0 14px",
               border: "none",
               borderRadius: 11,
-              background: "transparent",
+              background:
+                "transparent",
               color: colors.muted,
               fontSize: 14,
               fontWeight: 500,
               cursor: "pointer",
-              transition: "all 0.2s ease",
+              transition:
+                "all 0.2s ease",
               fontFamily: "inherit",
             }}
           >
-            <FaSignOutAlt style={iconStyle} />
+            <FaSignOutAlt
+              style={iconStyle}
+            />
 
-            {!collapsed && <span>Logout</span>}
+            {!collapsed && (
+              <span>Logout</span>
+            )}
           </button>
         </div>
       </aside>
@@ -573,29 +720,39 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
 
       {confirmLogout && (
         <div
-          onClick={() => setConfirmLogout(false)}
+          onClick={() =>
+            setConfirmLogout(false)
+          }
           style={{
             position: "fixed",
             inset: 0,
             zIndex: 5000,
-            background: "rgba(15, 23, 42, 0.45)",
-            backdropFilter: "blur(4px)",
+            background:
+              "rgba(15, 23, 42, 0.45)",
+            backdropFilter:
+              "blur(4px)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent:
+              "center",
             padding: 20,
           }}
         >
           <div
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
             style={{
               width: "100%",
               maxWidth: 400,
-              background: colors.white,
+              background:
+                colors.white,
               borderRadius: 18,
               padding: 26,
-              boxShadow: "0 24px 60px rgba(15, 23, 42, 0.18)",
-              boxSizing: "border-box",
+              boxShadow:
+                "0 24px 60px rgba(15, 23, 42, 0.18)",
+              boxSizing:
+                "border-box",
             }}
           >
             <div
@@ -603,21 +760,29 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                 width: 46,
                 height: 46,
                 borderRadius: 12,
-                background: colors.dangerLight,
-                color: colors.danger,
+                background:
+                  colors.dangerLight,
+                color:
+                  colors.danger,
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                alignItems:
+                  "center",
+                justifyContent:
+                  "center",
                 marginBottom: 18,
               }}
             >
-              <FaSignOutAlt size={18} />
+              <FaSignOutAlt
+                size={18}
+              />
             </div>
 
             <h3
               style={{
-                margin: "0 0 7px",
-                color: "#0f172a",
+                margin:
+                  "0 0 7px",
+                color:
+                  "#0f172a",
                 fontSize: 20,
                 fontWeight: 700,
               }}
@@ -628,37 +793,49 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
             <p
               style={{
                 margin: 0,
-                color: colors.muted,
+                color:
+                  colors.muted,
                 fontSize: 14,
                 lineHeight: 1.6,
               }}
             >
-              Are you sure you want to log out of your RAMHIS
-              account?
+              Are you sure you
+              want to log out of
+              your RAMHIS account?
             </p>
 
             <div
               style={{
                 display: "flex",
-                justifyContent: "flex-end",
+                justifyContent:
+                  "flex-end",
                 gap: 10,
                 marginTop: 25,
               }}
             >
               <button
                 type="button"
-                onClick={() => setConfirmLogout(false)}
+                onClick={() =>
+                  setConfirmLogout(
+                    false
+                  )
+                }
                 style={{
                   height: 40,
-                  padding: "0 17px",
+                  padding:
+                    "0 17px",
                   border: `1px solid ${colors.border}`,
                   borderRadius: 9,
-                  background: colors.white,
-                  color: colors.text,
+                  background:
+                    colors.white,
+                  color:
+                    colors.text,
                   fontSize: 13,
                   fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
+                  cursor:
+                    "pointer",
+                  fontFamily:
+                    "inherit",
                 }}
               >
                 Cancel
@@ -666,18 +843,25 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
 
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={
+                  handleLogout
+                }
                 style={{
                   height: 40,
-                  padding: "0 17px",
+                  padding:
+                    "0 17px",
                   border: "none",
                   borderRadius: 9,
-                  background: colors.danger,
-                  color: colors.white,
+                  background:
+                    colors.danger,
+                  color:
+                    colors.white,
                   fontSize: 13,
                   fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
+                  cursor:
+                    "pointer",
+                  fontFamily:
+                    "inherit",
                 }}
               >
                 Logout

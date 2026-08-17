@@ -24,6 +24,7 @@ import PharmacyQueue from "../Pages/MainPages/Pharmacy/components/PharmacyQueue"
 import PharmacyInventory from "../Pages/MainPages/Pharmacy/components/PharmacyInventory";
 import UserManagement from "../Pages/MainPages/Users/UserManagement";
 import Account from "../Pages/MainPages/Account/Account";
+import AuditLog from "../Pages/MainPages/AuditLog/AuditLog";
 
 export default function AppRoutes() {
   return (
@@ -178,8 +179,12 @@ export default function AppRoutes() {
               element={<UserManagement />}
             />
 
-          </Route>
+            <Route
+              path="/audit-log"
+              element={<AuditLog />}
+            />
 
+          </Route>
         </Route>
 
 
