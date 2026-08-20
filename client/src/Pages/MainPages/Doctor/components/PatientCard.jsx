@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  Clock3,
   FileText,
   UserRound,
 } from "lucide-react";
@@ -12,7 +11,7 @@ function PatientCard({
 }) {
   if (!patient) {
     return (
-      <section className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+      <section className="flex w-full self-start flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
           <UserRound size={28} />
         </div>
@@ -36,17 +35,18 @@ function PatientCard({
     patient.generalInfo?.sex ||
     "--";
 
-  return (
-    <section className="flex min-h-[360px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+  const isBeingSeen =
+    String(patient.status || "").toLowerCase() === "beingseen";
 
+  return (
+    <section className="flex min-h-[300px] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       {/* Top accent */}
-      <div className="h-1.5 bg-blue-950" />
+      <div className="h-1.5 w-full bg-blue-950" />
 
       <div className="flex flex-1 flex-col p-5 sm:p-6">
-
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-blue-700">
               Current Patient
             </p>
@@ -63,7 +63,7 @@ function PatientCard({
           )}
         </div>
 
-        {/* Avatar */}
+        {/* Patient overview */}
         <div className="mt-6 flex items-center gap-3 rounded-xl bg-slate-50 p-3">
           <div
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${
@@ -81,7 +81,7 @@ function PatientCard({
             </p>
 
             <p className="text-xs font-medium text-slate-500">
-              {patient.status === "beingSeen"
+              {isBeingSeen
                 ? "Currently being served"
                 : "Ready for consultation"}
             </p>
@@ -90,7 +90,6 @@ function PatientCard({
 
         {/* Patient information */}
         <div className="mt-5 grid grid-cols-2 gap-3">
-
           <div className="rounded-xl border border-slate-200 p-3">
             <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
               Age
@@ -110,7 +109,6 @@ function PatientCard({
               {gender}
             </p>
           </div>
-
         </div>
 
         {/* Complaint */}
@@ -120,21 +118,19 @@ function PatientCard({
           </p>
 
           <p className="mt-1 line-clamp-3 text-sm font-medium leading-5 text-slate-700">
-            {patient.initComplaint ||
-              "No complaint recorded."}
+            {patient.initComplaint || "No complaint recorded."}
           </p>
         </div>
 
         {/* Buttons */}
         <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
-
           <button
             type="button"
-            onClick={() => onSelect(patient)}
+            onClick={() => onSelect?.(patient)}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-3 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-sky-400/20 active:scale-[0.98]"
           >
             <FileText size={15} />
-            Open Sheet
+            Consult
           </button>
 
           <button
@@ -145,7 +141,6 @@ function PatientCard({
             Next
             <ArrowRight size={15} />
           </button>
-
         </div>
       </div>
     </section>

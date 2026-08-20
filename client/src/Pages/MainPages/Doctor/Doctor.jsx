@@ -1,431 +1,273 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-
-import {
-  Activity,
-  AlertCircle,
-  ClipboardList,
-  Clock3,
-  Stethoscope,
-  Users,
-} from "lucide-react";
-
-import { updatePatientStatus } from "../../../Services/doctorService";
-import { getPatientQueue } from "../../../Services/patientService";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Stethoscope } from "lucide-react";
 
 import DoctorQueue from "./components/DoctorQueue";
 import PatientCard from "./components/PatientCard";
 import PatientDoctorView from "./components/PatientDoctorView";
 
-import ConfirmModal from "../../../Components/ui/ConfirmModal";
-import TableSkeleton from "../../../Components/ui/TableSkeleton";
-import PatientCardSkeleton from "../../../Components/ui/PatientCardSkeleton";
+import { getDoctorQueue } from "../../../services/doctorService";
 
-function Doctor() {
+export default function Doctor() {
   const [patients, setPatients] = useState([]);
-  const [ongoingEvent, setOngoingEvent] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Consultation modal stays CLOSED initially.
   const [selectedPatient, setSelectedPatient] = useState(null);
+
   const [search, setSearch] = useState("");
   const [queueFilter, setQueueFilter] = useState("all");
 
-  const [showDoctorView, setShowDoctorView] = useState(false);
-  const [queueIndex, setQueueIndex] = useState(0);
-  const [showReleaseConfirm, setShowReleaseConfirm] =
-    useState(false);
-
-  const hasLoadedRef = useRef(false);
-
   const loadQueue = useCallback(async () => {
     try {
-      if (!hasLoadedRef.current) {
-        setLoading(true);
-      }
+      setLoading(true);
 
-      const response = await getPatientQueue();
+      const response = await getDoctorQueue({
+        page: 1,
+        limit: 1000,
+        search,
+        queueFilter,
+        department: "General",
+        role: "doctor",
+      });
 
-      const patientList = Array.isArray(response)
-        ? response
-        : response?.patients || [];
+      const queueData =
+        response?.patients ||
+        response?.data ||
+        (Array.isArray(response) ? response : []);
 
-      const currentEvent = Array.isArray(response)
-        ? null
-        : response?.ongoingEvent || null;
-
-      const activePatients = patientList.filter(
-        (patient) => patient?.status !== "released"
-      );
-
-      setPatients(activePatients);
-      setOngoingEvent(currentEvent);
-      hasLoadedRef.current = true;
+      setPatients(queueData);
     } catch (error) {
       console.error("Failed to load doctor queue:", error);
-
       setPatients([]);
-      setOngoingEvent(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [search, queueFilter]);
 
   useEffect(() => {
     loadQueue();
-
-    const interval = setInterval(() => {
-      loadQueue();
-    }, 5000);
-
-    return () => clearInterval(interval);
   }, [loadQueue]);
 
-  const filteredPatients = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
+  const stats = useMemo(() => {
+    const normalized = patients.map((patient) => ({
+      ...patient,
+      status: String(patient?.status || "").toLowerCase(),
+    }));
 
-    let result = [...patients];
-
-    if (normalizedSearch) {
-      result = result.filter((patient) =>
-        (patient?.generalInfo?.name || "")
-          .toLowerCase()
-          .includes(normalizedSearch)
-      );
-    }
-
-    if (queueFilter === "priority") {
-      result = result.filter(
-        (patient) => patient?.isPriority
-      );
-    }
-
-    return result;
-  }, [patients, search, queueFilter]);
-
-  useEffect(() => {
-    setQueueIndex(0);
-  }, [search, queueFilter]);
-
-  const queueStats = useMemo(() => {
     return {
-      total: patients.length,
-      waiting: patients.filter(
-        (patient) => patient.status === "waiting"
+      total: normalized.length,
+
+      waiting: normalized.filter(
+        (patient) =>
+          patient.status === "waiting" ||
+          patient.status === "unconsulted",
       ).length,
-      beingSeen: patients.filter(
-        (patient) => patient.status === "beingSeen"
+
+      beingSeen: normalized.filter(
+        (patient) => patient.status === "beingseen",
       ).length,
-      pharmacy: patients.filter(
-        (patient) => patient.status === "forPharmacy"
+
+      forPharmacy: normalized.filter(
+        (patient) => patient.status === "forpharmacy",
       ).length,
-      priority: patients.filter(
-        (patient) => patient.isPriority
+
+      priority: normalized.filter(
+        (patient) => patient.isPriority,
       ).length,
     };
   }, [patients]);
 
-  const openDoctorView = async (patient) => {
-    if (!patient?._id) return;
+  const currentPatient = useMemo(() => {
+    return patients.find((patient) => {
+      const status = String(patient?.status || "").toLowerCase();
 
-    try {
-      setSelectedPatient({
-        ...patient,
-        status: "beingSeen",
-      });
-
-      setShowDoctorView(true);
-
-      await updatePatientStatus(patient._id, {
-        status: "beingSeen",
-      });
-
-      await loadQueue();
-    } catch (error) {
-      console.error(
-        "Failed to update patient status:",
-        error
+      return (
+        status === "waiting" ||
+        status === "unconsulted" ||
+        status === "beingseen"
       );
+    });
+  }, [patients]);
 
-      setShowDoctorView(false);
-      setSelectedPatient(null);
+  // ============================================================
+  // OPEN CONSULTATION MODAL
+  // ============================================================
 
-      window.alert(
-        error?.message ||
-          "Failed to open the patient's doctor sheet."
-      );
-    }
+  const openDoctorView = (patient) => {
+    if (!patient) return;
+
+    setSelectedPatient(patient);
   };
 
-  const currentPatient =
-    filteredPatients[queueIndex] || null;
+  // ============================================================
+  // CLOSE CONSULTATION MODAL
+  // ============================================================
+
+  const handleCloseConsultation = () => {
+    setSelectedPatient(null);
+  };
+
+  // ============================================================
+  // AFTER RECORD IS SAVED
+  // ============================================================
+
+  const handleRecordSaved = async () => {
+    setSelectedPatient(null);
+
+    await loadQueue();
+  };
+
+  // ============================================================
+  // NEXT PATIENT
+  // ============================================================
 
   const handleNextPatient = () => {
     if (!currentPatient) return;
 
-    setShowReleaseConfirm(true);
-  };
+    const currentIndex = patients.findIndex(
+      (patient) => patient._id === currentPatient._id,
+    );
 
-  const confirmReleaseAndNext = async () => {
-    if (!currentPatient?._id) return;
+    if (currentIndex === -1) return;
 
-    try {
-      await updatePatientStatus(
-        currentPatient._id,
-        {
-          status: "released",
-        }
-      );
+    for (
+      let index = currentIndex + 1;
+      index < patients.length;
+      index += 1
+    ) {
+      const patient = patients[index];
 
-      setShowReleaseConfirm(false);
+      const status = String(
+        patient?.status || "",
+      ).toLowerCase();
 
-      await loadQueue();
-
-      setQueueIndex(0);
-    } catch (error) {
-      console.error(
-        "Failed to release patient:",
-        error
-      );
-
-      window.alert(
-        error?.message ||
-          "Failed to release the patient."
-      );
+      if (
+        status === "waiting" ||
+        status === "unconsulted" ||
+        status === "beingseen"
+      ) {
+        // Only open this patient's consultation modal.
+        setSelectedPatient(patient);
+        return;
+      }
     }
   };
 
   return (
-    <main className="min-h-full bg-slate-50 px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1600px] space-y-5">
+    <div className="min-h-screen w-full bg-slate-50 p-6">
+      <div className="mx-auto w-full max-w-[1600px]">
+        {/* PAGE HEADER */}
 
-        {/* =====================================================
-            PAGE HEADER
-        ====================================================== */}
-
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
-
-            <div className="min-w-0">
-              <div className="mb-2 flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                  <Stethoscope size={21} strokeWidth={2.2} />
-                </div>
-
-                <span className="text-xs font-extrabold uppercase tracking-[0.16em] text-blue-700">
-                  Clinical Services
-                </span>
-              </div>
-
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-                Doctor's Queue
-              </h1>
-
-              {ongoingEvent ? (
-                <p className="mt-1 text-sm font-medium text-slate-500">
-                  Current mission:{" "}
-                  <span className="font-bold text-slate-700">
-                    {ongoingEvent.title}
-                  </span>
-
-                  {ongoingEvent.location && (
-                    <>
-                      {" "}
-                      · {ongoingEvent.location}
-                    </>
-                  )}
-                </p>
-              ) : (
-                <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-slate-500">
-                  <AlertCircle size={15} />
-                  No ongoing mission. Showing unfinished
-                  patients from previous missions.
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                  Total Queue
-                </p>
-
-                <p className="mt-0.5 text-xl font-extrabold text-slate-900">
-                  {queueStats.total}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-amber-600">
-                  Priority
-                </p>
-
-                <p className="mt-0.5 text-xl font-extrabold text-amber-700">
-                  {queueStats.priority}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* =====================================================
-            QUEUE SUMMARY
-        ====================================================== */}
-
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                <Users size={18} />
-              </div>
-
-              <span className="text-xs font-bold text-slate-400">
-                QUEUE
-              </span>
-            </div>
-
-            <p className="mt-4 text-2xl font-extrabold text-slate-900">
-              {queueStats.total}
-            </p>
-
-            <p className="text-xs font-medium text-slate-500">
-              Active patients
-            </p>
+        <div className="mb-6 flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+            <Stethoscope size={24} />
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
-                <Clock3 size={18} />
-              </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">
+              Doctor
+            </h1>
 
-              <span className="text-xs font-bold text-slate-400">
-                WAITING
-              </span>
-            </div>
-
-            <p className="mt-4 text-2xl font-extrabold text-slate-900">
-              {queueStats.waiting}
-            </p>
-
-            <p className="text-xs font-medium text-slate-500">
-              Awaiting consultation
+            <p className="text-sm text-slate-500">
+              Manage patient consultations and medical records.
             </p>
           </div>
+        </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-700">
-                <Activity size={18} />
-              </div>
+        {/* STATISTICS */}
 
-              <span className="text-xs font-bold text-slate-400">
-                ACTIVE
-              </span>
-            </div>
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <StatCard
+            label="Total Patients"
+            value={stats.total}
+            valueClassName="text-slate-800"
+          />
 
-            <p className="mt-4 text-2xl font-extrabold text-slate-900">
-              {queueStats.beingSeen}
-            </p>
+          <StatCard
+            label="Waiting"
+            value={stats.waiting}
+            valueClassName="text-amber-600"
+          />
 
-            <p className="text-xs font-medium text-slate-500">
-              Currently being served
-            </p>
-          </div>
+          <StatCard
+            label="Being Served"
+            value={stats.beingSeen}
+            valueClassName="text-blue-600"
+          />
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                <ClipboardList size={18} />
-              </div>
+          <StatCard
+            label="For Pharmacy"
+            value={stats.forPharmacy}
+            valueClassName="text-emerald-600"
+          />
 
-              <span className="text-xs font-bold text-slate-400">
-                PHARMACY
-              </span>
-            </div>
+          <StatCard
+            label="Priority"
+            value={stats.priority}
+            valueClassName="text-rose-600"
+          />
+        </div>
 
-            <p className="mt-4 text-2xl font-extrabold text-slate-900">
-              {queueStats.pharmacy}
-            </p>
+        {/* CURRENT PATIENT + DOCTOR QUEUE */}
 
-            <p className="text-xs font-medium text-slate-500">
-              Awaiting pharmacy service
-            </p>
-          </div>
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+          {/* LEFT SIDE */}
 
-        </section>
-
-        {/* =====================================================
-            CURRENT PATIENT + QUEUE
-        ====================================================== */}
-
-        <section className="grid min-w-0 gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
-
-          {loading ? (
-            <PatientCardSkeleton />
-          ) : (
+          <div className="w-full xl:w-[360px]">
             <PatientCard
               patient={currentPatient}
               onSelect={openDoctorView}
               onNextPatient={handleNextPatient}
             />
-          )}
+          </div>
 
-          {loading ? (
-            <TableSkeleton
-              rows={8}
-              columns={6}
-            />
-          ) : (
+          {/* RIGHT SIDE */}
+
+          <div className="min-w-0">
             <DoctorQueue
-              patients={filteredPatients}
+              patients={patients}
+              loading={loading}
               search={search}
               setSearch={setSearch}
               queueFilter={queueFilter}
               setQueueFilter={setQueueFilter}
               onOpenDoctorView={openDoctorView}
             />
-          )}
+          </div>
+        </div>
 
-        </section>
+        {/* CONSULTATION MODAL */}
+
+        {selectedPatient && (
+          <PatientDoctorView
+            patient={selectedPatient}
+            open={true}
+            onClose={handleCloseConsultation}
+            onSaved={handleRecordSaved}
+            refreshQueue={loadQueue}
+          />
+        )}
       </div>
-
-      {/* =====================================================
-          DOCTOR SHEET MODAL
-      ====================================================== */}
-
-      {showDoctorView && selectedPatient && (
-        <PatientDoctorView
-          patient={selectedPatient}
-          onClose={() => {
-            setShowDoctorView(false);
-            setSelectedPatient(null);
-            loadQueue();
-          }}
-          refreshQueue={loadQueue}
-        />
-      )}
-
-      {/* =====================================================
-          RELEASE CONFIRMATION
-      ====================================================== */}
-
-      {showReleaseConfirm && (
-        <ConfirmModal
-          message="Are you sure you want to release the current patient? This will remove the patient from the active doctor queue."
-          onConfirm={confirmReleaseAndNext}
-          onCancel={() =>
-            setShowReleaseConfirm(false)
-          }
-        />
-      )}
-    </main>
+    </div>
   );
 }
 
-export default Doctor;
+function StatCard({
+  label,
+  value,
+  valueClassName = "text-slate-800",
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-sm font-medium text-slate-500">
+        {label}
+      </p>
+
+      <p
+        className={`mt-2 text-3xl font-bold ${valueClassName}`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}

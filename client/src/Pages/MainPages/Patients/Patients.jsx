@@ -4,21 +4,66 @@ import {
   useState,
 } from "react";
 
-import { apiFetch } from "../../../Services/api";
-import { API_BASE_URL } from "../../../Services/apiConfig";
+import {
+  getPatientQueue,
+  getPatientQueueSummary,
+} from "../../../Services/patientService";
 
 import PatientQueue from "./components/PatientQueue";
 import PatientDashboard from "./components/PatientDashboard";
 import AddPatientModal from "./components/AddPatientModal";
 import PatientViewModal from "./components/PatientViewModal";
 
-export default function Patient() {
-  const [patients, setPatients] = useState([]);
-  const [ongoingEvent, setOngoingEvent] = useState(null);
+const ITEMS_PER_PAGE = 15;
 
-  const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState(null);
+export default function Patients() {
+  const [patients, setPatients] = useState([]);
+
+  const [queueSummary, setQueueSummary] =
+    useState({
+      Pediatrics: 0,
+      Ortho: 0,
+      Opta: 0,
+      Dental: 0,
+      Cardio: 0,
+      General: 0,
+    });
+
+  const [ongoingEvent, setOngoingEvent] =
+    useState(null);
+
+  const [totalPatients, setTotalPatients] =
+    useState(0);
+
+  const [totalPages, setTotalPages] =
+    useState(1);
+
+  const [currentPage, setCurrentPage] =
+    useState(1);
+
+  const [search, setSearch] =
+    useState("");
+
+  const [departmentFilter, setDepartmentFilter] =
+    useState("All");
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [summaryLoading, setSummaryLoading] =
+    useState(true);
+
+  const [showAddModal, setShowAddModal] =
+    useState(false);
+
+  const [selectedPatient, setSelectedPatient] =
+    useState(null);
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD QUEUE
+  |--------------------------------------------------------------------------
+  */
 
   const fetchQueue = useCallback(
     async (silent = false) => {
@@ -27,16 +72,47 @@ export default function Patient() {
       }
 
       try {
-        const data = await apiFetch(
-          `${API_BASE_URL}/api/patients/queue`
+        const result =
+          await getPatientQueue({
+            page: currentPage,
+            limit: ITEMS_PER_PAGE,
+            search,
+            department:
+              departmentFilter,
+          });
+
+        setPatients(
+          Array.isArray(result.patients)
+            ? result.patients
+            : []
         );
 
-        if (Array.isArray(data)) {
-          setPatients(data);
-          setOngoingEvent(null);
-        } else {
-          setPatients(data?.patients || []);
-          setOngoingEvent(data?.ongoingEvent || null);
+        setTotalPatients(
+          result.total || 0
+        );
+
+        setTotalPages(
+          Math.max(
+            1,
+            result.totalPages || 1
+          )
+        );
+
+        /*
+         * The backend queue endpoint may return
+         * the ongoing event depending on the
+         * current implementation.
+         */
+        if (result.ongoingEvent) {
+          setOngoingEvent(
+            result.ongoingEvent
+          );
+        } else if (
+          result.event
+        ) {
+          setOngoingEvent(
+            result.event
+          );
         }
       } catch (error) {
         console.error(
@@ -45,23 +121,145 @@ export default function Patient() {
         );
 
         setPatients([]);
+        setTotalPatients(0);
+        setTotalPages(1);
         setOngoingEvent(null);
       } finally {
         setLoading(false);
       }
     },
-    []
+    [
+      currentPage,
+      search,
+      departmentFilter,
+    ]
   );
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD DEPARTMENT SUMMARY
+  |--------------------------------------------------------------------------
+  */
+
+  const fetchQueueSummary =
+    useCallback(
+      async (silent = false) => {
+        if (!silent) {
+          setSummaryLoading(true);
+        }
+
+        try {
+          const summary =
+            await getPatientQueueSummary();
+
+          setQueueSummary(summary);
+        } catch (error) {
+          console.error(
+            "Failed to load patient queue summary:",
+            error
+          );
+
+          setQueueSummary({
+            Pediatrics: 0,
+            Ortho: 0,
+            Opta: 0,
+            Dental: 0,
+            Cardio: 0,
+            General: 0,
+          });
+        } finally {
+          setSummaryLoading(false);
+        }
+      },
+      []
+    );
+
+  /*
+  |--------------------------------------------------------------------------
+  | INITIAL + REAL-TIME-LIKE REFRESH
+  |--------------------------------------------------------------------------
+  */
 
   useEffect(() => {
     fetchQueue();
+  }, [fetchQueue]);
 
+  useEffect(() => {
+    fetchQueueSummary();
+  }, [fetchQueueSummary]);
+
+  /*
+   * Keep the queue and department summary
+   * reasonably fresh.
+   *
+   * Later, this can be replaced with
+   * Socket.IO queueUpdated events.
+   */
+  useEffect(() => {
     const interval = setInterval(() => {
       fetchQueue(true);
-    }, 3000);
+      fetchQueueSummary(true);
+    }, 5000);
 
-    return () => clearInterval(interval);
-  }, [fetchQueue]);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [
+    fetchQueue,
+    fetchQueueSummary,
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | RESET PAGE WHEN FILTER CHANGES
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    search,
+    departmentFilter,
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | KEEP PAGE VALID
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    if (
+      currentPage > totalPages
+    ) {
+      setCurrentPage(
+        totalPages
+      );
+    }
+  }, [
+    currentPage,
+    totalPages,
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | REFRESH AFTER MODALS
+  |--------------------------------------------------------------------------
+  */
+
+  const refreshPatientData =
+    async () => {
+      await Promise.all([
+        fetchQueue(true),
+        fetchQueueSummary(true),
+      ]);
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | UI
+  |--------------------------------------------------------------------------
+  */
 
   return (
     <main className="min-h-full bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
@@ -84,25 +282,32 @@ export default function Patient() {
             </h1>
 
             <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Manage patient registration, department queues,
-              and current medical mission activity.
+              Manage patient registration,
+              department queues, and current
+              medical mission activity.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => setShowAddModal(true)}
+            onClick={() =>
+              setShowAddModal(true)
+            }
             disabled={!ongoingEvent}
             className={[
               "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3",
               "text-sm font-semibold shadow-sm transition",
               "focus:outline-none focus:ring-4 focus:ring-blue-100",
+
               ongoingEvent
                 ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "cursor-not-allowed bg-slate-200 text-slate-400",
             ].join(" ")}
           >
-            <span className="text-lg leading-none">+</span>
+            <span className="text-lg leading-none">
+              +
+            </span>
+
             Add Patient
           </button>
         </div>
@@ -111,9 +316,13 @@ export default function Patient() {
         {ongoingEvent && (
           <div className="mb-6 overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
             <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+
               <div className="flex items-start gap-4">
+
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                  <span className="text-lg">✚</span>
+                  <span className="text-lg">
+                    ✚
+                  </span>
                 </div>
 
                 <div>
@@ -122,7 +331,8 @@ export default function Patient() {
                   </p>
 
                   <h2 className="mt-1 text-base font-bold text-slate-900">
-                    {ongoingEvent.title || "Medical Mission"}
+                    {ongoingEvent.title ||
+                      "Medical Mission"}
                   </h2>
 
                   {ongoingEvent.location && (
@@ -135,35 +345,40 @@ export default function Patient() {
 
               <div className="flex items-center gap-2 self-start rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:self-center">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
+
                 Ongoing
               </div>
             </div>
           </div>
         )}
 
-        {!ongoingEvent && !loading && (
-          <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-              !
-            </div>
+        {!ongoingEvent &&
+          !loading && (
+            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
 
-            <div>
-              <p className="text-sm font-semibold text-amber-900">
-                No ongoing medical mission
-              </p>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 font-bold text-amber-700">
+                !
+              </div>
 
-              <p className="mt-0.5 text-xs text-amber-700">
-                Patient registration is currently unavailable
-                until an event is ongoing.
-              </p>
+              <div>
+                <p className="text-sm font-semibold text-amber-900">
+                  No ongoing medical
+                  mission
+                </p>
+
+                <p className="mt-0.5 text-xs text-amber-700">
+                  Patient registration is
+                  currently unavailable
+                  until an event is ongoing.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* DEPARTMENT SUMMARY */}
         <PatientDashboard
-          patients={patients}
-          loading={loading}
+          summary={queueSummary}
+          loading={summaryLoading}
         />
 
         {/* QUEUE */}
@@ -171,29 +386,52 @@ export default function Patient() {
           <PatientQueue
             patients={patients}
             loading={loading}
-            onSelectPatient={setSelectedPatient}
+            search={search}
+            setSearch={setSearch}
+            departmentFilter={
+              departmentFilter
+            }
+            setDepartmentFilter={
+              setDepartmentFilter
+            }
+            currentPage={currentPage}
+            setCurrentPage={
+              setCurrentPage
+            }
+            totalPatients={
+              totalPatients
+            }
+            totalPages={totalPages}
+            onSelectPatient={
+              setSelectedPatient
+            }
           />
         </div>
       </div>
 
-      {/* ADD PATIENT */}
-      {showAddModal && ongoingEvent && (
-        <AddPatientModal
-          ongoingEvent={ongoingEvent}
-          onClose={() => {
-            setShowAddModal(false);
-            fetchQueue(true);
-          }}
-        />
-      )}
+      {/* ADD PATIENT MODAL */}
+      {showAddModal &&
+        ongoingEvent && (
+          <AddPatientModal
+            ongoingEvent={
+              ongoingEvent
+            }
+            onClose={async () => {
+              setShowAddModal(false);
 
-      {/* PATIENT VIEW */}
+              await refreshPatientData();
+            }}
+          />
+        )}
+
+      {/* PATIENT RECORD MODAL */}
       {selectedPatient && (
         <PatientViewModal
           patient={selectedPatient}
-          onClose={() => {
+          onClose={async () => {
             setSelectedPatient(null);
-            fetchQueue(true);
+
+            await refreshPatientData();
           }}
         />
       )}

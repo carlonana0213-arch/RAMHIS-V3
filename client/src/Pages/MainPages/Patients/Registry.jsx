@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import { useLocation } from "react-router-dom";
 
 import {
@@ -23,74 +27,185 @@ const HISTORY_OPTIONS = [
   "Other",
 ];
 
-const emptyForm = {
-  generalInfo: {
-    name: "",
-    age: "",
-    birthdate: "",
-    sex: "",
-    insurance: "",
-    tobacco: "",
-    alcohol: "",
-    allergies: "",
-    vaccine: "",
-  },
+const createEmptyForm =
+  () => ({
+    generalInfo: {
+      name: "",
+      age: "",
+      birthdate: "",
+      sex: "",
+      insurance: "",
+      tobacco: "",
+      alcohol: "",
+      allergies: "",
+      vaccine: "",
+    },
 
-  examination: {
-    bp: "",
-    temp: "",
-    height: "",
-    weight: "",
-    bmi: "",
-  },
+    examination: {
+      bp: "",
+      temp: "",
+      height: "",
+      weight: "",
+      bmi: "",
+    },
 
-  obstetricHistory: {
-    contraception: false,
-    type: "",
-    gpfpal: "",
-    bf: "",
-    birthHistory: "",
-    deliverySite: "",
-    lmp: "",
-  },
+    obstetricHistory: {
+      contraception: false,
+      type: "",
+      gpfpal: "",
+      bf: "",
+      birthHistory: "",
+      deliverySite: "",
+      lmp: "",
+    },
 
-  perinatalHistory: {
-    bw: "",
-    bf: "",
-    birthHistory: "",
-    deliverySite: "",
-  },
+    perinatalHistory: {
+      bw: "",
+      bf: "",
+      birthHistory: "",
+      deliverySite: "",
+    },
 
-  medicalHistory: [],
-  familyHistory: [],
-  department: "",
-  initComplaint: "",
-};
+    medicalHistory: [],
+    familyHistory: [],
 
-function Registry({ patientIdFromQueue }) {
-  const [form, setForm] = useState(emptyForm);
-  const [patientId, setPatientId] = useState(null);
-  const [search, setSearch] = useState("");
-  const [results, setResults] = useState([]);
-  const [confirmState, setConfirmState] = useState(null);
-  const [alertMessage, setAlertMessage] = useState("");
+    department: "",
+    initComplaint: "",
+  });
 
-  const location = useLocation();
+function Registry({
+  patientIdFromQueue,
+}) {
+  const [
+    form,
+    setForm,
+  ] = useState(
+    createEmptyForm()
+  );
+
+  const [
+    patientId,
+    setPatientId,
+  ] = useState(null);
+
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+
+  const [
+    results,
+    setResults,
+  ] = useState([]);
+
+  const [
+    searching,
+    setSearching,
+  ] = useState(false);
+
+  const [
+    loadingPatient,
+    setLoadingPatient,
+  ] = useState(false);
+
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
+
+  const [
+    confirmState,
+    setConfirmState,
+  ] = useState(null);
+
+  const [
+    alertMessage,
+    setAlertMessage,
+  ] = useState("");
+
+  const location =
+    useLocation();
+
+  /*
+  |--------------------------------------------------------------------------
+  | FIELD HELPERS
+  |--------------------------------------------------------------------------
+  */
+
+  const handleChange = (
+    section,
+    field,
+    value
+  ) => {
+    setForm((previous) => ({
+      ...previous,
+
+      [section]: {
+        ...(previous[
+          section
+        ] || {}),
+        [field]: value,
+      },
+    }));
+  };
+
+  const toggleCheckbox = (
+    section,
+    value
+  ) => {
+    setForm((previous) => {
+
+      const current =
+        Array.isArray(
+          previous[section]
+        )
+          ? previous[section]
+          : [];
+
+      const exists =
+        current.includes(
+          value
+        );
+
+      return {
+        ...previous,
+
+        [section]: exists
+          ? current.filter(
+              (item) =>
+                item !== value
+            )
+          : [
+              ...current,
+              value,
+            ],
+      };
+    });
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | BUTTON GROUP KEYBOARD
+  |--------------------------------------------------------------------------
+  */
 
   const handleButtonGroupKey = (
-    e,
+    event,
     options,
     currentValue,
     setValue
   ) => {
     const currentIndex =
-      options.indexOf(currentValue);
+      options.indexOf(
+        currentValue
+      );
 
     if (
-      e.key === "ArrowRight" ||
-      e.key === "ArrowDown"
+      event.key ===
+        "ArrowRight" ||
+      event.key === "ArrowDown"
     ) {
-      e.preventDefault();
+      event.preventDefault();
 
       const next =
         options[
@@ -102,430 +217,306 @@ function Registry({ patientIdFromQueue }) {
     }
 
     if (
-      e.key === "ArrowLeft" ||
-      e.key === "ArrowUp"
+      event.key ===
+        "ArrowLeft" ||
+      event.key === "ArrowUp"
     ) {
-      e.preventDefault();
+      event.preventDefault();
 
-      const prev =
+      const previous =
         options[
-          (currentIndex - 1 +
+          (currentIndex -
+            1 +
             options.length) %
             options.length
         ];
 
-      setValue(prev);
+      setValue(previous);
     }
 
-    if (e.key === "Enter") {
-      e.preventDefault();
+    if (
+      event.key ===
+      "Enter"
+    ) {
+      event.preventDefault();
     }
   };
 
-  const handleChange = (
-    section,
-    field,
-    value
-  ) => {
-    setForm({
-      ...form,
+  /*
+  |--------------------------------------------------------------------------
+  | ENTER NAVIGATION
+  |--------------------------------------------------------------------------
+  */
 
-      [section]: {
-        ...form[section],
-        [field]: value,
-      },
-    });
-  };
-
-  const toggleCheckbox = (
-    section,
-    value
-  ) => {
-    setForm({
-      ...form,
-
-      [section]: form[section].includes(value)
-        ? form[section].filter(
-            (v) => v !== value
-          )
-        : [
-            ...form[section],
-            value,
-          ],
-    });
-  };
-
-  const handleSearch = async () => {
-    const data = await searchPatients(
-      search
-    );
-
-    setResults(data);
-  };
-
-  const selectPatient = (patient) => {
-    setPatientId(patient._id);
-
-    setForm({
-      generalInfo:
-        patient.generalInfo ||
-        emptyForm.generalInfo,
-
-      examination:
-        patient.examination ||
-        emptyForm.examination,
-
-      obstetricHistory: {
-        ...emptyForm.obstetricHistory,
-        ...patient.obstetricHistory,
-
-        contraception:
-          !!patient.obstetricHistory
-            ?.contraception,
-      },
-
-      perinatalHistory: {
-        ...emptyForm.perinatalHistory,
-        ...patient.perinatalHistory,
-      },
-
-      medicalHistory:
-        patient.medicalHistory || [],
-
-      familyHistory:
-        patient.familyHistory || [],
-
-      department:
-        patient.department ||
-        emptyForm.department,
-
-      initComplaint:
-        patient.initComplaint || "",
-    });
-
-    setResults([]);
-  };
-
-  const clearForm = () => {
-    setForm(emptyForm);
-    setPatientId(null);
-  };
-
-  const handleEnterKey = (e) => {
-    if (e.key === "Enter") {
+  const handleEnterKey =
+    (event) => {
       if (
-        e.target.placeholder ===
+        event.key !== "Enter"
+      ) {
+        return;
+      }
+
+      if (
+        event.target
+          ?.placeholder ===
         "Search patient name"
       ) {
         return;
       }
 
-      e.preventDefault();
+      event.preventDefault();
 
-      const formElement = e.target.form;
+      const formElement =
+        event.target.form;
 
-      const elements = Array.from(
-        formElement.querySelectorAll(
-          "input, select, textarea, .button-group"
-        )
-      );
-
-      const index = elements.indexOf(
-        e.target.closest(
-          ".button-group"
-        ) || e.target
-      );
-
-      const next = elements[index + 1];
-
-      if (next) {
-        if (
-          next.classList.contains(
-            "button-group"
-          )
-        ) {
-          next.focus();
-
-          const firstBtn =
-            next.querySelector(
-              "button"
-            );
-
-          if (firstBtn) {
-            firstBtn.focus();
-          }
-        } else {
-          next.focus();
-        }
+      if (!formElement) {
+        return;
       }
-    }
-  };
+
+      const elements =
+        Array.from(
+          formElement.querySelectorAll(
+            "input, select, textarea, .button-group"
+          )
+        );
+
+      const current =
+        event.target.closest(
+          ".button-group"
+        ) ||
+        event.target;
+
+      const index =
+        elements.indexOf(
+          current
+        );
+
+      const next =
+        elements[index + 1];
+
+      if (!next) {
+        return;
+      }
+
+      if (
+        next.classList.contains(
+          "button-group"
+        )
+      ) {
+        next.focus();
+
+        next
+          .querySelector(
+            "button"
+          )
+          ?.focus();
+      } else {
+        next.focus();
+      }
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | BMI
+  |--------------------------------------------------------------------------
+  */
 
   const computeBMI = (
     height,
     weight
   ) => {
-    if (!height || !weight) {
+    const numericHeight =
+      Number(height);
+
+    const numericWeight =
+      Number(weight);
+
+    if (
+      !numericHeight ||
+      !numericWeight ||
+      numericHeight <= 0 ||
+      numericWeight <= 0
+    ) {
       return "";
     }
 
-    const h = height / 100;
+    const heightMeters =
+      numericHeight / 100;
 
     return (
-      weight /
-      (h * h)
+      numericWeight /
+      (heightMeters *
+        heightMeters)
     ).toFixed(1);
   };
 
-  // ADD PATIENT
-  const handleAdd = async () => {
-    try {
-      const payload = {
-        generalInfo: {
-          name:
-            form.generalInfo.name ||
-            "",
+  /*
+  |--------------------------------------------------------------------------
+  | PATIENT SEARCH
+  |--------------------------------------------------------------------------
+  */
 
-          age:
-            form.generalInfo.age === ""
-              ? undefined
-              : Number(
-                  form.generalInfo.age
-                ),
+  const handleSearch =
+    async () => {
+      const value =
+        search.trim();
 
-          birthdate:
-            form.generalInfo.birthdate ||
-            "",
+      if (!value) {
+        setResults([]);
+        return;
+      }
 
-          sex:
-            form.generalInfo.sex ||
-            "",
+      try {
+        setSearching(true);
 
-          insurance:
-            form.generalInfo.insurance ||
-            "",
+        const data =
+          await searchPatients(
+            value
+          );
 
-          tobacco:
-            form.generalInfo.tobacco ||
-            "",
+        setResults(
+          Array.isArray(data)
+            ? data
+            : []
+        );
+      } catch (error) {
+        console.error(
+          "Patient search failed:",
+          error
+        );
 
-          alcohol:
-            form.generalInfo.alcohol ||
-            "",
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    };
 
-          allergies:
-            form.generalInfo.allergies ||
-            "",
+  /*
+  |--------------------------------------------------------------------------
+  | SELECT PATIENT
+  |--------------------------------------------------------------------------
+  */
 
-          vaccine:
-            form.generalInfo.vaccine ||
-            "",
-        },
-
-        examination: {
-          bp:
-            form.examination.bp || "",
-
-          temp:
-            form.examination.temp || "",
-
-          height:
-            form.examination.height || "",
-
-          weight:
-            form.examination.weight || "",
-
-          bmi:
-            form.examination.bmi || "",
-        },
-
-        obstetricHistory: {
-          contraception:
-            !!form.obstetricHistory
-              .contraception,
-
-          type:
-            form.obstetricHistory.type ||
-            "",
-
-          gpfpal:
-            form.obstetricHistory.gpfpal ||
-            "",
-
-          bf:
-            form.obstetricHistory.bf ||
-            "",
-
-          birthHistory:
-            form.obstetricHistory
-              .birthHistory || "",
-
-          deliverySite:
-            form.obstetricHistory
-              .deliverySite || "",
-
-          lmp:
-            form.obstetricHistory.lmp ||
-            "",
-        },
-
-        perinatalHistory: {
-          bw:
-            form.perinatalHistory.bw ||
-            "",
-
-          bf:
-            form.perinatalHistory.bf ||
-            "",
-
-          birthHistory:
-            form.perinatalHistory
-              .birthHistory || "",
-
-          deliverySite:
-            form.perinatalHistory
-              .deliverySite || "",
-        },
-
-        medicalHistory:
-          form.medicalHistory || [],
-
-        familyHistory:
-          form.familyHistory || [],
-
-        department:
-          form.department || "",
-
-        initComplaint:
-          form.initComplaint || "",
-      };
-
-      const res =
-        await addPatient(payload);
-
-      console.log(
-        "Add patient response:",
-        res
-      );
-
-      alert(
-        "Patient added successfully"
-      );
-
-      clearForm();
-    } catch (err) {
-      console.error(
-        "Error adding patient:",
-        err
-      );
-
-      alert(
-        "Failed to add patient. See console for details."
-      );
-    }
-  };
-
-  // EDIT PATIENT
-  const handleEdit = async () => {
-    if (!patientId) {
+  const selectPatient = (
+    patient
+  ) => {
+    if (!patient) {
       return;
     }
 
-    try {
-      const payload = {
-        generalInfo: {
-          ...form.generalInfo,
+    setPatientId(
+      patient._id
+    );
 
-          age:
-            form.generalInfo.age === ""
-              ? undefined
-              : Number(
-                  form.generalInfo.age
-                ),
-        },
+    const empty =
+      createEmptyForm();
 
-        examination: {
-          ...form.examination,
-        },
+    setForm({
+      ...empty,
 
-        obstetricHistory: {
-          ...form.obstetricHistory,
+      generalInfo: {
+        ...empty.generalInfo,
+        ...(patient.generalInfo ||
+          {}),
+      },
 
-          contraception:
-            !!form.obstetricHistory
-              .contraception,
-        },
+      examination: {
+        ...empty.examination,
+        ...(patient.examination ||
+          {}),
+      },
 
-        perinatalHistory: {
-          ...form.perinatalHistory,
-        },
+      obstetricHistory: {
+        ...empty.obstetricHistory,
+        ...(patient.obstetricHistory ||
+          {}),
+        contraception:
+          Boolean(
+            patient
+              .obstetricHistory
+              ?.contraception
+          ),
+      },
 
-        medicalHistory:
-          form.medicalHistory || [],
+      perinatalHistory: {
+        ...empty.perinatalHistory,
+        ...(patient.perinatalHistory ||
+          {}),
+      },
 
-        familyHistory:
-          form.familyHistory || [],
+      medicalHistory:
+        Array.isArray(
+          patient.medicalHistory
+        )
+          ? patient.medicalHistory
+          : [],
 
-        initComplaint:
-          form.initComplaint || "",
+      familyHistory:
+        Array.isArray(
+          patient.familyHistory
+        )
+          ? patient.familyHistory
+          : [],
 
-        department:
-          form.department || "",
-      };
+      department:
+        patient.department ||
+        "",
 
-      const res =
-        await updatePatient(
-          patientId,
-          payload
-        );
+      initComplaint:
+        patient.initComplaint ||
+        "",
+    });
 
-      console.log(
-        "Update patient response:",
-        res
-      );
-
-      setAlertMessage(
-        "Patient updated successfully"
-      );
-
-      clearForm();
-    } catch (err) {
-      console.error(
-        "Error updating patient:",
-        err
-      );
-
-      setAlertMessage(
-        "Failed to update patient"
-      );
-    }
+    setResults([]);
   };
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOAD PATIENT
+  |--------------------------------------------------------------------------
+  */
 
   useEffect(() => {
     const loadPatient =
       async () => {
         const id =
           patientIdFromQueue ||
-          location.state?.patientId;
+          location.state
+            ?.patientId;
 
         if (!id) {
           return;
         }
 
         try {
+          setLoadingPatient(
+            true
+          );
+
           const patient =
-            await getPatientById(id);
+            await getPatientById(
+              id
+            );
 
           if (
-            patient &&
-            patient._id
+            patient?._id
           ) {
-            selectPatient(patient);
+            selectPatient(
+              patient
+            );
           }
-        } catch (err) {
+        } catch (error) {
           console.error(
             "Error loading patient:",
-            err
+            error
+          );
+
+          setAlertMessage(
+            "Failed to load patient record."
+          );
+        } finally {
+          setLoadingPatient(
+            false
           );
         }
       };
@@ -536,48 +527,288 @@ function Registry({ patientIdFromQueue }) {
     location.state,
   ]);
 
+  /*
+  |--------------------------------------------------------------------------
+  | CLEAR
+  |--------------------------------------------------------------------------
+  */
+
+  const clearForm = () => {
+    setForm(
+      createEmptyForm()
+    );
+
+    setPatientId(null);
+    setSearch("");
+    setResults([]);
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | ADD PATIENT
+  |--------------------------------------------------------------------------
+  */
+
+  const handleAdd =
+    async () => {
+      try {
+        setSaving(true);
+
+        const payload = {
+          generalInfo: {
+            ...form.generalInfo,
+
+            age:
+              form.generalInfo
+                .age === ""
+                ? undefined
+                : Number(
+                    form.generalInfo
+                      .age
+                  ),
+          },
+
+          examination: {
+            ...form.examination,
+          },
+
+          obstetricHistory: {
+            ...form.obstetricHistory,
+
+            contraception:
+              Boolean(
+                form
+                  .obstetricHistory
+                  .contraception
+              ),
+          },
+
+          perinatalHistory: {
+            ...form.perinatalHistory,
+          },
+
+          medicalHistory:
+            form.medicalHistory ||
+            [],
+
+          familyHistory:
+            form.familyHistory ||
+            [],
+
+          department:
+            form.department ||
+            "",
+
+          initComplaint:
+            form.initComplaint ||
+            "",
+        };
+
+        await addPatient(
+          payload
+        );
+
+        setAlertMessage(
+          "Patient added successfully."
+        );
+
+        clearForm();
+      } catch (error) {
+        console.error(
+          "Error adding patient:",
+          error
+        );
+
+        setAlertMessage(
+          error?.message ||
+            "Failed to add patient."
+        );
+      } finally {
+        setSaving(false);
+      }
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | EDIT PATIENT
+  |--------------------------------------------------------------------------
+  */
+
+  const handleEdit =
+    async () => {
+      if (!patientId) {
+        return;
+      }
+
+      try {
+        setSaving(true);
+
+        const payload = {
+          generalInfo: {
+            ...form.generalInfo,
+
+            age:
+              form.generalInfo
+                .age === ""
+                ? undefined
+                : Number(
+                    form.generalInfo
+                      .age
+                  ),
+          },
+
+          examination: {
+            ...form.examination,
+          },
+
+          obstetricHistory: {
+            ...form.obstetricHistory,
+
+            contraception:
+              Boolean(
+                form
+                  .obstetricHistory
+                  .contraception
+              ),
+          },
+
+          perinatalHistory: {
+            ...form.perinatalHistory,
+          },
+
+          medicalHistory:
+            form.medicalHistory ||
+            [],
+
+          familyHistory:
+            form.familyHistory ||
+            [],
+
+          initComplaint:
+            form.initComplaint ||
+            "",
+
+          department:
+            form.department ||
+            "",
+        };
+
+        await updatePatient(
+          patientId,
+          payload
+        );
+
+        setAlertMessage(
+          "Patient updated successfully."
+        );
+      } catch (error) {
+        console.error(
+          "Error updating patient:",
+          error
+        );
+
+        setAlertMessage(
+          error?.message ||
+            "Failed to update patient."
+        );
+      } finally {
+        setSaving(false);
+      }
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | DELETE PATIENT
+  |--------------------------------------------------------------------------
+  */
+
+  const handleDelete =
+    async () => {
+      if (!patientId) {
+        return;
+      }
+
+      try {
+        setSaving(true);
+
+        await deletePatient(
+          patientId
+        );
+
+        setAlertMessage(
+          "Patient deleted successfully."
+        );
+
+        clearForm();
+      } catch (error) {
+        console.error(
+          "Error deleting patient:",
+          error
+        );
+
+        setAlertMessage(
+          error?.message ||
+            "Failed to delete patient."
+        );
+      } finally {
+        setSaving(false);
+      }
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | UI
+  |--------------------------------------------------------------------------
+  */
+
   return (
     <form
       className="registry-modern"
-      onSubmit={(e) =>
-        e.preventDefault()
+      onSubmit={(event) =>
+        event.preventDefault()
       }
     >
-      {/* SEARCH */}
 
+      {/* SEARCH HEADER */}
       <div className="header-card">
+
         <div className="patient-info">
+
           <h2>
-            {form.generalInfo.name ||
+            {form.generalInfo
+              .name ||
               "New Patient"}
           </h2>
 
           <p>
-            {form.generalInfo.age ||
+            {form.generalInfo
+              .age ||
               "--"}{" "}
             yrs •{" "}
-            {form.generalInfo.sex ||
+            {form.generalInfo
+              .sex ||
               "--"}
           </p>
+
         </div>
 
         <div className="search-box">
+
           <input
             placeholder="Search patient name"
             value={search}
-            onChange={(e) =>
+            onChange={(event) =>
               setSearch(
-                e.target.value
+                event.target.value
               )
             }
-            onKeyDown={(e) => {
+            onKeyDown={(event) => {
               if (
-                e.key === "Enter" &&
-                e.target ===
-                  e.currentTarget
+                event.key ===
+                "Enter"
               ) {
-                e.preventDefault();
-                e.stopPropagation();
+                event.preventDefault();
+                event.stopPropagation();
 
                 handleSearch();
               }
@@ -585,31 +816,76 @@ function Registry({ patientIdFromQueue }) {
           />
 
           <button
-            onClick={handleSearch}
+            type="button"
+            onClick={
+              handleSearch
+            }
+            disabled={
+              searching
+            }
           >
-            Search
+            {searching
+              ? "Searching..."
+              : "Search"}
           </button>
+
         </div>
       </div>
 
-      {results.map((p) => (
-        <div
-          key={p._id}
-          className="search-result"
-          onClick={() =>
-            selectPatient(p)
-          }
-        >
-          {p.generalInfo.name}
+      {/* SEARCH RESULTS */}
+      {results.length >
+        0 && (
+        <div className="search-results-list">
+
+          {results.map(
+            (patient) => (
+              <button
+                type="button"
+                key={
+                  patient._id
+                }
+                className="search-result"
+                onClick={() =>
+                  selectPatient(
+                    patient
+                  )
+                }
+              >
+                <span>
+                  {patient
+                    .generalInfo
+                    ?.name ||
+                    "Unnamed Patient"}
+                </span>
+
+                <small>
+                  {patient
+                    .generalInfo
+                    ?.birthdate ||
+                    "--"}
+                </small>
+              </button>
+            )
+          )}
+
         </div>
-      ))}
+      )}
+
+      {/* LOADING */}
+      {loadingPatient && (
+        <div className="py-4 text-center text-sm text-slate-500">
+          Loading patient record...
+        </div>
+      )}
 
       <div className="main-grid">
+
+        {/* LEFT */}
         <div className="left-column">
 
-          {/* GENERAL INFO */}
-
+          {/* GENERAL */}
           <div className="card">
+
             <h3>
               General Information
             </h3>
@@ -617,64 +893,77 @@ function Registry({ patientIdFromQueue }) {
             <div className="general-grid">
 
               <div className="field-group full-width">
-                <label>Name</label>
+
+                <label>
+                  Name
+                </label>
 
                 <input
                   value={
-                    form.generalInfo
+                    form
+                      .generalInfo
                       .name
                   }
-                  onChange={(e) =>
+                  onChange={(event) =>
                     handleChange(
                       "generalInfo",
                       "name",
-                      e.target.value
+                      event.target
+                        .value
                     )
                   }
                   onKeyDown={
                     handleEnterKey
                   }
                 />
+
               </div>
 
               <div className="field-group full-width">
+
                 <label>
                   Birthday
                 </label>
 
                 <input
-                  placeholder="Birthday"
                   type="date"
                   value={
-                    form.generalInfo
+                    form
+                      .generalInfo
                       .birthdate
                   }
-                  onChange={(e) => {
+                  onChange={(event) => {
+
                     const birthdate =
-                      e.target.value;
+                      event.target
+                        .value;
 
                     let age = "";
 
-                    if (birthdate) {
+                    if (
+                      birthdate
+                    ) {
                       const today =
                         new Date();
 
                       const birth =
                         new Date(
-                          birthdate
+                          `${birthdate}T00:00:00`
                         );
 
                       age =
                         today.getFullYear() -
                         birth.getFullYear();
 
-                      const m =
+                      const monthDifference =
                         today.getMonth() -
                         birth.getMonth();
 
                       if (
-                        m < 0 ||
-                        (m === 0 &&
+                        monthDifference <
+                          0 ||
+                        (monthDifference ===
+                          0 &&
                           today.getDate() <
                             birth.getDate())
                       ) {
@@ -682,67 +971,87 @@ function Registry({ patientIdFromQueue }) {
                       }
                     }
 
-                    setForm({
-                      ...form,
+                    setForm(
+                      (
+                        previous
+                      ) => ({
+                        ...previous,
 
-                      generalInfo: {
-                        ...form.generalInfo,
-                        birthdate,
-                        age,
-                      },
-                    });
+                        generalInfo: {
+                          ...previous.generalInfo,
+                          birthdate,
+                          age,
+                        },
+                      })
+                    );
                   }}
                   onKeyDown={
                     handleEnterKey
                   }
                 />
+
               </div>
 
               <div className="field-group full-width">
-                <label>Age</label>
+
+                <label>
+                  Age
+                </label>
 
                 <input
                   value={
-                    form.generalInfo.age
+                    form
+                      .generalInfo
+                      .age
                   }
                   readOnly
-                  onKeyDown={
-                    handleEnterKey
-                  }
                 />
+
               </div>
 
+              {/* SEX */}
               <div className="field-group">
-                <label>Sex</label>
+
+                <label>
+                  Sex
+                </label>
 
                 <div
                   className="button-group"
                   tabIndex="0"
-                  onKeyDown={(e) => {
-                    handleEnterKey(e);
+                  onKeyDown={(
+                    event
+                  ) => {
+                    handleEnterKey(
+                      event
+                    );
 
                     handleButtonGroupKey(
-                      e,
+                      event,
                       [
                         "Male",
                         "Female",
                       ],
-                      form.generalInfo
+                      form
+                        .generalInfo
                         .sex,
-                      (val) =>
+                      (value) =>
                         handleChange(
                           "generalInfo",
                           "sex",
-                          val
+                          value
                         )
                     );
                   }}
                 >
+
                   <button
                     type="button"
                     className={
-                      form.generalInfo
-                        .sex === "Male"
+                      form
+                        .generalInfo
+                        .sex ===
+                      "Male"
                         ? "active"
                         : ""
                     }
@@ -760,8 +1069,10 @@ function Registry({ patientIdFromQueue }) {
                   <button
                     type="button"
                     className={
-                      form.generalInfo
-                        .sex === "Female"
+                      form
+                        .generalInfo
+                        .sex ===
+                      "Female"
                         ? "active"
                         : ""
                     }
@@ -775,35 +1086,40 @@ function Registry({ patientIdFromQueue }) {
                   >
                     Female
                   </button>
+
                 </div>
               </div>
 
               <div className="field-group full-width">
+
                 <label>
                   Insurance
                 </label>
 
                 <input
                   value={
-                    form.generalInfo
+                    form
+                      .generalInfo
                       .insurance
                   }
-                  onChange={(e) =>
+                  onChange={(event) =>
                     handleChange(
                       "generalInfo",
                       "insurance",
-                      e.target.value
+                      event.target
+                        .value
                     )
                   }
                   onKeyDown={
                     handleEnterKey
                   }
                 />
+
               </div>
 
               {/* TOBACCO */}
-
               <div className="field-group">
+
                 <label>
                   Tobacco
                 </label>
@@ -811,28 +1127,39 @@ function Registry({ patientIdFromQueue }) {
                 <div
                   className="button-group"
                   tabIndex="0"
-                  onKeyDown={(e) => {
-                    handleEnterKey(e);
+                  onKeyDown={(
+                    event
+                  ) => {
+                    handleEnterKey(
+                      event
+                    );
 
                     handleButtonGroupKey(
-                      e,
-                      ["Yes", "No"],
-                      form.generalInfo
+                      event,
+                      [
+                        "Yes",
+                        "No",
+                      ],
+                      form
+                        .generalInfo
                         .tobacco,
-                      (val) =>
+                      (value) =>
                         handleChange(
                           "generalInfo",
                           "tobacco",
-                          val
+                          value
                         )
                     );
                   }}
                 >
+
                   <button
                     type="button"
                     className={
-                      form.generalInfo
-                        .tobacco === "Yes"
+                      form
+                        .generalInfo
+                        .tobacco ===
+                      "Yes"
                         ? "active"
                         : ""
                     }
@@ -850,8 +1177,10 @@ function Registry({ patientIdFromQueue }) {
                   <button
                     type="button"
                     className={
-                      form.generalInfo
-                        .tobacco === "No"
+                      form
+                        .generalInfo
+                        .tobacco ===
+                      "No"
                         ? "active"
                         : ""
                     }
@@ -865,12 +1194,13 @@ function Registry({ patientIdFromQueue }) {
                   >
                     No
                   </button>
+
                 </div>
               </div>
 
               {/* ALCOHOL */}
-
               <div className="field-group">
+
                 <label>
                   Alcohol
                 </label>
@@ -878,28 +1208,39 @@ function Registry({ patientIdFromQueue }) {
                 <div
                   className="button-group"
                   tabIndex="0"
-                  onKeyDown={(e) => {
-                    handleEnterKey(e);
+                  onKeyDown={(
+                    event
+                  ) => {
+                    handleEnterKey(
+                      event
+                    );
 
                     handleButtonGroupKey(
-                      e,
-                      ["Yes", "No"],
-                      form.generalInfo
+                      event,
+                      [
+                        "Yes",
+                        "No",
+                      ],
+                      form
+                        .generalInfo
                         .alcohol,
-                      (val) =>
+                      (value) =>
                         handleChange(
                           "generalInfo",
                           "alcohol",
-                          val
+                          value
                         )
                     );
                   }}
                 >
+
                   <button
                     type="button"
                     className={
-                      form.generalInfo
-                        .alcohol === "Yes"
+                      form
+                        .generalInfo
+                        .alcohol ===
+                      "Yes"
                         ? "active"
                         : ""
                     }
@@ -917,8 +1258,10 @@ function Registry({ patientIdFromQueue }) {
                   <button
                     type="button"
                     className={
-                      form.generalInfo
-                        .alcohol === "No"
+                      form
+                        .generalInfo
+                        .alcohol ===
+                      "No"
                         ? "active"
                         : ""
                     }
@@ -932,95 +1275,122 @@ function Registry({ patientIdFromQueue }) {
                   >
                     No
                   </button>
+
                 </div>
               </div>
 
               <div className="field-group full-width">
+
                 <label>
                   Allergies
                 </label>
 
                 <input
                   value={
-                    form.generalInfo
+                    form
+                      .generalInfo
                       .allergies
                   }
-                  onChange={(e) =>
+                  onChange={(event) =>
                     handleChange(
                       "generalInfo",
                       "allergies",
-                      e.target.value
+                      event.target
+                        .value
                     )
                   }
                   onKeyDown={
                     handleEnterKey
                   }
                 />
+
               </div>
 
               <div className="field-group full-width">
+
                 <label>
                   Vaccine
                 </label>
 
                 <input
                   value={
-                    form.generalInfo
+                    form
+                      .generalInfo
                       .vaccine
                   }
-                  onChange={(e) =>
+                  onChange={(event) =>
                     handleChange(
                       "generalInfo",
                       "vaccine",
-                      e.target.value
+                      event.target
+                        .value
                     )
                   }
                   onKeyDown={
                     handleEnterKey
                   }
                 />
+
               </div>
+
             </div>
           </div>
 
           {/* COMPLAINT */}
-
           <div className="card">
-            <h3>Complaint</h3>
+
+            <h3>
+              Complaint
+            </h3>
 
             <textarea
               placeholder="Complaint"
               value={
                 form.initComplaint
               }
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  initComplaint:
-                    e.target.value,
-                }))
+              onChange={(event) =>
+                setForm(
+                  (
+                    previous
+                  ) => ({
+                    ...previous,
+                    initComplaint:
+                      event
+                        .target
+                        .value,
+                  })
+                )
               }
               onKeyDown={
                 handleEnterKey
               }
             />
+
           </div>
 
           {/* DEPARTMENT */}
-
           <div className="card">
+
             <h3>
               Department
             </h3>
 
             <select
-              value={form.department}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  department:
-                    e.target.value,
-                }))
+              value={
+                form.department
+              }
+              onChange={(event) =>
+                setForm(
+                  (
+                    previous
+                  ) => ({
+                    ...previous,
+                    department:
+                      event
+                        .target
+                        .value,
+                  })
+                )
               }
               onKeyDown={
                 handleEnterKey
@@ -1057,166 +1427,190 @@ function Registry({ patientIdFromQueue }) {
                 General
               </option>
             </select>
+
           </div>
 
-          {form.generalInfo.sex ===
+          {/* FEMALE HISTORY */}
+          {form
+            .generalInfo
+            .sex ===
             "Female" && (
             <>
-              {/* OBSTETRIC HISTORY */}
-
               <div className="card">
-                <div className="ObsHist">
-                  <h3>
-                    Obstetric History
-                  </h3>
 
-                  <div className="checkbox-row">
-                    <input
-                      type="checkbox"
-                      checked={
-                        form
-                          .obstetricHistory
-                          .contraception
-                      }
-                      onChange={(e) =>
-                        handleChange(
-                          "obstetricHistory",
-                          "contraception",
-                          e.target
-                            .checked
-                        )
-                      }
-                    />
+                <h3>
+                  Obstetric History
+                </h3>
 
-                    <span>
-                      Contraception
-                    </span>
-                  </div>
+                <div className="checkbox-row">
 
                   <input
-                    placeholder="Type"
-                    value={
+                    type="checkbox"
+                    checked={Boolean(
                       form
                         .obstetricHistory
-                        .type
-                    }
-                    onChange={(e) =>
+                        .contraception
+                    )}
+                    onChange={(
+                      event
+                    ) =>
                       handleChange(
                         "obstetricHistory",
-                        "type",
-                        e.target.value
+                        "contraception",
+                        event.target
+                          .checked
                       )
-                    }
-                    onKeyDown={
-                      handleEnterKey
                     }
                   />
 
-                  <input
-                    placeholder="G/P (F/P/A/L)"
-                    value={
-                      form
-                        .obstetricHistory
-                        .gpfpal
-                    }
-                    onChange={(e) =>
-                      handleChange(
-                        "obstetricHistory",
-                        "gpfpal",
-                        e.target.value
-                      )
-                    }
-                    onKeyDown={
-                      handleEnterKey
-                    }
-                  />
+                  <span>
+                    Contraception
+                  </span>
 
-                  <input
-                    placeholder="BF"
-                    value={
-                      form
-                        .obstetricHistory
-                        .bf
-                    }
-                    onChange={(e) =>
-                      handleChange(
-                        "obstetricHistory",
-                        "bf",
-                        e.target.value
-                      )
-                    }
-                    onKeyDown={
-                      handleEnterKey
-                    }
-                  />
-
-                  <input
-                    placeholder="Birth History"
-                    value={
-                      form
-                        .obstetricHistory
-                        .birthHistory
-                    }
-                    onChange={(e) =>
-                      handleChange(
-                        "obstetricHistory",
-                        "birthHistory",
-                        e.target.value
-                      )
-                    }
-                    onKeyDown={
-                      handleEnterKey
-                    }
-                  />
-
-                  <input
-                    placeholder="Delivery Site"
-                    value={
-                      form
-                        .obstetricHistory
-                        .deliverySite
-                    }
-                    onChange={(e) =>
-                      handleChange(
-                        "obstetricHistory",
-                        "deliverySite",
-                        e.target.value
-                      )
-                    }
-                    onKeyDown={
-                      handleEnterKey
-                    }
-                  />
-
-                  <input
-                    type="date"
-                    value={
-                      form
-                        .obstetricHistory
-                        .lmp
-                    }
-                    onChange={(e) =>
-                      handleChange(
-                        "obstetricHistory",
-                        "lmp",
-                        e.target.value
-                      )
-                    }
-                    onKeyDown={
-                      handleEnterKey
-                    }
-                  />
                 </div>
+
+                <input
+                  placeholder="Type"
+                  value={
+                    form
+                      .obstetricHistory
+                      .type
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleChange(
+                      "obstetricHistory",
+                      "type",
+                      event.target
+                        .value
+                    )
+                  }
+                  onKeyDown={
+                    handleEnterKey
+                  }
+                />
+
+                <input
+                  placeholder="G/P (F/P/A/L)"
+                  value={
+                    form
+                      .obstetricHistory
+                      .gpfpal
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleChange(
+                      "obstetricHistory",
+                      "gpfpal",
+                      event.target
+                        .value
+                    )
+                  }
+                  onKeyDown={
+                    handleEnterKey
+                  }
+                />
+
+                <input
+                  placeholder="BF"
+                  value={
+                    form
+                      .obstetricHistory
+                      .bf
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleChange(
+                      "obstetricHistory",
+                      "bf",
+                      event.target
+                        .value
+                    )
+                  }
+                  onKeyDown={
+                    handleEnterKey
+                  }
+                />
+
+                <input
+                  placeholder="Birth History"
+                  value={
+                    form
+                      .obstetricHistory
+                      .birthHistory
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleChange(
+                      "obstetricHistory",
+                      "birthHistory",
+                      event.target
+                        .value
+                    )
+                  }
+                  onKeyDown={
+                    handleEnterKey
+                  }
+                />
+
+                <input
+                  placeholder="Delivery Site"
+                  value={
+                    form
+                      .obstetricHistory
+                      .deliverySite
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleChange(
+                      "obstetricHistory",
+                      "deliverySite",
+                      event.target
+                        .value
+                    )
+                  }
+                  onKeyDown={
+                    handleEnterKey
+                  }
+                />
+
+                <input
+                  type="date"
+                  value={
+                    form
+                      .obstetricHistory
+                      .lmp
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleChange(
+                      "obstetricHistory",
+                      "lmp",
+                      event.target
+                        .value
+                    )
+                  }
+                  onKeyDown={
+                    handleEnterKey
+                  }
+                />
+
               </div>
 
-              {/* PERINATAL HISTORY */}
-
               <div className="card">
+
                 <h3>
                   Perinatal History
                 </h3>
 
                 <div className="perinatal-grid">
+
                   <input
                     placeholder="Birth Weight"
                     value={
@@ -1224,11 +1618,14 @@ function Registry({ patientIdFromQueue }) {
                         .perinatalHistory
                         .bw
                     }
-                    onChange={(e) =>
+                    onChange={(
+                      event
+                    ) =>
                       handleChange(
                         "perinatalHistory",
                         "bw",
-                        e.target.value
+                        event.target
+                          .value
                       )
                     }
                     onKeyDown={
@@ -1243,11 +1640,14 @@ function Registry({ patientIdFromQueue }) {
                         .perinatalHistory
                         .bf
                     }
-                    onChange={(e) =>
+                    onChange={(
+                      event
+                    ) =>
                       handleChange(
                         "perinatalHistory",
                         "bf",
-                        e.target.value
+                        event.target
+                          .value
                       )
                     }
                     onKeyDown={
@@ -1262,11 +1662,14 @@ function Registry({ patientIdFromQueue }) {
                         .perinatalHistory
                         .birthHistory
                     }
-                    onChange={(e) =>
+                    onChange={(
+                      event
+                    ) =>
                       handleChange(
                         "perinatalHistory",
                         "birthHistory",
-                        e.target.value
+                        event.target
+                          .value
                       )
                     }
                     onKeyDown={
@@ -1281,39 +1684,45 @@ function Registry({ patientIdFromQueue }) {
                         .perinatalHistory
                         .deliverySite
                     }
-                    onChange={(e) =>
+                    onChange={(
+                      event
+                    ) =>
                       handleChange(
                         "perinatalHistory",
                         "deliverySite",
-                        e.target.value
+                        event.target
+                          .value
                       )
                     }
                     onKeyDown={
                       handleEnterKey
                     }
                   />
+
                 </div>
               </div>
             </>
           )}
+
         </div>
 
+        {/* RIGHT */}
         <div className="right-column">
 
           {/* MEDICAL HISTORY */}
-
           <div className="card">
+
             <h3>
               Medical History
             </h3>
 
             {HISTORY_OPTIONS.map(
-              (opt) => (
+              (option) => (
                 <div
-                  key={opt}
+                  key={option}
                   className={
                     form.medicalHistory.includes(
-                      opt
+                      option
                     )
                       ? "chip active"
                       : "chip"
@@ -1321,30 +1730,31 @@ function Registry({ patientIdFromQueue }) {
                   onClick={() =>
                     toggleCheckbox(
                       "medicalHistory",
-                      opt
+                      option
                     )
                   }
                 >
-                  {opt}
+                  {option}
                 </div>
               )
             )}
+
           </div>
 
           {/* FAMILY HISTORY */}
-
           <div className="card">
+
             <h3>
               Family History
             </h3>
 
             {HISTORY_OPTIONS.map(
-              (opt) => (
+              (option) => (
                 <div
-                  key={opt}
+                  key={option}
                   className={
                     form.familyHistory.includes(
-                      opt
+                      option
                     )
                       ? "chip active"
                       : "chip"
@@ -1352,39 +1762,55 @@ function Registry({ patientIdFromQueue }) {
                   onClick={() =>
                     toggleCheckbox(
                       "familyHistory",
-                      opt
+                      option
                     )
                   }
                 >
-                  {opt}
+                  {option}
                 </div>
               )
             )}
+
           </div>
 
           {/* EXAMINATION */}
-
           <div className="card">
+
             <h3>
               Examination
             </h3>
 
+            {/* BP */}
             <div className="bp-group">
+
               <input
                 placeholder="Systolic"
                 value={
-                  form.examination.bp.split(
-                    "/"
-                  )[0] || ""
+                  form
+                    .examination
+                    .bp
+                    ?.split(
+                      "/"
+                    )[0] ||
+                  ""
                 }
-                onChange={(e) => {
+                onChange={(
+                  event
+                ) => {
+
                   const sys =
-                    e.target.value;
+                    event
+                      .target
+                      .value;
 
                   const dia =
-                    form.examination.bp.split(
-                      "/"
-                    )[1] || "";
+                    form
+                      .examination
+                      .bp
+                      ?.split(
+                        "/"
+                      )[1] ||
+                    "";
 
                   handleChange(
                     "examination",
@@ -1397,23 +1823,38 @@ function Registry({ patientIdFromQueue }) {
                 }
               />
 
-              <span>/</span>
+              <span>
+                /
+              </span>
 
               <input
                 placeholder="Diastolic"
                 value={
-                  form.examination.bp.split(
-                    "/"
-                  )[1] || ""
+                  form
+                    .examination
+                    .bp
+                    ?.split(
+                      "/"
+                    )[1] ||
+                  ""
                 }
-                onChange={(e) => {
+                onChange={(
+                  event
+                ) => {
+
                   const dia =
-                    e.target.value;
+                    event
+                      .target
+                      .value;
 
                   const sys =
-                    form.examination.bp.split(
-                      "/"
-                    )[0] || "";
+                    form
+                      .examination
+                      .bp
+                      ?.split(
+                        "/"
+                      )[0] ||
+                    "";
 
                   handleChange(
                     "examination",
@@ -1425,18 +1866,25 @@ function Registry({ patientIdFromQueue }) {
                   handleEnterKey
                 }
               />
+
             </div>
 
+            {/* TEMP */}
             <input
               placeholder="Temperature"
               value={
-                form.examination.temp
+                form
+                  .examination
+                  .temp
               }
-              onChange={(e) =>
+              onChange={(
+                event
+              ) =>
                 handleChange(
                   "examination",
                   "temp",
-                  e.target.value
+                  event.target
+                    .value
                 )
               }
               onKeyDown={
@@ -1444,159 +1892,175 @@ function Registry({ patientIdFromQueue }) {
               }
             />
 
+            {/* HEIGHT */}
             <input
               placeholder="Height"
               value={
-                form.examination.height
+                form
+                  .examination
+                  .height
               }
-              onChange={(e) => {
+              onChange={(
+                event
+              ) => {
+
                 const height =
-                  e.target.value;
+                  event.target
+                    .value;
 
                 const bmi =
                   computeBMI(
                     height,
-                    form.examination
+                    form
+                      .examination
                       .weight
                   );
 
-                setForm({
-                  ...form,
+                setForm(
+                  (
+                    previous
+                  ) => ({
+                    ...previous,
 
-                  examination: {
-                    ...form.examination,
-                    height,
-                    bmi,
-                  },
-                });
+                    examination: {
+                      ...previous.examination,
+                      height,
+                      bmi,
+                    },
+                  })
+                );
               }}
               onKeyDown={
                 handleEnterKey
               }
             />
 
+            {/* WEIGHT */}
             <input
               placeholder="Weight"
               value={
-                form.examination.weight
+                form
+                  .examination
+                  .weight
               }
-              onChange={(e) => {
+              onChange={(
+                event
+              ) => {
+
                 const weight =
-                  e.target.value;
+                  event.target
+                    .value;
 
                 const bmi =
                   computeBMI(
-                    form.examination
+                    form
+                      .examination
                       .height,
                     weight
                   );
 
-                setForm({
-                  ...form,
+                setForm(
+                  (
+                    previous
+                  ) => ({
+                    ...previous,
 
-                  examination: {
-                    ...form.examination,
-                    weight,
-                    bmi,
-                  },
-                });
+                    examination: {
+                      ...previous.examination,
+                      weight,
+                      bmi,
+                    },
+                  })
+                );
               }}
               onKeyDown={
                 handleEnterKey
               }
             />
 
+            {/* BMI */}
             <input
               placeholder="BMI"
               value={
-                form.examination.bmi
+                form
+                  .examination
+                  .bmi
               }
-              onChange={(e) =>
-                handleChange(
-                  "examination",
-                  "bmi",
-                  e.target.value
-                )
-              }
-              onKeyDown={
-                handleEnterKey
-              }
+              readOnly
             />
+
           </div>
         </div>
       </div>
 
       {/* ACTION BAR */}
-
       <div className="action-bar">
-        <button
-          disabled={!patientId}
-          onClick={() => {
-            if (!patientId) {
-              return;
-            }
 
+        <button
+          type="button"
+          disabled={
+            !patientId ||
+            saving
+          }
+          onClick={() =>
             setConfirmState({
               message:
                 "Save changes to this patient?",
+              onConfirm:
+                async () => {
+                  setConfirmState(
+                    null
+                  );
 
-              onConfirm: async () => {
-                await handleEdit();
-                setConfirmState(null);
-              },
-            });
-          }}
+                  await handleEdit();
+                },
+            })
+          }
         >
-          Save Changes
+          {saving
+            ? "Saving..."
+            : "Save Changes"}
         </button>
 
         <button
+          type="button"
           className="danger"
-          disabled={!patientId}
-          onClick={() => {
-            if (!patientId) {
-              return;
-            }
-
+          disabled={
+            !patientId ||
+            saving
+          }
+          onClick={() =>
             setConfirmState({
               message:
                 "Are you sure you want to DELETE this patient? This cannot be undone.",
 
-              onConfirm: async () => {
-                try {
-                  await deletePatient(
-                    patientId
+              onConfirm:
+                async () => {
+                  setConfirmState(
+                    null
                   );
 
-                  setAlertMessage(
-                    "Patient deleted successfully"
-                  );
-
-                  clearForm();
-                } catch (err) {
-                  console.error(err);
-
-                  setAlertMessage(
-                    "Failed to delete patient"
-                  );
-                }
-
-                setConfirmState(null);
-              },
-            });
-          }}
+                  await handleDelete();
+                },
+            })
+          }
         >
           Delete
         </button>
 
         <button
+          type="button"
           className="ghost"
-          onClick={clearForm}
+          onClick={
+            clearForm
+          }
         >
           Clear
         </button>
+
       </div>
 
+      {/* CONFIRM */}
       {confirmState && (
         <ConfirmModal
           message={
@@ -1606,19 +2070,27 @@ function Registry({ patientIdFromQueue }) {
             confirmState.onConfirm
           }
           onCancel={() =>
-            setConfirmState(null)
+            setConfirmState(
+              null
+            )
           }
         />
       )}
 
+      {/* ALERT */}
       {alertMessage && (
         <AlertModal
-          message={alertMessage}
+          message={
+            alertMessage
+          }
           onClose={() =>
-            setAlertMessage("")
+            setAlertMessage(
+              ""
+            )
           }
         />
       )}
+
     </form>
   );
 }

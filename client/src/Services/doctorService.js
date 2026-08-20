@@ -1,28 +1,122 @@
 import { apiFetch } from "./api";
+import { API_BASE_URL } from "./apiConfig";
 
-const API = "http://localhost:5000/api";
+const API = `${API_BASE_URL}/api`;
 
+/**
+ * ============================================================
+ * GET DOCTOR QUEUE
+ * Backend:
+ * GET /api/patients/doctor-queue
+ * ============================================================
+ */
+export const getDoctorQueue = async ({
+  page = 1,
+  limit = 1000,
+  search = "",
+  queueFilter = "all",
+  department = "General",
+  role = "doctor",
+} = {}) => {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+    queueFilter,
+    department,
+    role,
+  });
+
+  if (search?.trim()) {
+    params.set("search", search.trim());
+  }
+
+  return apiFetch(
+    `${API}/patients/doctor-queue?${params.toString()}`
+  );
+};
+
+/**
+ * ============================================================
+ * LOAD PATIENT PRESCRIPTIONS
+ * Backend:
+ * GET /api/prescriptions/patient/:patientId
+ * ============================================================
+ */
 export const loadPatientPrescriptions = async (patientId) => {
-  return apiFetch(`${API}/prescriptions/patient/${patientId}`);
+  if (!patientId) {
+    throw new Error("Patient ID is required.");
+  }
+
+  const response = await apiFetch(
+    `${API}/prescriptions/patient/${patientId}`
+  );
+
+  return Array.isArray(response)
+    ? response
+    : response?.prescriptions || [];
 };
 
-export const saveDoctorRecord = async (patientId, data) => {
-  return apiFetch(`${API}/patients/${patientId}/doctor-record`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+/**
+ * ============================================================
+ * SAVE DOCTOR CONSULTATION RECORD
+ * Backend:
+ * POST /api/patients/:id/doctor-record
+ * ============================================================
+ */
+export const saveDoctorRecord = async (
+  patientId,
+  data
+) => {
+  if (!patientId) {
+    throw new Error("Patient ID is required.");
+  }
+
+  return apiFetch(
+    `${API}/patients/${patientId}/doctor-record`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
 };
 
-export const deleteDoctorRecord = async (patientId, recordId, deletedBy) => {
-  return apiFetch(`${API}/patients/${patientId}/doctor-record/${recordId}`, {
-    method: "DELETE",
-    body: JSON.stringify({
-      deletedBy,
-      deletedAt: new Date(),
-    }),
-  });
+/**
+ * ============================================================
+ * DELETE DOCTOR CONSULTATION RECORD
+ * Backend:
+ * DELETE /api/patients/:id/doctor-record/:recordId
+ * ============================================================
+ */
+export const deleteDoctorRecord = async (
+  patientId,
+  recordId,
+  deletedBy
+) => {
+  if (!patientId || !recordId) {
+    throw new Error(
+      "Patient ID and record ID are required."
+    );
+  }
+
+  return apiFetch(
+    `${API}/patients/${patientId}/doctor-record/${recordId}`,
+    {
+      method: "DELETE",
+      body: JSON.stringify({
+        deletedBy: deletedBy || "Unknown User",
+        deletedAt: new Date().toISOString(),
+      }),
+    }
+  );
 };
 
+/**
+ * ============================================================
+ * CREATE PRESCRIPTION
+ * Backend:
+ * POST /api/prescriptions
+ * ============================================================
+ */
 export const savePrescription = async (data) => {
   return apiFetch(`${API}/prescriptions`, {
     method: "POST",
@@ -30,15 +124,116 @@ export const savePrescription = async (data) => {
   });
 };
 
-export const markMedicineGiven = async (prescriptionId, itemId) => {
-  return apiFetch(`${API}/prescriptions/${prescriptionId}/${itemId}`, {
-    method: "PATCH",
+/**
+ * ============================================================
+ * MARK MEDICINE AS GIVEN
+ * Backend:
+ * PATCH /api/prescriptions/:prescriptionId/:itemId
+ * ============================================================
+ */
+export const markMedicineGiven = async (
+  prescriptionId,
+  itemId
+) => {
+  if (!prescriptionId || !itemId) {
+    throw new Error(
+      "Prescription ID and item ID are required."
+    );
+  }
+
+  return apiFetch(
+    `${API}/prescriptions/${prescriptionId}/${itemId}`,
+    {
+      method: "PATCH",
+    }
+  );
+};
+
+/**
+ * ============================================================
+ * UPDATE PATIENT STATUS
+ *
+ * Backend:
+ * PUT /api/patients/:id
+ * ============================================================
+ */
+export const updatePatientStatus = async (
+  patientId,
+  data = {}
+) => {
+  if (!patientId) {
+    throw new Error("Patient ID is required.");
+  }
+
+  if (!data || Object.keys(data).length === 0) {
+    throw new Error(
+      "Patient update data is required."
+    );
+  }
+
+  const payload = { ...data };
+
+  console.log(
+    "========================================"
+  );
+  console.log("UPDATING PATIENT STATUS");
+  console.log("Patient ID:", patientId);
+  console.log("Payload:", payload);
+  console.log(
+    "========================================"
+  );
+
+  const response = await apiFetch(
+    `${API}/patients/${patientId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }
+  );
+
+  console.log(
+    "PATIENT STATUS UPDATE RESPONSE:",
+    response
+  );
+
+  return response;
+};
+
+/**
+ * ============================================================
+ * SEND PATIENT TO PHARMACY
+ *
+ * This is the function PatientDoctorView should use.
+ * ============================================================
+ */
+export const sendPatientToPharmacy = async (
+  patientId
+) => {
+  if (!patientId) {
+    throw new Error("Patient ID is required.");
+  }
+
+  return updatePatientStatus(patientId, {
+    status: "forPharmacy",
+    department: "Pharmacy",
   });
 };
 
-export const updatePatientStatus = async (patientId, data) => {
-  return apiFetch(`${API}/patients/${patientId}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
+/**
+ * ============================================================
+ * RELEASE PATIENT
+ *
+ * This is the function PatientDoctorView should use.
+ * ============================================================
+ */
+export const releasePatient = async (
+  patientId
+) => {
+  if (!patientId) {
+    throw new Error("Patient ID is required.");
+  }
+
+  return updatePatientStatus(patientId, {
+    status: "released",
   });
 };

@@ -96,23 +96,23 @@ function DoctorSheet() {
     }
   };
 
-  const emptyDoctorSheet = {
-    examination: {
-      generalAppearance: "",
-      heent: "",
-      pulmonary: "",
-      cardiovascular: "",
-      gastrointestinal: "",
-      musculoskeletal: "",
-      genitourinary: "",
-      neuroPsych: "",
-      checkupPanel: "",
-    },
-    initComplaint: "",
-    diagnosis: "",
-    treatment: "",
-    medication: "",
-  };
+const EMPTY_DOCTOR_SHEET = {
+  examination: {
+    generalAppearance: "",
+    heent: "",
+    pulmonary: "",
+    cardiovascular: "",
+    gastrointestinal: "",
+    musculoskeletal: "",
+    genitourinary: "",
+    neuroPsych: "",
+    checkupPanel: "",
+  },
+  initComplaint: "",
+  diagnosis: "",
+  treatment: "",
+  medication: "",
+};
 
   const [doctorSheet, setDoctorSheet] = useState({
     examination: {

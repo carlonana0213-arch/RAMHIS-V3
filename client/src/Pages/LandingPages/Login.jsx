@@ -78,7 +78,7 @@ export default function Login() {
           replace: true,
         });
       } else if (user.role === "Doctor") {
-        navigate("/doctor-sheet", {
+        navigate("/doctor", {
           replace: true,
         });
       } else {

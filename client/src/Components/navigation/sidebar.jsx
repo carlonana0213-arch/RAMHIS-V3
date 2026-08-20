@@ -472,7 +472,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
 
           {canAccess("doctorSheet") && (
             <NavLink
-              to="/doctor-sheet"
+              to="/doctor"
               style={getNavStyle}
               title={
                 collapsed

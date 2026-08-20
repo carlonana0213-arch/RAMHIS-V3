@@ -18,7 +18,6 @@ import Dashboard from "../Pages/MainPages/Dashboard/Dashboard";
 import Analytics from "../Pages/MainPages/Analytics/Analytics";
 import Patients from "../Pages/MainPages/Patients/Patients";
 import Doctor from "../Pages/MainPages/Doctor/Doctor";
-import DoctorSheet from "../Pages/MainPages/Doctor/DoctorSheet";
 import Events from "../Pages/MainPages/Events/EventManagement";
 import PharmacyQueue from "../Pages/MainPages/Pharmacy/components/PharmacyQueue";
 import PharmacyInventory from "../Pages/MainPages/Pharmacy/components/PharmacyInventory";
@@ -109,11 +108,6 @@ export default function AppRoutes() {
 
             <Route
               path="/doctor"
-              element={<Doctor />}
-            />
-
-            <Route
-              path="/doctor-sheet"
               element={<Doctor />}
             />
 
