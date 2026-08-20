@@ -340,13 +340,6 @@ function UserManagement() {
                 </FilterButton>
 
                 <FilterButton
-                  active={filter === "Pharmacist"}
-                  onClick={() => setFilter("Pharmacist")}
-                >
-                  Pharmacists
-                </FilterButton>
-
-                <FilterButton
                   active={filter === "Admin"}
                   onClick={() => setFilter("Admin")}
                 >

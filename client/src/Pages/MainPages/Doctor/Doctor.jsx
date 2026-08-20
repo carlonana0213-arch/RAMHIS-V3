@@ -5,7 +5,7 @@ import DoctorQueue from "./components/DoctorQueue";
 import PatientCard from "./components/PatientCard";
 import PatientDoctorView from "./components/PatientDoctorView";
 
-import { getDoctorQueue } from "../../../services/doctorService";
+import { getDoctorQueue } from "../../../Services/doctorService";
 
 export default function Doctor() {
   const [patients, setPatients] = useState([]);

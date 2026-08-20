@@ -6,7 +6,7 @@ import {
 
 import { X } from "lucide-react";
 
-import Modal from "../../../../Components/ui/Modal";
+import Modal from "../../../../Components/ui/modal";
 
 import { getMedicines } from "../../../../Services/pharmacyService";
 
