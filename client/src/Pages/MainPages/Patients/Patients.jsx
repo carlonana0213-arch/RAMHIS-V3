@@ -9,6 +9,8 @@ import {
   getPatientQueueSummary,
 } from "../../../Services/patientService";
 
+import { getCurrentMission } from "../../../Services/eventService";
+
 import PatientQueue from "./components/PatientQueue";
 import PatientDashboard from "./components/PatientDashboard";
 import AddPatientModal from "./components/AddPatientModal";
@@ -59,6 +61,35 @@ export default function Patients() {
   const [selectedPatient, setSelectedPatient] =
     useState(null);
 
+
+    /*
+|--------------------------------------------------------------------------
+| LOAD CURRENT MISSION
+|--------------------------------------------------------------------------
+*/
+
+const fetchCurrentMission = useCallback(async () => {
+  try {
+    const result = await getCurrentMission();
+
+    const mission =
+      result?.ongoingEvent ||
+      result?.event ||
+      result?.mission ||
+      result ||
+      null;
+
+    setOngoingEvent(mission);
+  } catch (error) {
+    console.error(
+      "Failed to load current mission:",
+      error
+    );
+
+    setOngoingEvent(null);
+  }
+}, []);
+
   /*
   |--------------------------------------------------------------------------
   | LOAD QUEUE
@@ -98,22 +129,6 @@ export default function Patients() {
           )
         );
 
-        /*
-         * The backend queue endpoint may return
-         * the ongoing event depending on the
-         * current implementation.
-         */
-        if (result.ongoingEvent) {
-          setOngoingEvent(
-            result.ongoingEvent
-          );
-        } else if (
-          result.event
-        ) {
-          setOngoingEvent(
-            result.event
-          );
-        }
       } catch (error) {
         console.error(
           "Failed to load patient queue:",
@@ -179,6 +194,9 @@ export default function Patients() {
   | INITIAL + REAL-TIME-LIKE REFRESH
   |--------------------------------------------------------------------------
   */
+useEffect(() => {
+  fetchCurrentMission();
+}, [fetchCurrentMission]);
 
   useEffect(() => {
     fetchQueue();
@@ -196,18 +214,20 @@ export default function Patients() {
    * Socket.IO queueUpdated events.
    */
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchQueue(true);
-      fetchQueueSummary(true);
-    }, 5000);
+  const interval = setInterval(() => {
+    fetchCurrentMission();
+    fetchQueue(true);
+    fetchQueueSummary(true);
+  }, 5000);
 
-    return () => {
-      clearInterval(interval);
-    };
-  }, [
-    fetchQueue,
-    fetchQueueSummary,
-  ]);
+  return () => {
+    clearInterval(interval);
+  };
+}, [
+  fetchCurrentMission,
+  fetchQueue,
+  fetchQueueSummary,
+]);
 
   /*
   |--------------------------------------------------------------------------
@@ -248,12 +268,13 @@ export default function Patients() {
   */
 
   const refreshPatientData =
-    async () => {
-      await Promise.all([
-        fetchQueue(true),
-        fetchQueueSummary(true),
-      ]);
-    };
+  async () => {
+    await Promise.all([
+      fetchCurrentMission(),
+      fetchQueue(true),
+      fetchQueueSummary(true),
+    ]);
+  };
 
   /*
   |--------------------------------------------------------------------------
@@ -290,9 +311,10 @@ export default function Patients() {
 
           <button
             type="button"
-            onClick={() =>
-              setShowAddModal(true)
-            }
+            onClick={() => {
+  console.log("ADD PATIENT CLICKED");
+  setShowAddModal(true);
+}}
             disabled={!ongoingEvent}
             className={[
               "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3",

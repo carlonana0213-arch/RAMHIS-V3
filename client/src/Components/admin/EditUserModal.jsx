@@ -474,10 +474,6 @@ function EditUserModal({ user, onClose, onSuccess }) {
                     Volunteer
                   </option>
 
-                  <option value="Pharmacist">
-                    Pharmacist
-                  </option>
-
                   <option value="Admin">
                     Admin
                   </option>

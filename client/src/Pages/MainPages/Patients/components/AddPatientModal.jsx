@@ -22,6 +22,7 @@ import ExaminationStep from "../steps/ExaminationStep";
 import DepartmentStep from "../steps/DepartmentStep";
 import PerinatalStep from "../steps/PerinatalStep";
 import SummaryStep from "../steps/SummaryStep";
+import DuplicatePatientModal from "./DuplicatePatientModal";
 
 /*
 |--------------------------------------------------------------------------
@@ -92,146 +93,6 @@ const getSteps = (
   return steps;
 };
 
-/*
-|--------------------------------------------------------------------------
-| DUPLICATE PATIENT MODAL
-|--------------------------------------------------------------------------
-*/
-
-function DuplicatePatientModal({
-  patient,
-  onReuse,
-  onUpdate,
-  onCreateNew,
-  onCancel,
-}) {
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-
-      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
-
-        <div className="border-b border-border px-6 py-5">
-
-          <div className="flex items-start justify-between gap-4">
-
-            <div>
-              <h3 className="text-lg font-bold text-text-primary">
-                Existing Patient Found
-              </h3>
-
-              <p className="mt-1 text-sm text-text-muted">
-                A patient with matching
-                information already exists.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-lg text-text-subtle transition hover:bg-slate-100 hover:text-slate-700"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        <div className="px-6 py-5">
-
-          <div className="rounded-xl border border-blue-100 bg-primary-50 p-4">
-
-            <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
-              Patient Record
-            </p>
-
-            <p className="mt-1 text-base font-bold text-text-primary">
-              {patient?.generalInfo
-                ?.name ||
-                "Unnamed Patient"}
-            </p>
-
-            <div className="mt-2 grid grid-cols-2 gap-3 text-xs text-text-secondary">
-
-              <div>
-                <span className="font-semibold">
-                  Birthdate:
-                </span>{" "}
-                {patient?.generalInfo
-                  ?.birthdate ||
-                  "--"}
-              </div>
-
-              <div>
-                <span className="font-semibold">
-                  Sex:
-                </span>{" "}
-                {patient?.generalInfo
-                  ?.sex ||
-                  "--"}
-              </div>
-
-              <div>
-                <span className="font-semibold">
-                  Department:
-                </span>{" "}
-                {patient?.department ||
-                  "--"}
-              </div>
-
-              <div>
-                <span className="font-semibold">
-                  Status:
-                </span>{" "}
-                {patient?.status ||
-                  "--"}
-              </div>
-            </div>
-          </div>
-
-          <p className="mt-4 text-sm leading-6 text-text-secondary">
-            What would you like to do
-            with this existing record?
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2 border-t border-border bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end">
-
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-text-secondary transition hover:bg-slate-100"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={onCreateNew}
-            className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-          >
-            Create New
-          </button>
-
-          <button
-            type="button"
-            onClick={onUpdate}
-            className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-700"
-          >
-            Update Record
-          </button>
-
-          <button
-            type="button"
-            onClick={onReuse}
-            className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
-          >
-            Reuse & Queue
-          </button>
-
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /*
 |--------------------------------------------------------------------------
@@ -540,69 +401,68 @@ const AddPatientModal = ({
   |--------------------------------------------------------------------------
   */
 
-  const handleSubmit =
-    async () => {
-      if (
-        !duplicateChecked &&
-        !editingExistingPatient
-      ) {
-        const duplicateFound =
-          await checkDuplicatePatient();
+  const handleSubmit = async () => {
+  // First submission: check for duplicate
+  if (!editingExistingPatient && !duplicateChecked) {
+    const duplicateFound = await checkDuplicatePatient();
 
-        if (duplicateFound) {
-          return;
-        }
+    // STOP here if duplicate was found.
+    // Do NOT continue to addPatient().
+    if (duplicateFound) {
+      return;
+    }
 
-        setDuplicateChecked(
-          true
-        );
-      }
+    // No duplicate, now allow actual submission
+    setDuplicateChecked(true);
+  }
 
-      try {
-        const payload =
-          buildPayload();
+  try {
+    const payload = buildPayload();
 
-        if (
-          editingExistingPatient &&
-          matchedPatient?._id
-        ) {
-          await updatePatient(
-            matchedPatient._id,
-            payload
-          );
+    if (
+      editingExistingPatient &&
+      matchedPatient?._id
+    ) {
+      await updatePatient(
+        matchedPatient._id,
+        payload
+      );
 
-          setAlertMessage(
-            "Patient record updated and queued successfully."
-          );
-        } else {
-          await addPatient(
-            payload
-          );
+      setAlertMessage(
+        "Patient record updated and queued successfully."
+      );
+    } else {
+  console.log(
+    "🚨 addPatient is being called",
+    payload
+  );
 
-          setAlertMessage(
-            "Patient added to the queue successfully."
-          );
-        }
+  await addPatient(payload);
+      
+      
 
-        setDuplicateChecked(
-          false
-        );
+      setAlertMessage(
+        "Patient added to the queue successfully."
+      );
+    }
 
-        setEditingExistingPatient(
-          false
-        );
-      } catch (error) {
-        console.error(
-          "Failed to save patient:",
-          error
-        );
+    setDuplicateChecked(false);
+    setEditingExistingPatient(false);
 
-        setAlertMessage(
-          error?.message ||
-            "Failed to save patient."
-        );
-      }
-    };
+  } catch (error) {
+    console.error(
+      "Failed to save patient:",
+      error
+    );
+
+    setDuplicateChecked(false);
+
+    setAlertMessage(
+      error?.message ||
+        "Failed to save patient."
+    );
+  }
+};
 
   /*
   |--------------------------------------------------------------------------
@@ -691,83 +551,20 @@ const AddPatientModal = ({
   |--------------------------------------------------------------------------
   */
 
-  const updateExistingPatientInfo =
-    () => {
-      if (!matchedPatient) {
-        return;
-      }
+  const updateExistingPatientInfo = () => {
+  if (!matchedPatient?._id) {
+    return;
+  }
 
-      setEditingExistingPatient(
-        true
-      );
+  console.log(
+    "✏️ UPDATING EXISTING PATIENT ID:",
+    matchedPatient._id
+  );
 
-      setForm({
-        ...createEmptyForm(),
-        ...matchedPatient,
-
-        generalInfo: {
-          ...createEmptyForm()
-            .generalInfo,
-          ...(matchedPatient
-            .generalInfo || {}),
-        },
-
-        examination: {
-          ...createEmptyForm()
-            .examination,
-          ...(matchedPatient
-            .examination || {}),
-        },
-
-        medicalHistory:
-          Array.isArray(
-            matchedPatient
-              .medicalHistory
-          )
-            ? matchedPatient
-                .medicalHistory
-            : [],
-
-        familyHistory:
-          Array.isArray(
-            matchedPatient
-              .familyHistory
-          )
-            ? matchedPatient
-                .familyHistory
-            : [],
-
-        obstetricHistory:
-          matchedPatient
-            .obstetricHistory ||
-          {},
-
-        perinatalHistory:
-          matchedPatient
-            .perinatalHistory ||
-          {},
-
-        department:
-          matchedPatient
-            .department || "",
-
-        initComplaint:
-          matchedPatient
-            .initComplaint || "",
-
-        isPriority:
-          Boolean(
-            matchedPatient
-              .isPriority
-          ),
-      });
-
-      setShowDuplicateModal(
-        false
-      );
-
-      setStep(0);
-    };
+  setEditingExistingPatient(true);
+  setDuplicateChecked(true);
+  setShowDuplicateModal(false);
+};
 
   /*
   |--------------------------------------------------------------------------
@@ -898,15 +695,14 @@ const AddPatientModal = ({
   */
 
   return (
-    <div className="modal-overlay">
+  <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
 
       {/* CONSENT */}
-      {showConsent ? (
-        <div className="modal-overlay">
+   {showConsent ? (
+  <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
+    <div className="max-h-[90vh] overflow-y-auto p-6 sm:p-8">
 
-          <div className="consent-container">
-
-            <h3>
+            <h3 className="flex items-center gap-2 text-lg font-bold text-text-primary">
               <FiActivity
                 style={{
                   color:
@@ -918,7 +714,7 @@ const AddPatientModal = ({
               magpatuloy:
             </h3>
 
-            <div className="consent-text">
+           <div className="mt-5 space-y-4 text-sm leading-7 text-text-secondary">
 
               <p>
                 Ang mga boluntaryo ng RAM
@@ -961,19 +757,18 @@ const AddPatientModal = ({
               </p>
             </div>
 
-            <div className="consent-actions">
+            <div className="mt-6 flex justify-end gap-3 border-t border-border pt-5">
+
+              <button
+  type="button"
+  onClick={resetAndClose}
+>
+  Cancel
+</button>
 
               <button
                 type="button"
-                className="cancel-btn"
-                onClick={resetAndClose}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                className="primary"
+                className="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-700"
                 onClick={() =>
                   setShowConsent(false)
                 }
@@ -985,10 +780,10 @@ const AddPatientModal = ({
           </div>
         </div>
       ) : (
-        <div className="modal-box">
+  <div className="flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
 
           {/* HEADER */}
-          <div className="modal-header">
+          <div className="flex items-center justify-between border-b border-border px-6 py-4">
 
             <h2>
               {editingExistingPatient
@@ -1012,7 +807,7 @@ const AddPatientModal = ({
             </button>
           </div>
 
-          <div className="modal-container">
+          <div className="flex-1 overflow-y-auto p-6">
 
             {/* PROGRESS */}
             <div className="progress-container">
@@ -1128,7 +923,7 @@ const AddPatientModal = ({
             )}
 
             {/* ACTIONS */}
-            <div className="modal-actions">
+            <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
 
               {step > 0 && (
                 <button
@@ -1167,40 +962,29 @@ const AddPatientModal = ({
       )}
 
       {/* DUPLICATE MODAL */}
-      {showDuplicateModal &&
-        matchedPatient && (
-          <DuplicatePatientModal
-            patient={
-              matchedPatient
-            }
-            onReuse={() =>
-              setConfirmState({
-                message:
-                  "Reuse this patient record and add them to the current medical mission queue?",
+{showDuplicateModal &&
+  matchedPatient && (
+    <DuplicatePatientModal
+      patient={matchedPatient}
+      onReuse={() =>
+        setConfirmState({
+          message:
+            "Reuse this patient record and add them to the current medical mission queue?",
 
-                onConfirm:
-                  async () => {
-                    setConfirmState(
-                      null
-                    );
-
-                    await reusePatientRecord();
-                  },
-              })
-            }
-            onUpdate={
-              updateExistingPatientInfo
-            }
-            onCreateNew={
-              createNewPatientAnyway
-            }
-            onCancel={() =>
-              setShowDuplicateModal(
-                false
-              )
-            }
-          />
-        )}
+          onConfirm: async () => {
+            setConfirmState(null);
+            await reusePatientRecord();
+          },
+        })
+      }
+      onUpdate={updateExistingPatientInfo}
+      onCreateNew={createNewPatientAnyway}
+      onCancel={() => {
+        console.log("❌ DUPLICATE CANCEL CLICKED");
+        resetAndClose();
+      }}
+    />
+  )}
 
       {/* CONFIRM MODAL */}
       {confirmState && (
@@ -1211,9 +995,7 @@ const AddPatientModal = ({
           onConfirm={
             confirmState.onConfirm
           }
-          onCancel={() =>
-            setConfirmState(null)
-          }
+          onCancel={resetAndClose}
         />
       )}
 
