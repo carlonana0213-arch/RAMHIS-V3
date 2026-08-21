@@ -356,8 +356,8 @@ function Account() {
     return (
       <div className="min-h-full bg-slate-50 p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-2xl border border-red-200 bg-surface p-8 text-center shadow-sm">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+          <div className="rounded-2xl border border-status-critical-border bg-surface p-8 text-center shadow-sm">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-status-critical-bg text-red-600">
               <AlertCircle size={24} />
             </div>
 
@@ -416,8 +416,8 @@ function Account() {
           <div
             className={`mb-6 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium ${
               message
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-red-200 bg-red-50 text-red-700"
+                ? "border-status-stable-border bg-status-stable-bg text-status-stable-text"
+                : "border-status-critical-border bg-status-critical-bg text-status-critical-text"
             }`}
           >
             {message ? (
@@ -453,7 +453,7 @@ function Account() {
                 {getRoleLabel()}
               </p>
 
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-status-stable-bg px-3 py-1.5 text-xs font-bold text-status-stable-text">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 {getStatusLabel()}
               </div>
@@ -480,7 +480,7 @@ function Account() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-stable-bg text-status-stable-text">
                   <ShieldCheck size={17} />
                 </div>
 
@@ -756,7 +756,7 @@ function Account() {
           <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
 
             <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-status-watch-bg text-status-watch-text">
                 <LockKeyhole size={21} />
               </div>
 
@@ -826,7 +826,7 @@ function Account() {
             </p>
 
             <div className="mt-3 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-status-stable-bg text-status-stable-text">
                 <CheckCircle2 size={19} />
               </div>
 
@@ -1006,7 +1006,7 @@ function Account() {
               {/* PASSWORD ERROR */}
 
               {error && (
-                <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
+                <div className="mt-4 flex items-start gap-2 rounded-xl border border-status-critical-border bg-status-critical-bg p-3 text-xs font-medium text-status-critical-text">
                   <AlertCircle
                     size={16}
                     className="mt-0.5 shrink-0"

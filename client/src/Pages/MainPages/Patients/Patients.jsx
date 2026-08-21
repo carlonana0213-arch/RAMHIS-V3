@@ -343,7 +343,7 @@ export default function Patients() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 self-start rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:self-center">
+              <div className="flex items-center gap-2 self-start rounded-full bg-status-stable-bg px-3 py-1.5 text-xs font-semibold text-status-stable-text sm:self-center">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
 
                 Ongoing
@@ -354,9 +354,9 @@ export default function Patients() {
 
         {!ongoingEvent &&
           !loading && (
-            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-status-watch-border bg-status-watch-bg px-5 py-4">
 
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 font-bold text-amber-700">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 font-bold text-status-watch-text">
                 !
               </div>
 
@@ -366,7 +366,7 @@ export default function Patients() {
                   mission
                 </p>
 
-                <p className="mt-0.5 text-xs text-amber-700">
+                <p className="mt-0.5 text-xs text-status-watch-text">
                   Patient registration is
                   currently unavailable
                   until an event is ongoing.

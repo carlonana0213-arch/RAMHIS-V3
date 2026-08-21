@@ -134,13 +134,13 @@ function AuditLog() {
         return "bg-violet-50 text-violet-700 border-violet-100";
 
       case "Consultation":
-        return "bg-emerald-50 text-emerald-700 border-emerald-100";
+        return "bg-status-stable-bg text-status-stable-text border-emerald-100";
 
       case "Medicine Release":
         return "bg-cyan-50 text-cyan-700 border-cyan-100";
 
       case "Inventory":
-        return "bg-amber-50 text-amber-700 border-amber-100";
+        return "bg-status-watch-bg text-status-watch-text border-amber-100";
 
       case "Accounts":
         return "bg-indigo-50 text-indigo-700 border-indigo-100";

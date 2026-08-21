@@ -7,169 +7,75 @@ import {
   FaExclamationTriangle,
 } from "react-icons/fa";
 
+import {
+  statCardVariants,
+  statusPillVariants,
+} from "../../../../ui/variants";
+
 function DashboardCards({ summary = {} }) {
   const patientDiff = Number(summary.patientIncrease || 0);
   const userDiff = Number(summary.userIncrease || 0);
 
-  const cardStyle = {
-    background: "#ffffff",
-    border: "1px solid #e5eaf2",
-    borderRadius: "20px",
-    padding: "24px",
-    boxShadow: "0 4px 20px rgba(15, 23, 42, 0.04)",
-    minWidth: 0,
-  };
-
-  const iconStyle = {
-    width: "52px",
-    height: "52px",
-    borderRadius: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "21px",
-    flexShrink: 0,
-  };
-
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-        gap: "18px",
-        marginTop: "30px",
-      }}
-    >
-      {/* PATIENTS */}
-      <div style={cardStyle}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: "16px",
-          }}
-        >
+<div className="grid grid-cols-1 gap-3 md:grid-cols-3">     
+  <div className={statCardVariants.base}>
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <span
-              style={{
-                display: "block",
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "#64748b",
-                marginBottom: "10px",
-              }}
-            >
+            <span className="mb-2 block text-sm font-semibold text-text-secondary">
               Total Patients
             </span>
 
-            <strong
-              style={{
-                display: "block",
-                fontSize: "34px",
-                lineHeight: 1,
-                fontWeight: 750,
-                color: "#0f172a",
-                letterSpacing: "-1px",
-              }}
-            >
+            <strong className="block text-[30px] font-bold leading-none tracking-tight text-text-primary">
               {(summary.totalPatients || 0).toLocaleString()}
             </strong>
           </div>
 
-          <div
-            style={{
-              ...iconStyle,
-              background: "#eff6ff",
-              color: "#2563eb",
-            }}
-          >
+          <div className={statCardVariants.icon}>
             <FaUserInjured />
           </div>
         </div>
 
         <div
-          style={{
-            marginTop: "22px",
-            paddingTop: "16px",
-            borderTop: "1px solid #eef2f7",
-            display: "flex",
-            alignItems: "center",
-            gap: "7px",
-            fontSize: "12px",
-            color: patientDiff >= 0 ? "#16a34a" : "#dc2626",
-            fontWeight: 600,
-          }}
+          className={`mt-3 flex items-center gap-2 border-t border-border-soft pt-4 text-xs font-semibold ${
+            patientDiff >= 0
+              ? "text-status-stable-text"
+              : "text-status-critical-text"
+          }`}
         >
           {patientDiff >= 0 ? <FaArrowUp /> : <FaArrowDown />}
 
           <span>
-            {Math.abs(summary.currentPatients || 0).toLocaleString()} patients
-            added this month
+            {Math.abs(patientDiff).toLocaleString()} patients added this month
           </span>
         </div>
       </div>
 
       {/* VOLUNTEERS */}
-      <div style={cardStyle}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: "16px",
-          }}
-        >
+      <div className={statCardVariants.base}>
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <span
-              style={{
-                display: "block",
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "#64748b",
-                marginBottom: "10px",
-              }}
-            >
+            <span className="mb-2 block text-sm font-semibold text-text-secondary">
               Total Volunteers
             </span>
 
-            <strong
-              style={{
-                display: "block",
-                fontSize: "34px",
-                lineHeight: 1,
-                fontWeight: 750,
-                color: "#0f172a",
-                letterSpacing: "-1px",
-              }}
-            >
+            <strong className="block text-[34px] font-bold leading-none tracking-tight text-text-primary">
               {(summary.totalUsers || 0).toLocaleString()}
             </strong>
           </div>
 
           <div
-            style={{
-              ...iconStyle,
-              background: "#ecfdf3",
-              color: "#16a34a",
-            }}
+            className={`${statCardVariants.icon} bg-status-stable-bg text-status-stable-text`}
           >
             <FaUsers />
           </div>
         </div>
 
         <div
-          style={{
-            marginTop: "22px",
-            paddingTop: "16px",
-            borderTop: "1px solid #eef2f7",
-            display: "flex",
-            alignItems: "center",
-            gap: "7px",
-            fontSize: "12px",
-            color: userDiff >= 0 ? "#16a34a" : "#dc2626",
-            fontWeight: 600,
-          }}
+          className={`mt-5 flex items-center gap-2 border-t border-border-soft pt-3 text-xs font-semibold ${
+            userDiff >= 0
+              ? "text-status-stable-text"
+              : "text-status-critical-text"
+          }`}
         >
           {userDiff >= 0 ? <FaArrowUp /> : <FaArrowDown />}
 
@@ -180,89 +86,35 @@ function DashboardCards({ summary = {} }) {
       </div>
 
       {/* MEDICINES */}
-      <div style={cardStyle}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: "16px",
-          }}
-        >
+      <div className={statCardVariants.base}>
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <span
-              style={{
-                display: "block",
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "#64748b",
-                marginBottom: "10px",
-              }}
-            >
+            <span className="mb-2.5 block text-sm font-semibold text-text-secondary">
               Total Medicines
             </span>
 
-            <strong
-              style={{
-                display: "block",
-                fontSize: "34px",
-                lineHeight: 1,
-                fontWeight: 750,
-                color: "#0f172a",
-                letterSpacing: "-1px",
-              }}
-            >
+            <strong className="block text-[34px] font-bold leading-none tracking-tight text-text-primary">
               {(summary.totalMedicines || 0).toLocaleString()}
             </strong>
           </div>
 
           <div
-            style={{
-              ...iconStyle,
-              background: "#f5f3ff",
-              color: "#7c3aed",
-            }}
+            className={`${statCardVariants.icon} bg-status-watch-bg text-primary-700`}
           >
             <FaCapsules />
           </div>
         </div>
 
-        <div
-          style={{
-            marginTop: "22px",
-            paddingTop: "16px",
-            borderTop: "1px solid #eef2f7",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "8px",
-          }}
-        >
+        <div className="mt-5 flex flex-wrap gap-2 border-t border-border-soft pt-4">
           <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 9px",
-              borderRadius: "8px",
-              background: "#fffbeb",
-              color: "#d97706",
-              fontSize: "11px",
-              fontWeight: 650,
-            }}
+            className={`${statusPillVariants.base} ${statusPillVariants.watch}`}
           >
             <FaExclamationTriangle />
             Low Stock: {summary.lowStock || 0}
           </span>
 
           <span
-            style={{
-              padding: "6px 9px",
-              borderRadius: "8px",
-              background: "#fef2f2",
-              color: "#dc2626",
-              fontSize: "11px",
-              fontWeight: 650,
-            }}
+            className={`${statusPillVariants.base} ${statusPillVariants.critical}`}
           >
             Out of Stock: {summary.outOfStock || 0}
           </span>

@@ -687,10 +687,10 @@ function ActionButton({
 }) {
   const styles = {
     success:
-      "bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+      "bg-status-stable-bg text-status-stable-text hover:bg-emerald-100",
 
     danger:
-      "bg-red-50 text-red-700 hover:bg-red-100",
+      "bg-status-critical-bg text-status-critical-text hover:bg-red-100",
 
     secondary:
       "bg-slate-100 text-slate-700 hover:bg-slate-200",
@@ -711,8 +711,8 @@ function RoleBadge({ role }) {
   const styles = {
     Admin: "bg-purple-50 text-purple-700",
     Doctor: "bg-primary-50 text-primary-700",
-    Volunteer: "bg-emerald-50 text-emerald-700",
-    Pharmacist: "bg-amber-50 text-amber-700",
+    Volunteer: "bg-status-stable-bg text-status-stable-text",
+    Pharmacist: "bg-status-watch-bg text-status-watch-text",
   };
 
   return (
@@ -728,10 +728,10 @@ function RoleBadge({ role }) {
 
 function StatusBadge({ status }) {
   const styles = {
-    Approved: "bg-emerald-50 text-emerald-700",
-    Pending: "bg-amber-50 text-amber-700",
-    Rejected: "bg-red-50 text-red-700",
-    Deactivated: "bg-red-50 text-red-700",
+    Approved: "bg-status-stable-bg text-status-stable-text",
+    Pending: "bg-status-watch-bg text-status-watch-text",
+    Rejected: "bg-status-critical-bg text-status-critical-text",
+    Deactivated: "bg-status-critical-bg text-status-critical-text",
   };
 
   return (

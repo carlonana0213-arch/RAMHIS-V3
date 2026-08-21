@@ -26,13 +26,13 @@ function DoctorQueue({
 
   const statusStyles = {
     waiting:
-      "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+      "bg-status-watch-bg text-status-watch-text ring-1 ring-inset ring-amber-200",
 
     beingSeen:
       "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
 
     forPharmacy:
-      "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
+      "bg-status-stable-bg text-status-stable-text ring-1 ring-inset ring-emerald-200",
 
     released:
       "bg-slate-100 text-text-secondary ring-1 ring-inset ring-slate-200",
@@ -285,7 +285,7 @@ function DoctorQueue({
                     key={patient._id}
                     className={`group transition-colors hover:bg-primary-50/40 ${
                       patient.isPriority
-                        ? "bg-amber-50/35"
+                        ? "bg-status-watch-bg/35"
                         : ""
                     }`}
                   >
@@ -299,7 +299,7 @@ function DoctorQueue({
                         <div
                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
                             patient.isPriority
-                              ? "bg-amber-100 text-amber-700"
+                              ? "bg-amber-100 text-status-watch-text"
                               : "bg-primary-50 text-primary-700"
                           }`}
                         >
@@ -325,7 +325,7 @@ function DoctorQueue({
                             </p>
 
                             {patient.isPriority && (
-                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-amber-700">
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-status-watch-text">
                                 PRIORITY
                               </span>
                             )}

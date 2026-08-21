@@ -11,7 +11,7 @@ const statusConfig = {
   waiting: {
     label: "Waiting",
     className:
-      "bg-amber-50 text-amber-700 ring-amber-200",
+      "bg-status-watch-bg text-status-watch-text ring-amber-200",
     dot: "bg-amber-500",
   },
 
@@ -25,7 +25,7 @@ const statusConfig = {
   forPharmacy: {
     label: "For Pharmacy",
     className:
-      "bg-emerald-50 text-emerald-700 ring-emerald-200",
+      "bg-status-stable-bg text-status-stable-text ring-emerald-200",
     dot: "bg-emerald-500",
   },
 
@@ -271,7 +271,7 @@ export default function PatientQueue({
                         className={[
                           "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold",
                           patient.isPriority
-                            ? "bg-red-50 text-red-600"
+                            ? "bg-status-critical-bg text-red-600"
                             : "bg-primary-50 text-primary-600",
                         ].join(" ")}
                       >
@@ -287,7 +287,7 @@ export default function PatientQueue({
                         </p>
 
                         {patient.isPriority && (
-                          <span className="mt-1 inline-flex rounded-full bg-red-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-red-600 ring-1 ring-red-100">
+                          <span className="mt-1 inline-flex rounded-full bg-status-critical-bg px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-red-600 ring-1 ring-red-100">
                             Priority
                           </span>
                         )}

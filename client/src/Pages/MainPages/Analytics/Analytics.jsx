@@ -132,17 +132,17 @@ const Analytics = () => {
   }, [analytics]);
 
   const confidenceStyles = {
-    HIGH: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    HIGH: "bg-status-stable-bg text-status-stable-text ring-emerald-200",
     MEDIUM: "bg-primary-50 text-primary-700 ring-blue-200",
-    LOW: "bg-amber-50 text-amber-700 ring-amber-200",
+    LOW: "bg-status-watch-bg text-status-watch-text ring-amber-200",
     "VERY LOW":
-      "bg-red-50 text-red-700 ring-red-200",
+      "bg-status-critical-bg text-status-critical-text ring-red-200",
   };
 
   const riskStyles = {
-    HIGH: "bg-red-50 text-red-700 ring-red-200",
-    MEDIUM: "bg-amber-50 text-amber-700 ring-amber-200",
-    LOW: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    HIGH: "bg-status-critical-bg text-status-critical-text ring-red-200",
+    MEDIUM: "bg-status-watch-bg text-status-watch-text ring-amber-200",
+    LOW: "bg-status-stable-bg text-status-stable-text ring-emerald-200",
   };
 
   return (
@@ -433,7 +433,7 @@ const Analytics = () => {
                     </p>
                   </div>
 
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-status-stable-bg text-status-stable-text">
                     <FiClock />
                   </div>
                 </div>
@@ -689,7 +689,7 @@ const Analytics = () => {
               <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
                 <div className="border-b border-border-soft px-5 py-5 sm:px-6">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-status-watch-bg text-amber-600">
                       <FiAlertTriangle />
                     </div>
 
@@ -718,9 +718,9 @@ const Analytics = () => {
                     smartInsights.map((insight, index) => {
                       const styles = {
                         warning:
-                          "bg-amber-50 text-amber-700 border-amber-100",
+                          "bg-status-watch-bg text-status-watch-text border-amber-100",
                         danger:
-                          "bg-red-50 text-red-700 border-red-100",
+                          "bg-status-critical-bg text-status-critical-text border-red-100",
                         info:
                           "bg-primary-50 text-primary-700 border-blue-100",
                       };
@@ -850,7 +850,7 @@ function InsightCard({
     <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
       <div className="border-b border-border-soft px-5 py-5 sm:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-status-stable-bg text-emerald-600">
             {icon}
           </div>
 

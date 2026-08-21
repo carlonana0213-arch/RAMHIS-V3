@@ -57,7 +57,7 @@ function PatientCard({
           </div>
 
           {patient.isPriority && (
-            <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-amber-700 ring-1 ring-inset ring-amber-200">
+            <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-status-watch-text ring-1 ring-inset ring-amber-200">
               PRIORITY
             </span>
           )}
@@ -68,7 +68,7 @@ function PatientCard({
           <div
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${
               patient.isPriority
-                ? "bg-amber-100 text-amber-700"
+                ? "bg-amber-100 text-status-watch-text"
                 : "bg-primary-100 text-blue-800"
             }`}
           >

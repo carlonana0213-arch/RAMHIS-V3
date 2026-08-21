@@ -50,255 +50,104 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "70vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "12px",
-          fontFamily: "Poppins, sans-serif",
-          color: "#64748b",
-        }}
-      >
-        <div
-          style={{
-            width: "34px",
-            height: "34px",
-            border: "3px solid #dbeafe",
-            borderTop: "3px solid #2563eb",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
-          }}
-        />
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-3 text-text-muted">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-100 border-t-primary-700" />
 
-        <p
-          style={{
-            margin: 0,
-            fontSize: "14px",
-          }}
-        >
+        <p className="text-sm">
           Loading dashboard...
         </p>
       </div>
     );
   }
 
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const currentDate = new Date().toLocaleDateString(
+    "en-US",
+    {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }
+  );
 
   return (
-    <div
-      style={{
-        width: "100%",
-        minHeight: "100vh",
-        padding: "28px 32px",
-        boxSizing: "border-box",
-        background: "#f8fafc",
-        fontFamily: "Poppins, sans-serif",
-        color: "#0f172a",
-      }}
-    >
-      {/* HEADER */}
-      <header
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          gap: "24px",
-          marginBottom: "28px",
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <span
-            style={{
-              display: "block",
-              marginBottom: "6px",
-              fontSize: "11px",
-              fontWeight: 700,
-              letterSpacing: "1.2px",
-              color: "#2563eb",
-            }}
-          >
-            RAMHIS OVERVIEW
-          </span>
-          
+<div className="h-[calc(100vh-64px)] w-full overflow-y-auto overflow-x-hidden bg-background-soft p-3 text-text-primary lg:p-4">
+  <div className="mx-auto grid min-h-full max-w-[1900px] grid-rows-[auto_auto_minmax(0,1fr)] gap-3">
 
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "30px",
-              fontWeight: 700,
-              lineHeight: 1.2,
-              color: "#0f172a",
-            }}
-          >
-            Dashboard
-          </h1>
+        {/* HEADER */}
+        <header className="flex items-center justify-between gap-4">
+          <div>
+            <div className="mb-1 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-status-stable-dot" />
 
-          <p
-            style={{
-              margin: "8px 0 0",
-              fontSize: "14px",
-              color: "#64748b",
-            }}
-          >
-            Monitor patient activity, healthcare services, and pharmacy
-            resources.
-          </p>
-        </div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                System Operational
+              </span>
+            </div>
 
-        <div
-          style={{
-            padding: "12px 18px",
-            background: "#ffffff",
-            border: "1px solid #e2e8f0",
-            borderRadius: "12px",
-            textAlign: "right",
-          }}
-        >
-          <span
-            style={{
-              display: "block",
-              fontSize: "11px",
-              color: "#94a3b8",
-              marginBottom: "3px",
-            }}
-          >
-            Today
-          </span>
+            <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">
+              Dashboard
+            </h1>
+          </div>
 
-          <strong
-            style={{
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#334155",
-            }}
-          >
-            {currentDate}
-          </strong>
-        </div>
-      </header>
+          <div className="rounded-lg border border-border bg-surface px-4 py-2 shadow-sm">
+            <span className="block text-[10px] font-bold uppercase text-text-muted">
+              Today
+            </span>
 
-      {/* SUMMARY CARDS */}
-      <DashboardCards summary={summary} />
+            <strong className="text-xs text-text-primary">
+              {currentDate}
+            </strong>
+          </div>
+        </header>
 
-      {/* HEALTH OVERVIEW */}
-      <section style={{ marginTop: "32px" }}>
-        <div style={{ marginBottom: "16px" }}>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "19px",
-              fontWeight: 700,
-              color: "#0f172a",
-            }}
-          >
-            Health Overview
-          </h2>
+        {/* METRIC CARDS */}
+        <DashboardCards summary={summary} />
 
-          <p
-            style={{
-              margin: "5px 0 0",
-              fontSize: "13px",
-              color: "#64748b",
-            }}
-          >
-            Current distribution of patient and prescription data.
-          </p>
-        </div>
+        {/* MAIN DASHBOARD GRID */}
+{/* MAIN DASHBOARD GRID */}
+{/* MAIN DASHBOARD GRID */}
+<main className="grid min-h-0 h-full grid-cols-1 gap-3 xl:grid-cols-[1.45fr_1fr]">
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "20px",
-          }}
-        >
-          <DashboardPieCard
-            title="Diagnosis Distribution"
-            subtitle="Top recorded diagnoses"
-            data={diagnosisData}
-            labelKey="name"
-            valueKey="value"
-          />
+  {/* LEFT */}
+  <div className="grid min-h-0 h-full grid-rows-[1.15fr_0.85fr] gap-3">
 
-          <DashboardPieCard
-            title="Prescribed Medicines"
-            subtitle="Most frequently prescribed"
-            data={topMedicines}
-            labelKey="medicine"
-            valueKey="count"
-          />
-        </div>
-      </section>
+    <div className="min-h-0">
+      <DashboardPatientGraphs
+        patientTrends={patientTrends}
+      />
+    </div>
 
-      {/* PATIENT ACTIVITY */}
-      <section style={{ marginTop: "32px" }}>
-        <div style={{ marginBottom: "16px" }}>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "19px",
-              fontWeight: 700,
-              color: "#0f172a",
-            }}
-          >
-            Patient Activity
-          </h2>
+    <div className="grid min-h-0 h-full grid-cols-1 gap-3 md:grid-cols-2">
+      <DashboardPieCard
+        title="Diagnosis Distribution"
+        subtitle="Top diagnoses"
+        data={diagnosisData}
+        labelKey="name"
+        valueKey="value"
+      />
 
-          <p
-            style={{
-              margin: "5px 0 0",
-              fontSize: "13px",
-              color: "#64748b",
-            }}
-          >
-            Patient visits, volunteers, and prescriptions over time.
-          </p>
-        </div>
+      <DashboardPieCard
+        title="Medicine Distribution"
+        subtitle="Most prescribed"
+        data={topMedicines}
+        labelKey="medicine"
+        valueKey="count"
+      />
+    </div>
 
-        <DashboardPatientGraphs
-          patientTrends={patientTrends}
-        />
-      </section>
+  </div>
 
-      {/* PHARMACY */}
-      <section style={{ marginTop: "32px", paddingBottom: "32px" }}>
-        <div style={{ marginBottom: "16px" }}>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "19px",
-              fontWeight: 700,
-              color: "#0f172a",
-            }}
-          >
-            Pharmacy Overview
-          </h2>
+  {/* RIGHT */}
+  <div className="min-h-0 h-full">
+    <DashboardInventoryGraphs
+      summary={summary}
+      topMedicines={topMedicines}
+    />
+  </div>
 
-          <p
-            style={{
-              margin: "5px 0 0",
-              fontSize: "13px",
-              color: "#64748b",
-            }}
-          >
-            Monitor medicine usage and current inventory levels.
-          </p>
-        </div>
-
-        <DashboardInventoryGraphs
-          summary={summary}
-          topMedicines={topMedicines}
-        />
-      </section>
+</main>
+      </div>
     </div>
   );
 }

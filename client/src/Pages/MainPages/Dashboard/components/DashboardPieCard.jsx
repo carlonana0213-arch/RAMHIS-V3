@@ -6,6 +6,11 @@ import {
   Tooltip,
 } from "recharts";
 
+import {
+  dashboardCardVariants,
+  statusPillVariants,
+} from "../../../../ui/variants";
+
 const COLORS = [
   "#1e3a8a",
   "#2563eb",
@@ -23,27 +28,25 @@ function DashboardPieCard({
 }) {
   const sortedData = [...data]
     .filter((item) => Number(item[valueKey]) > 0)
-    .sort((a, b) => Number(b[valueKey]) - Number(a[valueKey]));
+    .sort(
+      (a, b) =>
+        Number(b[valueKey]) - Number(a[valueKey])
+    );
 
   const topThree = sortedData.slice(0, 3);
 
   return (
     <div
-      style={{
-        background: "#ffffff",
-        border: "1px solid #e5eaf2",
-        borderRadius: "20px",
-        padding: "24px",
-        boxShadow: "0 4px 20px rgba(15, 23, 42, 0.04)",
-        minWidth: 0,
-      }}
+      className={`${dashboardCardVariants.base} flex h-full min-h-0 flex-col overflow-hidden`}
     >
+      {/* HEADER */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: "8px",
+          flexShrink: 0,
         }}
       >
         <div>
@@ -70,45 +73,23 @@ function DashboardPieCard({
         </div>
 
         <span
-          style={{
-            padding: "6px 10px",
-            borderRadius: "8px",
-            background: "#eff6ff",
-            color: "#2563eb",
-            fontSize: "10px",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-          }}
+          className={`${statusPillVariants.base} ${statusPillVariants.stable} uppercase tracking-wide`}
         >
           Overview
         </span>
       </div>
 
+      {/* EMPTY STATE */}
       {sortedData.length === 0 ? (
-        <div
-          style={{
-            minHeight: "250px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#94a3b8",
-            fontSize: "13px",
-          }}
-        >
+        <div className="flex flex-1 items-center justify-center text-sm text-text-secondary">
           No data available
         </div>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(140px, 0.9fr) minmax(180px, 1.1fr)",
-            alignItems: "center",
-            gap: "10px",
-            minHeight: "250px",
-          }}
-        >
-          <div>
+        /* CONTENT */
+        <div className="grid min-h-0 flex-1 grid-cols-[0.9fr_1.1fr] items-center gap-2">
+          
+          {/* LEGEND */}
+          <div className="min-w-0">
             {topThree.map((item, index) => (
               <div
                 key={`${item[labelKey]}-${index}`}
@@ -116,7 +97,7 @@ function DashboardPieCard({
                   display: "flex",
                   alignItems: "flex-start",
                   gap: "9px",
-                  marginBottom: "16px",
+                  marginBottom: "12px",
                 }}
               >
                 <span
@@ -125,7 +106,8 @@ function DashboardPieCard({
                     height: "8px",
                     marginTop: "5px",
                     borderRadius: "50%",
-                    background: COLORS[index % COLORS.length],
+                    background:
+                      COLORS[index % COLORS.length],
                     flexShrink: 0,
                   }}
                 />
@@ -152,7 +134,10 @@ function DashboardPieCard({
                       color: "#94a3b8",
                     }}
                   >
-                    {Number(item[valueKey]).toLocaleString()} records
+                    {Number(
+                      item[valueKey]
+                    ).toLocaleString()}{" "}
+                    records
                   </span>
                 </div>
               </div>
@@ -173,15 +158,19 @@ function DashboardPieCard({
             )}
           </div>
 
-          <div style={{ width: "100%", minWidth: 0 }}>
-            <ResponsiveContainer width="100%" height={245}>
+          {/* PIE CHART */}
+          <div className="h-full min-h-0 w-full">
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+            >
               <PieChart>
                 <Pie
                   data={sortedData}
                   dataKey={valueKey}
                   nameKey={labelKey}
-                  innerRadius={62}
-                  outerRadius={91}
+                  innerRadius="55%"
+                  outerRadius="80%"
                   paddingAngle={3}
                   stroke="#ffffff"
                   strokeWidth={4}
@@ -189,19 +178,29 @@ function DashboardPieCard({
                   {sortedData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
+                      fill={
+                        COLORS[
+                          index % COLORS.length
+                        ]
+                      }
                     />
                   ))}
                 </Pie>
 
                 <Tooltip
                   contentStyle={{
-                    border: "1px solid #e2e8f0",
+                    border:
+                      "1px solid #e2e8f0",
                     borderRadius: "12px",
-                    boxShadow: "0 8px 25px rgba(15, 23, 42, 0.08)",
+                    boxShadow:
+                      "0 8px 25px rgba(15, 23, 42, 0.08)",
                     fontSize: "12px",
                   }}
-                  formatter={(value, name, props) => [
+                  formatter={(
+                    value,
+                    name,
+                    props
+                  ) => [
                     Number(value).toLocaleString(),
                     props.payload[labelKey],
                   ]}
@@ -209,6 +208,7 @@ function DashboardPieCard({
               </PieChart>
             </ResponsiveContainer>
           </div>
+
         </div>
       )}
     </div>

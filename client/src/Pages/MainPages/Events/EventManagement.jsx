@@ -23,13 +23,13 @@ const STATUS_STYLES = {
     "border-blue-200 bg-primary-50 text-primary-700",
 
   Ongoing:
-    "border-emerald-200 bg-emerald-50 text-emerald-700",
+    "border-status-stable-border bg-status-stable-bg text-status-stable-text",
 
   Completed:
     "border-border bg-slate-100 text-text-secondary",
 
   Cancelled:
-    "border-red-200 bg-red-50 text-red-700",
+    "border-status-critical-border bg-status-critical-bg text-status-critical-text",
 };
 
 const TABS = [
@@ -419,7 +419,7 @@ const EventManagement = () => {
             label="Ongoing"
             value={statistics.ongoing}
             icon={<FaUsers size={18} />}
-            iconClass="bg-emerald-50 text-emerald-700"
+            iconClass="bg-status-stable-bg text-status-stable-text"
           />
 
           <StatCard
@@ -490,7 +490,7 @@ const EventManagement = () => {
 
           {error && (
 
-            <div className="border-b border-red-100 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
+            <div className="border-b border-red-100 bg-status-critical-bg px-5 py-4 text-sm font-medium text-status-critical-text">
 
               {error}
 

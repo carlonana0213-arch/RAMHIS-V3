@@ -67,7 +67,7 @@ function StatusBadge({ status }) {
     waiting: {
       label: "Waiting",
       classes:
-        "bg-amber-50 text-amber-700 ring-amber-200",
+        "bg-status-watch-bg text-status-watch-text ring-amber-200",
     },
 
     beingSeen: {
@@ -79,7 +79,7 @@ function StatusBadge({ status }) {
     forPharmacy: {
       label: "For Pharmacy",
       classes:
-        "bg-emerald-50 text-emerald-700 ring-emerald-200",
+        "bg-status-stable-bg text-status-stable-text ring-emerald-200",
     },
 
     released: {
@@ -221,7 +221,7 @@ export default function PatientViewModal({
             <div
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
                 isPriority
-                  ? "bg-red-50 text-red-600"
+                  ? "bg-status-critical-bg text-red-600"
                   : "bg-primary-50 text-primary-600"
               }`}
             >
@@ -237,7 +237,7 @@ export default function PatientViewModal({
                 </h2>
 
                 {isPriority && (
-                  <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-red-600 ring-1 ring-red-100">
+                  <span className="rounded-full bg-status-critical-bg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-red-600 ring-1 ring-red-100">
                     Priority
                   </span>
                 )}

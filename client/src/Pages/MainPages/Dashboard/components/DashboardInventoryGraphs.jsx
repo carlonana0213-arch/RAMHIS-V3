@@ -14,91 +14,133 @@ import {
   FaBan,
 } from "react-icons/fa";
 
+import {
+  statCardVariants,
+  statusPillVariants,
+  statusDotVariants,
+  inventoryPanelVariants,
+  dashboardBadgeVariants,
+} from "../../../../ui/variants";
+
 function DashboardInventoryGraphs({
   summary = {},
   topMedicines = [],
 }) {
-  const inventoryCard = {
-    background: "#ffffff",
-    border: "1px solid #e5eaf2",
-    borderRadius: "18px",
-    padding: "22px",
-    boxShadow: "0 4px 20px rgba(15, 23, 42, 0.04)",
-  };
+  const totalMedicines = Number(summary.totalMedicines || 0);
+  const lowStock = Number(summary.lowStock || 0);
+  const outOfStock = Number(summary.outOfStock || 0);
 
-  const statusIcon = {
-    width: "48px",
-    height: "48px",
-    borderRadius: "14px",
+  const statusIconBase = {
+    width: "42px",
+    height: "42px",
+    borderRadius: "10px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "18px",
+    fontSize: "16px",
     flexShrink: 0,
   };
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 2fr) minmax(260px, 0.9fr)",
-        gap: "18px",
-        alignItems: "stretch",
-      }}
-    >
-      {/* CHART */}
-      <div style={inventoryCard}>
-        <div style={{ marginBottom: "18px" }}>
-          <h3
-            style={{
-              margin: 0,
-              fontSize: "17px",
-              fontWeight: 700,
-              color: "#0f172a",
-            }}
-          >
-            Most Prescribed Medicines
-          </h3>
+    <div className="grid h-full min-h-0 grid-cols-1 gap-4 lg:grid-cols-[2fr_0.9fr]">
+      {/* MEDICINE ACTIVITY MONITOR */}
+      <div
+  className={`${statCardVariants.base} flex h-full min-h-0 flex-col`}
+  style={{ minWidth: 0 }}
+>
+        {/* HEADER */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: "20px",
+            marginBottom: "12px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <span
+              style={{
+                display: "block",
+                marginBottom: "6px",
+                fontSize: "10px",
+                fontWeight: 700,
+                letterSpacing: "0.9px",
+                color: "#64748b",
+                textTransform: "uppercase",
+              }}
+            >
+              Pharmacy Monitor
+            </span>
 
-          <p
-            style={{
-              margin: "6px 0 0",
-              fontSize: "12px",
-              color: "#94a3b8",
-            }}
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "18px",
+                fontWeight: 700,
+                color: "#0f172a",
+              }}
+            >
+              Medicine Usage
+            </h3>
+
+            <p
+              style={{
+                margin: "6px 0 0",
+                fontSize: "12px",
+                color: "#64748b",
+              }}
+            >
+              Most frequently prescribed medicines.
+            </p>
+          </div>
+
+          <span
+            className={`${dashboardBadgeVariants.base} ${dashboardBadgeVariants.overview}`}
           >
-            Medicines most frequently included in prescriptions.
-          </p>
+            Usage Metrics
+          </span>
         </div>
 
+        {/* CHART */}
         {topMedicines.length === 0 ? (
           <div
             style={{
-              height: "300px",
+              height: "100%",
+              minHeight: 0,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              border: "1px dashed #cbd5e1",
+              borderRadius: "12px",
               color: "#94a3b8",
               fontSize: "13px",
             }}
           >
-            No medicine data available
+            No medicine usage data available
           </div>
         ) : (
-          <div style={{ width: "100%", height: "310px" }}>
+          <div
+  style={{
+    width: "100%",
+    flex: 1,
+    minHeight: 0,
+  }}
+>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={topMedicines}
                 margin={{
                   top: 10,
-                  right: 10,
+                  right: 15,
                   left: -15,
                   bottom: 5,
                 }}
               >
                 <CartesianGrid
-                  stroke="#e8edf5"
-                  strokeDasharray="4 4"
+                  stroke="#e2e8f0"
+                  strokeDasharray="3 3"
                   vertical={false}
                 />
 
@@ -123,13 +165,14 @@ function DashboardInventoryGraphs({
 
                 <Tooltip
                   cursor={{
-                    fill: "#f8fafc",
+                    fill: "rgba(59, 130, 246, 0.04)",
                   }}
                   contentStyle={{
                     background: "#ffffff",
                     border: "1px solid #e2e8f0",
-                    borderRadius: "12px",
-                    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.08)",
+                    borderRadius: "10px",
+                    boxShadow:
+                      "0 10px 25px rgba(15, 23, 42, 0.10)",
                     fontSize: "12px",
                   }}
                 />
@@ -138,8 +181,8 @@ function DashboardInventoryGraphs({
                   dataKey="count"
                   name="Prescriptions"
                   fill="#2563eb"
-                  radius={[7, 7, 0, 0]}
-                  maxBarSize={58}
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={54}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -147,16 +190,22 @@ function DashboardInventoryGraphs({
         )}
       </div>
 
-      {/* INVENTORY STATUS */}
+      {/* INVENTORY HEALTH */}
       <div
-        style={{
-          display: "grid",
-          gridTemplateRows: "repeat(3, 1fr)",
-          gap: "14px",
-        }}
-      >
-        {/* TOTAL */}
-        <div style={inventoryCard}>
+  className="grid h-full min-h-0"
+  style={{
+    gridTemplateRows: "repeat(3, 1fr)",
+    gap: "12px",
+  }}
+>
+        {/* STABLE */}
+        <div
+          className={`${statCardVariants.base} ${inventoryPanelVariants.stable}`}
+          style={{
+            minWidth: 0,
+            padding: "16px",
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -170,54 +219,67 @@ function DashboardInventoryGraphs({
               <span
                 style={{
                   display: "block",
+                  fontSize: "10px",
+                  fontWeight: 700,
                   color: "#64748b",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  marginBottom: "7px",
+                  letterSpacing: "0.7px",
+                  textTransform: "uppercase",
+                  marginBottom: "8px",
                 }}
               >
-                Total Medicines
+                Inventory
               </span>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "6px",
+                }}
+              >
+                <span
+                  className={statusDotVariants.stable}
+                />
+
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                  }}
+                >
+                  Total Medicines
+                </span>
+              </div>
 
               <strong
                 style={{
                   display: "block",
-                  fontSize: "27px",
-                  color: "#0f172a",
+                  fontSize: "28px",
                   lineHeight: 1,
+                  color: "#0f172a",
                 }}
               >
-                {summary.totalMedicines || 0}
+                {totalMedicines.toLocaleString()}
               </strong>
-
-              <p
-                style={{
-                  margin: "7px 0 0",
-                  color: "#94a3b8",
-                  fontSize: "10px",
-                }}
-              >
-                Currently in inventory
-              </p>
             </div>
 
             <div
-              style={{
-                ...statusIcon,
-                background: "#eff6ff",
-                color: "#2563eb",
-              }}
+              className={inventoryPanelVariants.iconStable}
+              style={statusIconBase}
             >
               <FaCapsules />
             </div>
           </div>
         </div>
 
-        {/* LOW STOCK */}
+        {/* WATCH */}
         <div
+          className={`${statCardVariants.base} ${inventoryPanelVariants.watch}`}
           style={{
-            ...inventoryCard,
-            borderColor: "#f6e6b8",
+            minWidth: 0,
+            padding: "16px",
           }}
         >
           <div
@@ -233,54 +295,67 @@ function DashboardInventoryGraphs({
               <span
                 style={{
                   display: "block",
-                  color: "#92400e",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  marginBottom: "7px",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  color: "#64748b",
+                  letterSpacing: "0.7px",
+                  textTransform: "uppercase",
+                  marginBottom: "8px",
                 }}
               >
-                Low Stock
+                Attention Required
               </span>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "6px",
+                }}
+              >
+                <span
+                  className={statusDotVariants.watch}
+                />
+
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                  }}
+                >
+                  Low Stock
+                </span>
+              </div>
 
               <strong
                 style={{
                   display: "block",
-                  fontSize: "27px",
-                  color: "#0f172a",
+                  fontSize: "28px",
                   lineHeight: 1,
+                  color: "#0f172a",
                 }}
               >
-                {summary.lowStock || 0}
+                {lowStock.toLocaleString()}
               </strong>
-
-              <p
-                style={{
-                  margin: "7px 0 0",
-                  color: "#a16207",
-                  fontSize: "10px",
-                }}
-              >
-                Medicines requiring attention
-              </p>
             </div>
 
             <div
-              style={{
-                ...statusIcon,
-                background: "#fffbeb",
-                color: "#d97706",
-              }}
+              className={inventoryPanelVariants.iconWatch}
+              style={statusIconBase}
             >
               <FaExclamationTriangle />
             </div>
           </div>
         </div>
 
-        {/* OUT OF STOCK */}
+        {/* CRITICAL */}
         <div
+          className={`${statCardVariants.base} ${inventoryPanelVariants.critical}`}
           style={{
-            ...inventoryCard,
-            borderColor: "#f4d6d6",
+            minWidth: 0,
+            padding: "16px",
           }}
         >
           <div
@@ -296,43 +371,55 @@ function DashboardInventoryGraphs({
               <span
                 style={{
                   display: "block",
-                  color: "#991b1b",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  marginBottom: "7px",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  color: "#64748b",
+                  letterSpacing: "0.7px",
+                  textTransform: "uppercase",
+                  marginBottom: "8px",
                 }}
               >
-                Out of Stock
+                Critical
               </span>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "6px",
+                }}
+              >
+                <span
+                  className={statusDotVariants.critical}
+                />
+
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                  }}
+                >
+                  Out of Stock
+                </span>
+              </div>
 
               <strong
                 style={{
                   display: "block",
-                  fontSize: "27px",
-                  color: "#0f172a",
+                  fontSize: "28px",
                   lineHeight: 1,
+                  color: "#0f172a",
                 }}
               >
-                {summary.outOfStock || 0}
+                {outOfStock.toLocaleString()}
               </strong>
-
-              <p
-                style={{
-                  margin: "7px 0 0",
-                  color: "#b91c1c",
-                  fontSize: "10px",
-                }}
-              >
-                Currently unavailable
-              </p>
             </div>
 
             <div
-              style={{
-                ...statusIcon,
-                background: "#fef2f2",
-                color: "#dc2626",
-              }}
+              className={inventoryPanelVariants.iconCritical}
+              style={statusIconBase}
             >
               <FaBan />
             </div>

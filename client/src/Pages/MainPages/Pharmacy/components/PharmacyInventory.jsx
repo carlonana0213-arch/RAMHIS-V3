@@ -211,8 +211,8 @@ function PharmacyInventory() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <p className="text-xs font-medium text-amber-700">
+          <div className="rounded-xl border border-status-watch-border bg-status-watch-bg px-4 py-3">
+            <p className="text-xs font-medium text-status-watch-text">
               Low Stock
             </p>
 
@@ -384,7 +384,7 @@ function PharmacyInventory() {
                             <span
                               className={`font-bold ${
                                 isLowStock
-                                  ? "text-amber-700"
+                                  ? "text-status-watch-text"
                                   : "text-text-primary"
                               }`}
                             >

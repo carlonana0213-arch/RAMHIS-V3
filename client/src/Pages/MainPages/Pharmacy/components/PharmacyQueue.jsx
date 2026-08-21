@@ -212,7 +212,7 @@ function PharmacyQueue() {
 
     if (stock.type === "out") {
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-status-critical-bg px-3 py-1.5 text-xs font-semibold text-status-critical-text">
           <XCircle size={14} />
           Out of Stock
         </span>
@@ -221,7 +221,7 @@ function PharmacyQueue() {
 
     if (stock.type === "low") {
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-status-watch-bg px-3 py-1.5 text-xs font-semibold text-status-watch-text">
           <AlertTriangle size={14} />
           Low Stock
         </span>
@@ -229,7 +229,7 @@ function PharmacyQueue() {
     }
 
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-status-stable-bg px-3 py-1.5 text-xs font-semibold text-status-stable-text">
         <CheckCircle2 size={14} />
         Ready
       </span>
@@ -239,7 +239,7 @@ function PharmacyQueue() {
   const renderAction = (prescription, item) => {
     if (item.isGiven) {
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-status-stable-bg px-3 py-1.5 text-xs font-semibold text-status-stable-text">
           <CheckCircle2 size={14} />
           Given
         </span>
@@ -323,7 +323,7 @@ function PharmacyQueue() {
               </p>
             </div>
 
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-status-watch-bg text-status-watch-text">
               <Clock3 size={22} />
             </div>
           </div>
@@ -345,7 +345,7 @@ function PharmacyQueue() {
               </p>
             </div>
 
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-status-stable-bg text-status-stable-text">
               <CheckCircle2 size={22} />
             </div>
           </div>

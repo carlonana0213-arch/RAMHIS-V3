@@ -1461,7 +1461,7 @@ function PatientDoctorView({
                               prescriptionItems.length ===
                               1
                             }
-                            className="rounded-xl border border-rose-200 px-3 text-sm font-bold text-rose-600 transition hover:bg-rose-50 disabled:opacity-40"
+                            className="rounded-xl border border-status-critical-border px-3 text-sm font-bold text-rose-600 transition hover:bg-status-critical-bg disabled:opacity-40"
                           >
                             Remove
                           </button>
@@ -1667,7 +1667,7 @@ function PatientDoctorView({
                                       record._id
                                     )
                                   }
-                                  className="rounded-lg px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50"
+                                  className="rounded-lg px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-status-critical-bg"
                                 >
                                   Delete
                                 </button>
