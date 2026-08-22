@@ -215,7 +215,6 @@ export const sendPatientToPharmacy = async (
 
   return updatePatientStatus(patientId, {
     status: "forPharmacy",
-    department: "Pharmacy",
   });
 };
 

@@ -74,23 +74,37 @@ function PatientDoctorView({
     "General",
   ];
 
-  const [doctorSheet, setDoctorSheet] =
-    useState(
-      createEmptyDoctorSheet(
-        patient?.initComplaint || ""
-      )
-    );
+  const [doctorSheet, setDoctorSheet] = useState(
+  createEmptyDoctorSheet("")
+);
 
+
+
+const [activeTab, setActiveTab] = useState("current");
   const [
     existingPrescriptions,
     setExistingPrescriptions,
   ] = useState([]);
+  
+  const [recordMode, setRecordMode] = useState("existing");
+
+  const handleNewRecord = () => {
+  setRecordMode("new");
+
+  setDoctorSheet(
+    createEmptyDoctorSheet(
+      patient?.initComplaint || ""
+    )
+  );
+
+  setNewComplaint("");
+  setActiveTab("current");
+};
 
   const [medicines, setMedicines] =
     useState([]);
 
-  const [activeTab, setActiveTab] =
-    useState("current");
+  
 
   const [
     nextPatientStatus,
@@ -170,85 +184,73 @@ function PatientDoctorView({
    * =========================================================
    */
 
-  useEffect(() => {
-    if (!patient?._id) {
-      return;
-    }
+useEffect(() => {
+  if (!patient?._id) {
+    return;
+  }
 
-    setActiveTab("current");
+  // Do not overwrite the form when
+  // the doctor is creating a new record.
+  if (recordMode === "new") {
+    return;
+  }
 
-    if (
-      Array.isArray(
-        patient.doctorSheets
-      ) &&
-      patient.doctorSheets.length > 0
-    ) {
-      const latest =
-        patient.doctorSheets[
-          patient.doctorSheets.length -
-            1
-        ];
+  setActiveTab("current");
 
-      setDoctorSheet({
-        examination: {
-          ...EMPTY_DOCTOR_SHEET.examination,
-          ...(latest.examination ||
-            {}),
-        },
+  if (
+    Array.isArray(patient.doctorSheets) &&
+    patient.doctorSheets.length > 0
+  ) {
+    const latest =
+      patient.doctorSheets[
+        patient.doctorSheets.length - 1
+      ];
 
-        initComplaint:
-          latest.initComplaint ||
-          patient.initComplaint ||
-          "",
-
-        diagnosis:
-          latest.diagnosis || "",
-
-        treatment:
-          latest.treatment || "",
-
-        medication:
-          latest.medication || "",
-      });
-    } else {
-      setDoctorSheet(
-        createEmptyDoctorSheet(
-          patient.initComplaint || ""
-        )
-      );
-    }
-
-    setPrescriptionItems([
-      {
-        medicine: "",
-        quantity: "",
-        directions: "",
+    setDoctorSheet({
+      examination: {
+        ...EMPTY_DOCTOR_SHEET.examination,
+        ...(latest.examination || {}),
       },
-    ]);
 
-    setMedicineSearch({});
-    setActiveDropdown(null);
+      initComplaint:
+        latest.initComplaint ||
+        patient.initComplaint ||
+        "",
 
-    setNextPatientStatus(
-      "forPharmacy"
+      diagnosis: latest.diagnosis || "",
+      treatment: latest.treatment || "",
+      medication: latest.medication || "",
+    });
+  } else {
+    setDoctorSheet(
+      createEmptyDoctorSheet(
+        patient.initComplaint || ""
+      )
     );
+  }
 
-    setNewComplaint("");
-
-    setShowReferral(false);
-
-    setReferralDept("");
-
-    setReferralReason("");
-
-    setIsSaving(false);
-
-    loadPrescriptions(
-      patient._id
-    );
-  }, [
-    patient?._id,
+  setPrescriptionItems([
+    {
+      medicine: "",
+      quantity: "",
+      directions: "",
+    },
   ]);
+
+  setMedicineSearch({});
+  setActiveDropdown(null);
+  setNextPatientStatus("forPharmacy");
+  setNewComplaint("");
+  setShowReferral(false);
+  setReferralDept("");
+  setReferralReason("");
+  setIsSaving(false);
+
+  loadPrescriptions(patient._id);
+}, [
+  patient?._id,
+  recordMode,
+]);
 
   /*
    * =========================================================
@@ -954,26 +956,13 @@ function PatientDoctorView({
               Previous Records
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setDoctorSheet(
-                  createEmptyDoctorSheet(
-                    patient?.initComplaint ||
-                      ""
-                  )
-                );
-
-                setNewComplaint("");
-
-                setActiveTab(
-                  "current"
-                );
-              }}
-              className="ml-auto rounded-xl border border-border bg-surface px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-            >
-              + New Record
-            </button>
+           <button
+  type="button"
+  onClick={handleNewRecord}
+  className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+>
+  + New Record
+</button>
 
           </div>
 
