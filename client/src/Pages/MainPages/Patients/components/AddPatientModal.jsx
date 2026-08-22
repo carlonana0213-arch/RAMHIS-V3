@@ -262,138 +262,80 @@ const AddPatientModal = ({
   */
 
   const buildPayload = () => {
-    const medicalHistory =
-      Array.isArray(
-        form.medicalHistory
+  const medicalHistory = Array.isArray(
+    form.medicalHistory
+  )
+    ? form.medicalHistory.map((item) =>
+        item === "Other"
+          ? form.medicalOther || "Other"
+          : item
       )
-        ? form.medicalHistory.map(
-            (item) =>
-              item === "Other"
-                ? form.medicalOther ||
-                  "Other"
-                : item
-          )
-        : [];
+    : [];
 
-    const familyHistory =
-      Array.isArray(
-        form.familyHistory
+  const familyHistory = Array.isArray(
+    form.familyHistory
+  )
+    ? form.familyHistory.map((item) =>
+        item === "Other"
+          ? form.familyOther || "Other"
+          : item
       )
-        ? form.familyHistory.map(
-            (item) =>
-              item === "Other"
-                ? form.familyOther ||
-                  "Other"
-                : item
-          )
-        : [];
+    : [];
 
-    return {
-      generalInfo: {
-        name:
-          form.generalInfo
-            ?.name || "",
+  return {
+    generalInfo: {
+      ...form.generalInfo,
 
-        age:
-          form.generalInfo
-            ?.age === ""
-            ? null
-            : Number(
-                form.generalInfo
-                  ?.age
-              ),
+      name:
+        form.generalInfo?.name || "",
 
-        birthdate:
-          form.generalInfo
-            ?.birthdate || "",
+      age:
+        form.generalInfo?.age === ""
+          ? null
+          : Number(
+              form.generalInfo?.age
+            ),
+    },
 
-        sex:
-          form.generalInfo
-            ?.sex || "",
+    examination: {
+      ...form.examination,
+    },
 
-        insurance:
-          form.generalInfo
-            ?.insurance || "",
+    medicalHistory,
 
-        tobacco:
-          form.generalInfo
-            ?.tobacco || "",
+    familyHistory,
 
-        alcohol:
-          form.generalInfo
-            ?.alcohol || "",
+    obstetricHistory:
+      form.obstetricHistory || {},
 
-        allergies:
-          form.generalInfo
-            ?.allergies || "",
+    perinatalHistory:
+      form.perinatalHistory || {},
 
-        vaccine:
-          form.generalInfo
-            ?.vaccine || "",
-      },
+    department:
+      form.department || "",
 
-      examination: {
-        bp:
-          form.examination
-            ?.bp || "",
+    initComplaint:
+      form.initComplaint || "",
 
-        temp:
-          form.examination
-            ?.temp || "",
+    isPriority:
+      Boolean(form.isPriority),
 
-        height:
-          form.examination
-            ?.height || "",
+    location:
+      ongoingEvent?.location || "",
 
-        weight:
-          form.examination
-            ?.weight || "",
+    missionDate:
+      ongoingEvent?.date ||
+      new Date(),
 
-        bmi:
-          form.examination
-            ?.bmi || "",
-      },
+    eventId:
+      ongoingEvent?._id || "",
 
-      medicalHistory,
+    eventTitle:
+      ongoingEvent?.title || "",
 
-      familyHistory,
-
-      obstetricHistory:
-        form.obstetricHistory ||
-        {},
-
-      perinatalHistory:
-        form.perinatalHistory ||
-        {},
-
-      department:
-        form.department || "",
-
-      initComplaint:
-        form.initComplaint || "",
-
-      isPriority:
-        Boolean(
-          form.isPriority
-        ),
-
-      location:
-        ongoingEvent?.location ||
-        "",
-
-      missionDate:
-        ongoingEvent?.date ||
-        new Date(),
-
-      eventId:
-        ongoingEvent?._id || "",
-
-      eventTitle:
-        ongoingEvent?.title || "",
-
-      status: "waiting",
-    };
+    status: "waiting",
   };
+};
 
   /*
   |--------------------------------------------------------------------------

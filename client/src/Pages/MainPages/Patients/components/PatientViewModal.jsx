@@ -122,17 +122,26 @@ export default function PatientViewModal({
   const general =
     patient.generalInfo || {};
 
-  const medical =
-    patient.medicalHistory || {};
+  const medicalHistory = Array.isArray(patient.medicalHistory)
+  ? patient.medicalHistory
+  : [];
 
-  const family =
-    patient.familyHistory || {};
+const familyHistory = Array.isArray(patient.familyHistory)
+  ? patient.familyHistory
+  : [];
+
+const hasMedicalHistory = (condition) =>
+  medicalHistory.includes(condition);
+
+const hasFamilyHistory = (condition) =>
+  familyHistory.includes(condition);
 
   const history =
     patient.history || {};
 
-  const perinatal =
-    patient.perinatal || {};
+  const perinatal = patient.perinatalHistory || {};
+
+  const obstetric = patient.obstetricHistory || {};
 
   const examination =
     patient.examination || {};
@@ -485,113 +494,132 @@ export default function PatientViewModal({
                 />
 
                 <Field
-                  label="Complaint"
-                  value={
-                    general.complaint ||
-                    patient.complaint
-                  }
-                />
+  label="Complaint"
+  value={
+    patient.initComplaint ||
+    general.complaint ||
+    patient.complaint
+  }
+/>
 
               </div>
             </Section>
 
             {/* MEDICAL HISTORY */}
             <Section title="Medical History">
+  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <YesNoField
+      label="Diabetes"
+      value={hasMedicalHistory("Diabetes")}
+    />
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <YesNoField
+      label="Hypertension"
+      value={hasMedicalHistory("Hypertension")}
+    />
 
-                <YesNoField
-                  label="Diabetes"
-                  value={medical.diabetes}
-                />
+    <YesNoField
+      label="Asthma"
+      value={hasMedicalHistory("Asthma")}
+    />
 
-                <YesNoField
-                  label="Hypertension"
-                  value={medical.hypertension}
-                />
+    <YesNoField
+      label="Cancer"
+      value={hasMedicalHistory("Cancer")}
+    />
 
-                <YesNoField
-                  label="Asthma"
-                  value={medical.asthma}
-                />
+    <YesNoField
+      label="Stroke"
+      value={hasMedicalHistory("Stroke")}
+    />
 
-                <YesNoField
-                  label="Cancer"
-                  value={medical.cancer}
-                />
+    <YesNoField
+      label="Epilepsy"
+      value={hasMedicalHistory("Epilepsy")}
+    />
 
-                <YesNoField
-                  label="Stroke"
-                  value={medical.stroke}
-                />
+    <YesNoField
+      label="Tuberculosis"
+      value={hasMedicalHistory("Tuberculosis")}
+    />
 
-                <YesNoField
-                  label="Epilepsy"
-                  value={medical.epilepsy}
-                />
-
-                <YesNoField
-                  label="Tuberculosis"
-                  value={medical.tuberculosis}
-                />
-
-                <Field
-                  label="Other"
-                  value={medical.other}
-                />
-
-              </div>
-            </Section>
+    <Field
+      label="Other"
+      value={
+        medicalHistory.find(
+          (item) =>
+            ![
+              "Diabetes",
+              "Hypertension",
+              "Asthma",
+              "Cancer",
+              "Stroke",
+              "Epilepsy",
+              "Tuberculosis",
+            ].includes(item)
+        )
+      }
+    />
+  </div>
+</Section>
 
             {/* FAMILY HISTORY */}
             <Section title="Family History">
+  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <YesNoField
+      label="Diabetes"
+      value={hasFamilyHistory("Diabetes")}
+    />
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <YesNoField
+      label="Hypertension"
+      value={hasFamilyHistory("Hypertension")}
+    />
 
-                <YesNoField
-                  label="Diabetes"
-                  value={family.diabetes}
-                />
+    <YesNoField
+      label="Asthma"
+      value={hasFamilyHistory("Asthma")}
+    />
 
-                <YesNoField
-                  label="Hypertension"
-                  value={family.hypertension}
-                />
+    <YesNoField
+      label="Cancer"
+      value={hasFamilyHistory("Cancer")}
+    />
 
-                <YesNoField
-                  label="Asthma"
-                  value={family.asthma}
-                />
+    <YesNoField
+      label="Stroke"
+      value={hasFamilyHistory("Stroke")}
+    />
 
-                <YesNoField
-                  label="Cancer"
-                  value={family.cancer}
-                />
+    <YesNoField
+      label="Epilepsy"
+      value={hasFamilyHistory("Epilepsy")}
+    />
 
-                <YesNoField
-                  label="Stroke"
-                  value={family.stroke}
-                />
+    <YesNoField
+      label="Tuberculosis"
+      value={hasFamilyHistory("Tuberculosis")}
+    />
 
-                <YesNoField
-                  label="Epilepsy"
-                  value={family.epilepsy}
-                />
-
-                <YesNoField
-                  label="Tuberculosis"
-                  value={
-                    family.tuberculosis
-                  }
-                />
-
-                <Field
-                  label="Other"
-                  value={family.other}
-                />
-
-              </div>
-            </Section>
+    <Field
+      label="Other"
+      value={
+        familyHistory.find(
+          (item) =>
+            ![
+              "Diabetes",
+              "Hypertension",
+              "Asthma",
+              "Cancer",
+              "Stroke",
+              "Epilepsy",
+              "Tuberculosis",
+            ].includes(item)
+        )
+      }
+    />
+  </div>
+</Section>
 
             {/* PATIENT HISTORY */}
             <Section title="Patient History">
@@ -633,41 +661,73 @@ export default function PatientViewModal({
               </div>
             </Section>
 
+            <Section title="Obstetric History">
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+    <YesNoField
+      label="Contraception"
+      value={obstetric.contraception}
+    />
+
+    <Field
+      label="Type"
+      value={obstetric.type}
+    />
+
+    <Field
+      label="G/P (F/P/A/L)"
+      value={obstetric.gpfpal}
+    />
+
+    <Field
+      label="BF"
+      value={obstetric.bf}
+    />
+
+    <Field
+      label="Birth History"
+      value={obstetric.birthHistory}
+    />
+
+    <Field
+      label="Delivery Site"
+      value={obstetric.deliverySite}
+    />
+
+    <Field
+      label="Last Menstrual Period"
+      value={obstetric.lmp}
+    />
+
+  </div>
+</Section>
+
             {/* PERINATAL */}
-            <Section title="Perinatal Information">
+            <Section title="Perinatal History">
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <Field
+      label="Birth Weight"
+      value={perinatal.bw}
+    />
 
-                <Field
-                  label="Birth Weight"
-                  value={
-                    perinatal.birthWeight
-                  }
-                />
+    <Field
+      label="BF"
+      value={perinatal.bf}
+    />
 
-                <Field
-                  label="Birth Type"
-                  value={
-                    perinatal.birthType
-                  }
-                />
+    <Field
+      label="Birth History"
+      value={perinatal.birthHistory}
+    />
 
-                <Field
-                  label="Gestational Age"
-                  value={
-                    perinatal.gestationalAge
-                  }
-                />
+    <Field
+      label="Delivery Site"
+      value={perinatal.deliverySite}
+    />
 
-                <Field
-                  label="Birth Complications"
-                  value={
-                    perinatal.complications
-                  }
-                />
-
-              </div>
-            </Section>
+  </div>
+</Section>
 
             {/* EXAMINATION */}
             <Section title="Examination">
@@ -675,18 +735,14 @@ export default function PatientViewModal({
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
 
                 <Field
-                  label="Blood Pressure"
-                  value={
-                    examination.bloodPressure
-                  }
-                />
+  label="Blood Pressure"
+  value={examination.bp}
+/>
 
-                <Field
-                  label="Temperature"
-                  value={
-                    examination.temperature
-                  }
-                />
+<Field
+  label="Temperature"
+  value={examination.temp}
+/>
 
                 <Field
                   label="Heart Rate"
