@@ -237,50 +237,62 @@ function PharmacyQueue() {
   };
 
   const renderAction = (prescription, item) => {
-    if (item.isGiven) {
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-status-stable-bg px-3 py-1.5 text-xs font-semibold text-status-stable-text">
-          <CheckCircle2 size={14} />
-          Given
-        </span>
-      );
-    }
-
-    const stock = Number(
-      item.medicine?.quantity ?? 0,
-    );
-
-    if (stock <= 0) {
-      return (
-        <button
-          type="button"
-          disabled
-          className="inline-flex cursor-not-allowed items-center rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-text-subtle"
-        >
-          Unavailable
-        </button>
-      );
-    }
-
+  if (item.isGiven) {
     return (
-      <Button
-        size="sm"
-        onClick={() =>
-          setConfirmState({
-            message:
-              "Mark this prescription as given?",
-            onConfirm: () =>
-              handleMarkAsGiven(
-                prescription._id,
-                item._id,
-              ),
-          })
-        }
-      >
-        Mark as Given
-      </Button>
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-status-stable-bg px-3 py-1.5 text-xs font-semibold text-status-stable-text">
+        <CheckCircle2 size={14} />
+        Given
+      </span>
     );
-  };
+  }
+
+  const stock = Number(item.medicine?.quantity ?? 0);
+  const requiredQuantity = Number(item.quantity ?? 0);
+
+  // Completely out of stock
+  if (stock <= 0) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="inline-flex cursor-not-allowed items-center rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-text-subtle"
+      >
+        Out of Stock
+      </button>
+    );
+  }
+
+  // Stock exists, but it is not enough for this prescription
+  if (stock < requiredQuantity) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="inline-flex cursor-not-allowed items-center rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-text-subtle"
+      >
+        Insufficient Stock
+      </button>
+    );
+  }
+
+  return (
+    <Button
+      size="sm"
+      onClick={() =>
+        setConfirmState({
+          message: "Mark this prescription as given?",
+          onConfirm: () =>
+            handleMarkAsGiven(
+              prescription._id,
+              item._id,
+            ),
+        })
+      }
+    >
+      Mark as Given
+    </Button>
+  );
+};
 
   return (
     <div className="space-y-6">

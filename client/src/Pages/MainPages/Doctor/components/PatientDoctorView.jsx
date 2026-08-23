@@ -418,22 +418,18 @@ useEffect(() => {
       }
 
       const validItems =
-        prescriptionItems
-          .filter(
-            (item) =>
-              item.medicine &&
-              Number(
-                item.quantity
-              ) > 0
-          )
-          .map((item) => ({
-            medicine: item.medicine,
-            quantity: Number(
-              item.quantity
-            ),
-            directions:
-              item.directions || "",
-          }));
+  prescriptionItems
+    .filter(
+      (item) =>
+        item.medicine &&
+        Number(item.quantity) > 0
+    )
+    .map((item) => ({
+      medicine: item.medicine,
+      quantity: Number(item.quantity),
+      directions:
+        item.directions?.trim() || "As directed",
+    }));
 
       if (
         validItems.length === 0
@@ -639,7 +635,29 @@ useEffect(() => {
         return;
       }
 
-      setIsSaving(true);
+      if (
+  nextPatientStatus !== "forPharmacy" &&
+  nextPatientStatus !== "released"
+) {
+  setAlertMessage(
+    "Please select For Pharmacy or Release Patient."
+  );
+
+  return;
+}
+
+if (
+  nextPatientStatus === "forPharmacy" &&
+  existingPrescriptions.length === 0
+) {
+  setAlertMessage(
+    "Please save at least one prescription before sending the patient to Pharmacy."
+  );
+
+  return;
+}
+
+setIsSaving(true);
 
       try {
         // =========================
