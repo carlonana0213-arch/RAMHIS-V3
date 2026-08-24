@@ -17,32 +17,44 @@ function DashboardCards({ summary = {} }) {
   const userDiff = Number(summary.userIncrease || 0);
 
   return (
-<div className="grid grid-cols-1 gap-3 md:grid-cols-3">     
-  <div className={statCardVariants.base}>
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+
+      {/* TOTAL PATIENTS */}
+      <div
+        className={`${statCardVariants.base} rounded-2xl border-0 p-6 shadow-[0_4px_20px_rgba(0,0,0,0.06)]`}
+      >
         <div className="flex items-start justify-between gap-4">
+
           <div>
-            <span className="mb-2 block text-sm font-semibold text-text-secondary">
+            <span className="mb-3 block text-sm font-medium text-text-muted">
               Total Patients
             </span>
 
-            <strong className="block text-[30px] font-bold leading-none tracking-tight text-text-primary">
+            <strong className="block text-[36px] font-bold leading-none tracking-tight text-primary-900">
               {(summary.totalPatients || 0).toLocaleString()}
             </strong>
           </div>
 
-          <div className={statCardVariants.icon}>
+          <div
+            className={`${statCardVariants.icon} flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-xl text-primary-700`}
+          >
             <FaUserInjured />
           </div>
+
         </div>
 
         <div
-          className={`mt-3 flex items-center gap-2 border-t border-border-soft pt-4 text-xs font-semibold ${
+          className={`mt-6 flex items-center gap-2 border-t border-border-soft pt-4 text-xs font-semibold ${
             patientDiff >= 0
               ? "text-status-stable-text"
               : "text-status-critical-text"
           }`}
         >
-          {patientDiff >= 0 ? <FaArrowUp /> : <FaArrowDown />}
+          {patientDiff >= 0 ? (
+            <FaArrowUp />
+          ) : (
+            <FaArrowDown />
+          )}
 
           <span>
             {Math.abs(patientDiff).toLocaleString()} patients added this month
@@ -50,34 +62,42 @@ function DashboardCards({ summary = {} }) {
         </div>
       </div>
 
-      {/* VOLUNTEERS */}
-      <div className={statCardVariants.base}>
+      {/* TOTAL VOLUNTEERS */}
+      <div
+        className={`${statCardVariants.base} rounded-2xl border-0 p-6 shadow-[0_4px_20px_rgba(0,0,0,0.06)]`}
+      >
         <div className="flex items-start justify-between gap-4">
+
           <div>
-            <span className="mb-2 block text-sm font-semibold text-text-secondary">
+            <span className="mb-3 block text-sm font-medium text-text-muted">
               Total Volunteers
             </span>
 
-            <strong className="block text-[34px] font-bold leading-none tracking-tight text-text-primary">
+            <strong className="block text-[36px] font-bold leading-none tracking-tight text-primary-900">
               {(summary.totalUsers || 0).toLocaleString()}
             </strong>
           </div>
 
           <div
-            className={`${statCardVariants.icon} bg-status-stable-bg text-status-stable-text`}
+            className={`${statCardVariants.icon} flex h-12 w-12 items-center justify-center rounded-2xl bg-status-stable-bg text-xl text-status-stable-text`}
           >
             <FaUsers />
           </div>
+
         </div>
 
         <div
-          className={`mt-5 flex items-center gap-2 border-t border-border-soft pt-3 text-xs font-semibold ${
+          className={`mt-6 flex items-center gap-2 border-t border-border-soft pt-4 text-xs font-semibold ${
             userDiff >= 0
               ? "text-status-stable-text"
               : "text-status-critical-text"
           }`}
         >
-          {userDiff >= 0 ? <FaArrowUp /> : <FaArrowDown />}
+          {userDiff >= 0 ? (
+            <FaArrowUp />
+          ) : (
+            <FaArrowDown />
+          )}
 
           <span>
             {Math.abs(userDiff).toLocaleString()} compared to previous month
@@ -85,31 +105,35 @@ function DashboardCards({ summary = {} }) {
         </div>
       </div>
 
-      {/* MEDICINES */}
-      <div className={statCardVariants.base}>
+      {/* TOTAL MEDICINES / ATTENTION CARD */}
+      <div
+        className={`${statCardVariants.base} rounded-2xl border-0 bg-warning-100 p-6 shadow-[0_4px_20px_rgba(0,0,0,0.06)]`}
+      >
         <div className="flex items-start justify-between gap-4">
+
           <div>
-            <span className="mb-2.5 block text-sm font-semibold text-text-secondary">
+            <span className="mb-3 block text-sm font-semibold text-warning-800">
               Total Medicines
             </span>
 
-            <strong className="block text-[34px] font-bold leading-none tracking-tight text-text-primary">
+            <strong className="block text-[36px] font-bold leading-none tracking-tight text-warning-900">
               {(summary.totalMedicines || 0).toLocaleString()}
             </strong>
           </div>
 
-          <div
-            className={`${statCardVariants.icon} bg-status-watch-bg text-primary-700`}
-          >
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-warning-200 text-xl text-warning-800">
             <FaCapsules />
           </div>
+
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2 border-t border-border-soft pt-4">
+        <div className="mt-6 flex flex-wrap gap-2 border-t border-warning-200 pt-4">
+
           <span
             className={`${statusPillVariants.base} ${statusPillVariants.watch}`}
           >
             <FaExclamationTriangle />
+
             Low Stock: {summary.lowStock || 0}
           </span>
 
@@ -118,8 +142,10 @@ function DashboardCards({ summary = {} }) {
           >
             Out of Stock: {summary.outOfStock || 0}
           </span>
+
         </div>
       </div>
+
     </div>
   );
 }

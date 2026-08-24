@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
+import { NavLink, useNavigate } from "react-router-dom";
+import { colors } from "../../Theme/colors";
 import {
   FaChartLine,
   FaSignOutAlt,
@@ -29,25 +31,14 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
 
   const role = user?.role;
+  const location = useLocation();
+  const isPharmacyActive = location.pathname.startsWith("/pharmacy");
 
   /*
   |--------------------------------------------------------------------------
   | COLORS
   |--------------------------------------------------------------------------
   */
-
-  const colors = {
-    navy: "#0f2f6b",
-    navyDark: "#0b2454",
-    blue: "#2563eb",
-    blueLight: "#eff6ff",
-    text: "#334155",
-    muted: "#64748b",
-    border: "#e2e8f0",
-    white: "#ffffff",
-    danger: "#dc2626",
-    dangerLight: "#fef2f2",
-  };
 
   /*
   |--------------------------------------------------------------------------
@@ -124,30 +115,34 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
   */
 
   const getNavStyle = ({ isActive }) => ({
-    display: "flex",
-    alignItems: "center",
-    justifyContent: collapsed ? "center" : "flex-start",
-    gap: collapsed ? 0 : 13,
-    width: "100%",
-    minHeight: 46,
-    padding: collapsed ? "0 10px" : "0 14px",
-    borderRadius: 12,
-    border: "none",
-    background: isActive ? colors.blueLight : "transparent",
-    color: isActive ? colors.blue : colors.text,
-    textDecoration: "none",
-    fontSize: 14,
-    fontWeight: isActive ? 600 : 500,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-    boxSizing: "border-box",
-  });
+  display: "flex",
+  alignItems: "center",
+  gap: collapsed ? 0 : 12,
+  width: "100%",
+  minHeight: 48,
+  padding: collapsed ? "0 10px" : "0 12px",
+  justifyContent: collapsed ? "center" : "flex-start",
 
-  const iconStyle = {
-    width: 18,
-    minWidth: 18,
-    fontSize: 17,
-  };
+  border: "none",
+  borderRadius: 16,
+
+  background: isActive
+    ? "#F4C542"
+    : "transparent",
+
+  color: isActive
+    ? colors.primary[900]
+    : "rgba(255, 255, 255, 0.68)",
+
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+
+  fontSize: 13,
+  fontWeight: isActive ? 700 : 500,
+  fontFamily: "inherit",
+
+  textDecoration: "none",
+});
 
   /*
   |--------------------------------------------------------------------------
@@ -160,27 +155,32 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
     marginLeft: collapsed ? 0 : 20,
     paddingLeft: collapsed ? 0 : 12,
     borderLeft: collapsed
-      ? "none"
-      : `1px solid ${colors.border}`,
+  ? "none"
+  : `1px solid ${colors.border.DEFAULT}`,
   };
 
   const submenuLinkStyle = ({ isActive }) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    minHeight: 38,
-    padding: "0 12px",
-    marginBottom: 3,
-    borderRadius: 9,
-    textDecoration: "none",
-    color: isActive ? colors.blue : colors.muted,
-    background: isActive
-      ? colors.blueLight
-      : "transparent",
-    fontSize: 13,
-    fontWeight: isActive ? 600 : 500,
-    transition: "all 0.2s ease",
-  });
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  minHeight: 38,
+  padding: "0 12px",
+  marginBottom: 3,
+  borderRadius: 9,
+  textDecoration: "none",
+
+  color: isActive
+    ? colors.primary[600]
+    : colors.text.muted,
+
+  background: isActive
+    ? colors.primary[50]
+    : "transparent",
+
+  fontSize: 13,
+  fontWeight: isActive ? 600 : 500,
+  transition: "all 0.2s ease",
+});
 
   /*
   |--------------------------------------------------------------------------
@@ -188,26 +188,44 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
   |--------------------------------------------------------------------------
   */
 
+  const iconStyle = {
+  fontSize: 16,
+  flexShrink: 0,
+};
+
   return (
     <>
-      <aside
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          bottom: 0,
-          zIndex: 1000,
-          width: collapsed ? 76 : 250,
-          background: colors.white,
-          borderRight: `1px solid ${colors.border}`,
-          boxShadow:
-            "4px 0 20px rgba(15, 23, 42, 0.04)",
-          display: "flex",
-          flexDirection: "column",
-          transition: "width 0.25s ease",
-          overflow: "hidden",
-        }}
-      >
+     <aside
+  style={{
+  position: "fixed",
+  top: 12,
+  left: 12,
+  bottom: 12,
+
+  width: collapsed ? 76 : 250,
+
+  background: colors.primary[900],
+
+  borderRadius: 28,
+
+  border: "1px solid rgba(255, 255, 255, 0.10)",
+
+  boxShadow:
+    "0 18px 45px rgba(15, 23, 42, 0.22)",
+
+  display: "flex",
+  flexDirection: "column",
+
+  padding: 12,
+
+  zIndex: 1000,
+
+  transition:
+    "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+
+  boxSizing: "border-box",
+}}
+>
         {/* =====================================================
             HEADER
         ====================================================== */}
@@ -224,7 +242,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
             padding: collapsed
               ? "0 12px"
               : "0 16px",
-            borderBottom: `1px solid ${colors.border}`,
+            borderBottom: `1px solid ${colors.border.DEFAULT}`,
             boxSizing: "border-box",
           }}
         >
@@ -257,7 +275,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
               >
                 <strong
                   style={{
-                    color: colors.navy,
+                    color: "#FFFFFF",
                     fontSize: 19,
                     letterSpacing: "0.5px",
                   }}
@@ -268,7 +286,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                 <span
                   style={{
                     marginTop: 5,
-                    color: colors.muted,
+                    color: "rgba(255, 255, 255, 0.55)",
                     fontSize: 9,
                     fontWeight: 600,
                     letterSpacing: "0.7px",
@@ -281,26 +299,32 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
           )}
 
           <button
-            type="button"
-            onClick={toggleSidebar}
-            aria-label="Toggle sidebar"
-            style={{
-              width: 38,
-              height: 38,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: `1px solid ${colors.border}`,
-              borderRadius: 10,
-              background: colors.white,
-              color: colors.muted,
-              cursor: "pointer",
-              flexShrink: 0,
-              transition: "all 0.2s ease",
-            }}
-          >
-            <FaBars size={16} />
-          </button>
+  type="button"
+  onClick={toggleSidebar}
+  aria-label="Toggle sidebar"
+  style={{
+    width: 38,
+    height: 38,
+    border: "none",
+    borderRadius: "50%",
+
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+
+    flexShrink: 0,
+
+    background: "rgba(255, 255, 255, 0.08)",
+
+    color: "rgba(255, 255, 255, 0.82)",
+
+    cursor: "pointer",
+
+    transition: "all 0.2s ease",
+  }}
+>
+  <FaBars size={16} />
+</button>
         </div>
 
         {/* =====================================================
@@ -507,18 +531,14 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                     : undefined
                 }
                 style={{
-                  ...getNavStyle({
-                    isActive:
-                      openPharmacy ||
-                      window.location.pathname.startsWith(
-                        "/pharmacy"
-                      ),
-                  }),
-                  justifyContent: collapsed
-                    ? "center"
-                    : "space-between",
-                  fontFamily: "inherit",
-                }}
+  ...getNavStyle({
+    isActive: isPharmacyActive,
+  }),
+  justifyContent: collapsed
+    ? "center"
+    : "space-between",
+  fontFamily: "inherit",
+}}
               >
                 <span
                   style={{
@@ -591,7 +611,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
             padding: collapsed
               ? "12px 10px"
               : "12px 14px 16px",
-            borderTop: `1px solid ${colors.border}`,
+            borderTop: `1px solid ${colors.border.DEFAULT}`,
           }}
         >
           {!collapsed && user && (
@@ -610,9 +630,8 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                   width: 36,
                   height: 36,
                   borderRadius: 10,
-                  background:
-                    colors.blueLight,
-                  color: colors.blue,
+                  background: colors.primary[50],
+color: colors.primary[600],
                   display: "flex",
                   alignItems: "center",
                   justifyContent:
@@ -639,7 +658,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
               >
                 <strong
                   style={{
-                    color: colors.text,
+                    color: "#FFFFFF",
                     fontSize: 12,
                     whiteSpace:
                       "nowrap",
@@ -657,7 +676,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                 <span
                   style={{
                     marginTop: 3,
-                    color: colors.muted,
+                    color: "rgba(255, 255, 255, 0.55)",
                     fontSize: 10,
                   }}
                 >
@@ -694,7 +713,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
               borderRadius: 11,
               background:
                 "transparent",
-              color: colors.muted,
+              color: "rgba(255, 255, 255, 0.55)",
               fontSize: 14,
               fontWeight: 500,
               cursor: "pointer",
@@ -745,8 +764,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
             style={{
               width: "100%",
               maxWidth: 400,
-              background:
-                colors.white,
+              background: colors.surface.DEFAULT,
               borderRadius: 18,
               padding: 26,
               boxShadow:
@@ -760,10 +778,8 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                 width: 46,
                 height: 46,
                 borderRadius: 12,
-                background:
-                  colors.dangerLight,
-                color:
-                  colors.danger,
+                background: colors.danger[50],
+color: colors.danger[600],
                 display: "flex",
                 alignItems:
                   "center",
@@ -793,8 +809,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
             <p
               style={{
                 margin: 0,
-                color:
-                  colors.muted,
+                color: colors.text.muted,
                 fontSize: 14,
                 lineHeight: 1.6,
               }}
@@ -824,12 +839,9 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
                   height: 40,
                   padding:
                     "0 17px",
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 9,
-                  background:
-                    colors.white,
-                  color:
-                    colors.text,
+                  border: `1px solid ${colors.border.DEFAULT}`,
+background: colors.surface.DEFAULT,
+color: colors.text.primary,
                   fontSize: 13,
                   fontWeight: 600,
                   cursor:
@@ -842,30 +854,23 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
               </button>
 
               <button
-                type="button"
-                onClick={
-                  handleLogout
-                }
-                style={{
-                  height: 40,
-                  padding:
-                    "0 17px",
-                  border: "none",
-                  borderRadius: 9,
-                  background:
-                    colors.danger,
-                  color:
-                    colors.white,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor:
-                    "pointer",
-                  fontFamily:
-                    "inherit",
-                }}
-              >
-                Logout
-              </button>
+  type="button"
+  onClick={handleLogout}
+  style={{
+    height: 40,
+    padding: "0 17px",
+    border: "none",
+    borderRadius: 9,
+    background: colors.danger[600],
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  }}
+>
+  Logout
+</button>
             </div>
           </div>
         </div>

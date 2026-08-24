@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 import {
-  statCardVariants,
+  dashboardCardVariants,
   dashboardBadgeVariants,
 } from "../../../../ui/variants";
 
@@ -24,7 +24,11 @@ function DashboardPatientGraphs({ patientTrends = [] }) {
     const volunteers = Number(item.volunteers || 0);
     const prescriptions = Number(item.prescriptions || 0);
 
-    return patients > 0 || volunteers > 0 || prescriptions > 0;
+    return (
+      patients > 0 ||
+      volunteers > 0 ||
+      prescriptions > 0
+    );
   });
 
   const chartData = showAllMonths
@@ -35,70 +39,41 @@ function DashboardPatientGraphs({ patientTrends = [] }) {
     activeTrends.length < patientTrends.length;
 
   return (
-    <div className={`${statCardVariants.base} flex h-full min-h-0 flex-col`}>
+    <div
+      className={`${dashboardCardVariants.base} flex min-h-[420px] flex-col`}
+    >
       {/* HEADER */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: "20px",
-          marginBottom: "12px",
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <span
-            style={{
-              display: "block",
-              marginBottom: "6px",
-              fontSize: "10px",
-              fontWeight: 700,
-              letterSpacing: "0.9px",
-              color: "#64748b",
-              textTransform: "uppercase",
-            }}
-          >
+          <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
             Activity Monitor
           </span>
 
-          <h3
-            style={{
-              margin: 0,
-              fontSize: "18px",
-              fontWeight: 700,
-              color: "#0f172a",
-            }}
-          >
+          <h3 className="text-lg font-bold tracking-tight text-primary-900 sm:text-xl">
             Patient Activity
           </h3>
 
-          <p
-            style={{
-              margin: "6px 0 0",
-              color: "#64748b",
-              fontSize: "12px",
-            }}
-          >
+          <p className="mt-2 text-sm text-text-muted">
             Monthly patient visits, volunteer activity, and prescriptions.
           </p>
         </div>
 
         <span
-          className={`${dashboardBadgeVariants.base} ${dashboardBadgeVariants.overview}`}
+          className={`${dashboardBadgeVariants.base} ${dashboardBadgeVariants.overview} self-start`}
         >
           Live Metrics
         </span>
       </div>
 
-      {/* CHART */}
+      {/* EMPTY STATE */}
       {activeTrends.length === 0 ? (
-        <div className="flex min-h-[240px] flex-1 items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm text-text-secondary">
-  No activity data available
-</div>
-            ) : (
+        <div className="flex min-h-[280px] flex-1 items-center justify-center rounded-2xl border border-dashed border-border-strong bg-surface-muted px-4 text-center text-sm text-text-secondary">
+          No activity data available
+        </div>
+      ) : (
         <>
-          <div className="min-h-0 flex-1">
+          {/* CHART */}
+          <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
@@ -110,7 +85,7 @@ function DashboardPatientGraphs({ patientTrends = [] }) {
                 }}
               >
                 <CartesianGrid
-                  stroke="#e2e8f0"
+                  stroke="#E2E8F0"
                   strokeDasharray="3 3"
                   vertical={false}
                 />
@@ -120,7 +95,7 @@ function DashboardPatientGraphs({ patientTrends = [] }) {
                   axisLine={false}
                   tickLine={false}
                   tick={{
-                    fill: "#64748b",
+                    fill: "#64748B",
                     fontSize: 11,
                   }}
                 />
@@ -129,14 +104,21 @@ function DashboardPatientGraphs({ patientTrends = [] }) {
                   axisLine={false}
                   tickLine={false}
                   tick={{
-                    fill: "#64748b",
+                    fill: "#64748B",
                     fontSize: 11,
                   }}
                 />
 
                 <Tooltip
                   cursor={{
-                    fill: "rgba(59, 130, 246, 0.04)",
+                    fill: "rgba(79, 99, 217, 0.05)",
+                  }}
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "1px solid #EEF2F7",
+                    boxShadow:
+                      "0 8px 24px rgba(15, 23, 42, 0.08)",
+                    fontSize: "12px",
                   }}
                 />
 
@@ -146,42 +128,45 @@ function DashboardPatientGraphs({ patientTrends = [] }) {
                   wrapperStyle={{
                     fontSize: "11px",
                     paddingTop: "18px",
-                    color: "#64748b",
+                    color: "#64748B",
                   }}
                 />
 
                 <Bar
                   dataKey="patients"
                   name="Patients"
-                  fill="#1e3a8a"
-                  radius={[4, 4, 0, 0]}
+                  fill="#273A78"
+                  radius={[8, 8, 0, 0]}
                   maxBarSize={32}
                 />
 
                 <Bar
                   dataKey="volunteers"
                   name="Volunteers"
-                  fill="#2563eb"
-                  radius={[4, 4, 0, 0]}
+                  fill="#667CEB"
+                  radius={[8, 8, 0, 0]}
                   maxBarSize={32}
                 />
 
                 <Bar
                   dataKey="prescriptions"
                   name="Prescriptions"
-                  fill="#93c5fd"
-                  radius={[4, 4, 0, 0]}
+                  fill="#B6C5FF"
+                  radius={[8, 8, 0, 0]}
                   maxBarSize={32}
                 />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
+          {/* TOGGLE */}
           {hasHiddenMonths && (
             <button
               type="button"
-              onClick={() => setShowAllMonths(!showAllMonths)}
-              className="mt-2 self-center text-xs font-semibold text-primary-700 hover:text-primary-900"
+              onClick={() =>
+                setShowAllMonths((previous) => !previous)
+              }
+              className="mt-4 self-center rounded-full px-4 py-2 text-xs font-semibold text-primary-700 transition-colors hover:bg-primary-50 hover:text-primary-900"
             >
               {showAllMonths
                 ? "Hide Empty Months"

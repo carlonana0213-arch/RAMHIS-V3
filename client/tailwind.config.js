@@ -32,6 +32,23 @@ export default {
           ${colors.background.gradient.to} 100%
         )`,
       },
+
+      boxShadow: {
+        soft:
+          "0 2px 8px rgba(15, 23, 42, 0.04)",
+
+        card:
+          "0 8px 24px rgba(15, 23, 42, 0.06)",
+
+        elevated:
+          "0 18px 45px rgba(39, 58, 120, 0.10)",
+      },
+
+      borderRadius: {
+        card: "1rem",
+        panel: "1.25rem",
+        pill: "9999px",
+      },
     },
   },
 

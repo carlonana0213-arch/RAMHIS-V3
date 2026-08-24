@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
-  FaUserCircle,
   FaChevronDown,
   FaUserCog,
 } from "react-icons/fa";
@@ -31,212 +30,185 @@ export default function Topbar() {
 
   return (
     <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 900,
-        height: 76,
-        background: "rgba(255, 255, 255, 0.94)",
-        backdropFilter: "blur(12px)",
-        borderBottom: "1px solid #e2e8f0",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "flex-end",
-        padding: "0 30px",
-        boxSizing: "border-box",
-      }}
+      className="
+        sticky top-0 z-[900]
+        flex h-[76px] items-center justify-end
+        border-b border-border-soft
+        bg-white/80 px-5
+        backdrop-blur-xl
+        md:px-6 lg:px-8
+      "
     >
-      {/* =====================================================
-          USER AREA
-      ====================================================== */}
-
-      <div
-        style={{
-          position: "relative",
-        }}
-      >
+      {/* USER AREA */}
+      <div className="relative">
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
           aria-expanded={open}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 11,
-            padding: "6px 8px",
-            border: "none",
-            borderRadius: 12,
-            background: open ? "#f8fafc" : "transparent",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            fontFamily: "inherit",
-          }}
+          className={`
+            flex items-center gap-3
+            rounded-2xl px-2 py-1.5
+            transition-all duration-200
+            ${
+              open
+                ? "border border-border-soft bg-surface shadow-sm"
+                : "border border-transparent bg-transparent hover:bg-surface"
+            }
+          `}
         >
           {/* AVATAR */}
-
           <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
-              background:
-                "linear-gradient(135deg, #2563eb, #1e40af)",
-              color: "#ffffff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 14,
-              fontWeight: 700,
-              boxShadow:
-                "0 4px 12px rgba(37, 99, 235, 0.18)",
-            }}
+            className="
+              flex h-11 w-11
+              shrink-0 items-center justify-center
+              rounded-2xl
+              bg-gradient-to-br
+              from-primary-600 to-primary-900
+              text-sm font-bold
+              text-text-inverse
+              shadow-[0_6px_18px_rgba(30,42,94,0.22)]
+            "
           >
             {firstLetter}
           </div>
 
           {/* USER INFO */}
-
           <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              minWidth: 100,
-              maxWidth: 180,
-            }}
+            className="
+              hidden min-w-[100px] max-w-[180px]
+              flex-col items-start
+              sm:flex
+            "
           >
             <span
-              style={{
-                color: "#0f172a",
-                fontSize: 13,
-                fontWeight: 650,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                maxWidth: 180,
-              }}
+              className="
+                max-w-[180px]
+                truncate
+                text-[13px]
+                font-bold
+                text-primary-900
+              "
             >
               {displayName}
             </span>
 
             <span
-              style={{
-                marginTop: 3,
-                color: "#64748b",
-                fontSize: 11,
-                fontWeight: 500,
-              }}
+              className="
+                mt-0.5
+                text-[11px]
+                font-medium
+                capitalize
+                text-text-muted
+              "
             >
               {role}
             </span>
           </div>
 
           {/* CHEVRON */}
-
           <FaChevronDown
-            style={{
-              color: "#64748b",
-              fontSize: 11,
-              transform: open
-                ? "rotate(180deg)"
-                : "rotate(0deg)",
-              transition: "transform 0.2s ease",
-            }}
+            className={`
+              hidden text-[11px]
+              text-text-muted
+              transition-transform duration-200
+              sm:block
+              ${
+                open
+                  ? "rotate-180"
+                  : "rotate-0"
+              }
+            `}
           />
         </button>
 
-        {/* =====================================================
-            DROPDOWN
-        ====================================================== */}
-
+        {/* DROPDOWN */}
         {open && (
           <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 9px)",
-              right: 0,
-              width: 220,
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              borderRadius: 14,
-              padding: 7,
-              boxShadow:
-                "0 18px 45px rgba(15, 23, 42, 0.12)",
-              boxSizing: "border-box",
-            }}
+            className="
+              absolute right-0 top-[calc(100%+10px)]
+              w-[230px]
+              overflow-hidden
+              rounded-2xl
+              border border-border-soft
+              bg-surface
+              p-2
+              shadow-[0_20px_50px_rgba(15,23,42,0.12)]
+            "
           >
             {/* ACCOUNT HEADER */}
-
             <div
-              style={{
-                padding: "10px 11px 12px",
-                borderBottom: "1px solid #f1f5f9",
-                marginBottom: 5,
-              }}
+              className="
+                mb-2
+                border-b border-border-soft
+                px-3 py-3
+              "
             >
               <span
-                style={{
-                  display: "block",
-                  color: "#94a3b8",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: "0.7px",
-                  textTransform: "uppercase",
-                }}
+                className="
+                  block
+                  text-[9px]
+                  font-bold
+                  uppercase
+                  tracking-[0.14em]
+                  text-text-muted
+                "
               >
                 Signed in as
               </span>
 
               <strong
-                style={{
-                  display: "block",
-                  marginTop: 4,
-                  color: "#0f172a",
-                  fontSize: 13,
-                  fontWeight: 650,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
+                className="
+                  mt-1 block
+                  truncate
+                  text-[13px]
+                  font-bold
+                  text-primary-900
+                "
               >
                 {displayName}
               </strong>
+
+              <span
+                className="
+                  mt-0.5 block
+                  text-[11px]
+                  capitalize
+                  text-text-muted
+                "
+              >
+                {role}
+              </span>
             </div>
 
             {/* ACCOUNT SETTINGS */}
-
             <button
               type="button"
               onClick={() => {
                 setOpen(false);
                 navigate("/account");
               }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 11,
-                width: "100%",
-                height: 42,
-                padding: "0 11px",
-                border: "none",
-                borderRadius: 9,
-                background: "transparent",
-                color: "#334155",
-                fontSize: 13,
-                fontWeight: 500,
-                textAlign: "left",
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
+              className="
+                flex h-11 w-full
+                items-center gap-3
+                rounded-xl px-3
+                text-left text-[13px]
+                font-semibold
+                text-text-secondary
+                transition-all duration-200
+                hover:bg-primary-50
+                hover:text-primary-900
+              "
             >
               <FaUserCog
-                style={{
-                  color: "#2563eb",
-                  fontSize: 15,
-                }}
+                className="
+                  text-[16px]
+                  text-primary-700
+                "
               />
 
-              <span>Account Settings</span>
+              <span>
+                Account Settings
+              </span>
             </button>
           </div>
         )}

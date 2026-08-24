@@ -18,13 +18,11 @@ export default function MainLayout() {
           "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
-      {/* SIDEBAR */}
       <Sidebar
         collapsed={collapsed}
         toggleSidebar={() => setCollapsed((prev) => !prev)}
       />
 
-      {/* MAIN AREA */}
       <div
         style={{
           minHeight: "100vh",
@@ -32,10 +30,8 @@ export default function MainLayout() {
           transition: "margin-left 0.25s ease",
         }}
       >
-        {/* TOPBAR */}
         <Topbar />
 
-        {/* PAGE CONTENT */}
         <main
           style={{
             width: "100%",

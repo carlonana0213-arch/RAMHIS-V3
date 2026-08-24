@@ -82,29 +82,55 @@ export const statusDotVariants = {
 };
 
 export const statCardVariants = {
+
   base: [
-    "rounded-xl",
+
+    "rounded-2xl",
+
     "border",
+
     "border-border-soft",
+
     "bg-surface",
-    "p-5",
-    "shadow-sm",
+
+    "p-6",
+
+    "shadow-[0_4px_20px_rgba(0,0,0,0.06)]",
+
     "transition-all",
+
     "duration-200",
+
+    "hover:-translate-y-0.5",
+
     "hover:border-primary-200",
-    "hover:shadow-md",
+
+    "hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)]",
+
   ].join(" "),
 
   icon: [
+
     "flex",
-    "h-10",
-    "w-10",
+
+    "h-12",
+
+    "w-12",
+
     "items-center",
+
     "justify-center",
-    "rounded-lg",
+
+    "rounded-2xl",
+
     "bg-primary-50",
+
     "text-primary-700",
+
+    "text-xl",
+
   ].join(" "),
+
 };
 
 export const alertVariants = {
