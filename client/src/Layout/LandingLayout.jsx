@@ -1,4 +1,4 @@
-import Navbar from "../Components/Landing/Navbar";
+import Navbar from "../Components/landing/Navbar";
 
 export default function LandingLayout({ children }) {
   return (
