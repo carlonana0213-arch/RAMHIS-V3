@@ -1,4 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  CheckCircle2,
+  ChevronRight,
+  CircleAlert,
+  FileCheck2,
+  FileText,
+  Filter,
+  Plus,
+  Search,
+  ShieldCheck,
+  UserCheck,
+  UserCog,
+  UserRound,
+  Users,
+  UserX,
+} from "lucide-react";
 
 // Services
 import {
@@ -213,441 +229,565 @@ function UserManagement() {
         ? "Active Users"
         : "Deactivated Users";
 
+  const pageDescription =
+    tab === "pending"
+      ? "Review and manage new account registration requests."
+      : tab === "active"
+        ? "Manage approved and currently active system accounts."
+        : "Review rejected and deactivated user accounts.";
+
+  const activeCount = users.filter(
+    (user) =>
+      user.verificationStatus === "Approved" ||
+      user.status === "active",
+  ).length;
+
+  const pendingCount = users.filter(
+    (user) =>
+      user.verificationStatus === "Pending" ||
+      user.status === "pending",
+  ).length;
+
+  const deactivatedCount = users.filter(
+    (user) =>
+      user.verificationStatus === "Deactivated" ||
+      user.verificationStatus === "Rejected" ||
+      user.status === "deactivated",
+  ).length;
+
   return (
-    <div className="w-full space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* =========================
-          PAGE HEADER
-      ========================= */}
+    <div className="min-h-screen w-full bg-slate-50 p-5 sm:p-6 lg:p-8">
+      <div className="mx-auto w-full max-w-[1700px] space-y-6">
+        {/* =========================
+            PAGE HEADER
+        ========================= */}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text-primary">
-            Account Management
-          </h1>
-
-          <p className="mt-1 text-sm text-text-muted">
-            Manage system users, approvals, and account status.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-        >
-          <span className="text-lg leading-none">+</span>
-          Add User
-        </button>
-      </div>
-
-      {/* =========================
-          USER STATISTICS
-      ========================= */}
-
-      {loading ? (
-        <CardSkeleton count={4} />
-      ) : (
-        <UserDashboard users={users} />
-      )}
-
-      {/* =========================
-          SEARCH + FILTERS
-      ========================= */}
-
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-        <div className="flex flex-col gap-4">
-          {/* Search */}
-
-          <div className="w-full">
-            <label
-              htmlFor="user-search"
-              className="mb-2 block text-sm font-semibold text-slate-700"
-            >
-              Search Users
-            </label>
-
-            <input
-              id="user-search"
-              type="text"
-              placeholder="Search by name, email, or role..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-border-strong bg-surface px-4 py-3 text-sm text-text-primary outline-none transition placeholder:text-text-subtle focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
-
-          {/* Filters */}
-
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            {/* Status */}
-
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-text-muted">
-                Account Status
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                <FilterButton
-                  active={tab === "active"}
-                  onClick={() => setTab("active")}
-                >
-                  Active
-                </FilterButton>
-
-                <FilterButton
-                  active={tab === "pending"}
-                  onClick={() => setTab("pending")}
-                >
-                  Pending
-                </FilterButton>
-
-                <FilterButton
-                  active={tab === "deactivated"}
-                  onClick={() => setTab("deactivated")}
-                >
-                  Deactivated
-                </FilterButton>
-              </div>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+              <UserCog size={24} />
             </div>
 
-            {/* Role */}
-
             <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-text-muted">
-                Role
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-subtle">
+                System Administration
               </p>
 
-              <div className="flex flex-wrap gap-2">
-                <FilterButton
-                  active={filter === "All"}
-                  onClick={() => setFilter("All")}
-                >
-                  All
-                </FilterButton>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-text-primary">
+                Account Management
+              </h1>
 
-                <FilterButton
-                  active={filter === "Doctor"}
-                  onClick={() => setFilter("Doctor")}
-                >
-                  Doctors
-                </FilterButton>
-
-                <FilterButton
-                  active={filter === "Volunteer"}
-                  onClick={() => setFilter("Volunteer")}
-                >
-                  Volunteers
-                </FilterButton>
-
-                <FilterButton
-                  active={filter === "Admin"}
-                  onClick={() => setFilter("Admin")}
-                >
-                  Admins
-                </FilterButton>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* =========================
-          TABLE SECTION
-      ========================= */}
-
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-        {/* Table Header */}
-
-        <div className="border-b border-border px-5 py-5">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-text-primary">
-                {pageTitle}
-              </h2>
-
-              <p className="text-sm text-text-muted">
-                {filteredUsers.length} user
-                {filteredUsers.length !== 1 ? "s" : ""} found
+              <p className="mt-1 text-sm text-text-muted">
+                Manage system users, approvals, roles, and account status.
               </p>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-sky-400/20 active:scale-[0.98] sm:w-auto"
+          >
+            <Plus size={18} />
+            Add User
+          </button>
         </div>
 
-        {/* Loading */}
+        {/* =========================
+            USER STATISTICS
+        ========================= */}
 
         {loading ? (
-          <div className="p-4">
-            <TableSkeleton rows={8} columns={7} />
-          </div>
-        ) : filteredUsers.length === 0 ? (
-          /* Empty State */
+          <CardSkeleton count={4} />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <MiniStatCard
+                label="Total Users"
+                value={users.length}
+                icon={Users}
+                iconClassName="bg-primary-100 text-primary-700"
+              />
 
-          <div className="flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl">
-              👥
+              <MiniStatCard
+                label="Active Accounts"
+                value={activeCount}
+                icon={UserCheck}
+                iconClassName="bg-emerald-50 text-emerald-600"
+              />
+
+              <MiniStatCard
+                label="Pending Approval"
+                value={pendingCount}
+                icon={CircleAlert}
+                iconClassName="bg-amber-50 text-amber-600"
+              />
+
+              <MiniStatCard
+                label="Inactive Accounts"
+                value={deactivatedCount}
+                icon={UserX}
+                iconClassName="bg-rose-50 text-rose-600"
+              />
             </div>
 
-            <h3 className="text-base font-bold text-text-primary">
-              No users found
-            </h3>
+            <UserDashboard users={users} />
+          </>
+        )}
 
-            <p className="mt-1 max-w-md text-sm text-text-muted">
-              There are no users matching the current status,
-              role, or search filters.
-            </p>
+        {/* =========================
+            FILTER SECTION
+        ========================= */}
+
+        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="border-b border-border px-5 py-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                <Filter size={17} />
+              </div>
+
+              <div>
+                <h2 className="text-sm font-extrabold text-text-primary">
+                  Search & Filters
+                </h2>
+
+                <p className="text-xs text-text-muted">
+                  Find and organize user accounts.
+                </p>
+              </div>
+            </div>
           </div>
-        ) : (
-          /* Table */
 
-          <div className="w-full overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-left">
-              <thead className="bg-slate-50">
-                <tr className="border-b border-border">
-                  <TableHeader>Name</TableHeader>
-                  <TableHeader>Role</TableHeader>
-                  <TableHeader>Status</TableHeader>
-                  <TableHeader>Date Added</TableHeader>
-                  <TableHeader>License Proof</TableHeader>
-                  <TableHeader>Doctorate Proof</TableHeader>
-                  <TableHeader>Actions</TableHeader>
-                </tr>
-              </thead>
+          <div className="space-y-5 p-5 sm:p-6">
+            {/* Search */}
 
-              <tbody className="divide-y divide-border-soft">
-                {filteredUsers.map((user) => (
-                  <tr
-                    key={user._id}
-                    className="transition hover:bg-slate-50"
+            <div className="relative">
+              <Search
+                size={18}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-subtle"
+              />
+
+              <input
+                id="user-search"
+                type="text"
+                placeholder="Search by name, email, or role..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-xl border border-border bg-slate-50 py-3 pl-11 pr-4 text-sm text-text-primary outline-none transition placeholder:text-text-subtle focus:border-primary-400 focus:bg-surface focus:ring-4 focus:ring-primary-100"
+              />
+            </div>
+
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+              {/* Status */}
+
+              <div>
+                <p className="mb-2.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-subtle">
+                  Account Status
+                </p>
+
+                <div className="flex flex-wrap gap-2">
+                  <FilterButton
+                    active={tab === "active"}
+                    onClick={() => setTab("active")}
+                    icon={CheckCircle2}
                   >
-                    {/* Name */}
+                    Active
+                  </FilterButton>
 
-                    <td className="px-5 py-4">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedUser(user)}
-                        className="text-left"
-                      >
-                        <p className="font-semibold text-text-primary hover:text-primary-700">
-                          {user.name || "Unnamed User"}
-                        </p>
+                  <FilterButton
+                    active={tab === "pending"}
+                    onClick={() => setTab("pending")}
+                    icon={CircleAlert}
+                  >
+                    Pending
+                  </FilterButton>
 
-                        <p className="mt-1 text-xs text-text-muted">
-                          {user.email || "No email"}
-                        </p>
-                      </button>
-                    </td>
+                  <FilterButton
+                    active={tab === "deactivated"}
+                    onClick={() => setTab("deactivated")}
+                    icon={UserX}
+                  >
+                    Deactivated
+                  </FilterButton>
+                </div>
+              </div>
 
-                    {/* Role */}
+              {/* Role */}
 
-                    <td className="px-5 py-4">
-                      <RoleBadge role={user.role} />
-                    </td>
+              <div>
+                <p className="mb-2.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-text-subtle">
+                  User Role
+                </p>
 
-                    {/* Status */}
+                <div className="flex flex-wrap gap-2">
+                  <FilterButton
+                    active={filter === "All"}
+                    onClick={() => setFilter("All")}
+                  >
+                    All
+                  </FilterButton>
 
-                    <td className="px-5 py-4">
-                      <StatusBadge
-                        status={user.verificationStatus}
-                      />
-                    </td>
+                  <FilterButton
+                    active={filter === "Doctor"}
+                    onClick={() => setFilter("Doctor")}
+                  >
+                    Doctors
+                  </FilterButton>
 
-                    {/* Date */}
+                  <FilterButton
+                    active={filter === "Volunteer"}
+                    onClick={() => setFilter("Volunteer")}
+                  >
+                    Volunteers
+                  </FilterButton>
 
-                    <td className="whitespace-nowrap px-5 py-4 text-sm text-text-secondary">
-                      {user.createdAt
-                        ? new Date(
-                            user.createdAt,
-                          ).toLocaleDateString()
-                        : "N/A"}
-                    </td>
-
-                    {/* License */}
-
-                    <td className="px-5 py-4">
-                      {user.role === "Doctor" &&
-                      user.doctorInfo?.proofOfLicense ? (
-                        <a
-                          href={
-                            user.doctorInfo.proofOfLicense
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-semibold text-primary-600 hover:text-blue-800 hover:underline"
-                        >
-                          View
-                        </a>
-                      ) : (
-                        <span className="text-text-subtle">
-                          -
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Doctorate */}
-
-                    <td className="px-5 py-4">
-                      {user.role === "Doctor" &&
-                      user.doctorInfo?.proofOfDoctorate ? (
-                        <a
-                          href={
-                            user.doctorInfo.proofOfDoctorate
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-semibold text-primary-600 hover:text-blue-800 hover:underline"
-                        >
-                          View
-                        </a>
-                      ) : (
-                        <span className="text-text-subtle">
-                          -
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Actions */}
-
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        {tab === "pending" && (
-                          <>
-                            <ActionButton
-                              variant="success"
-                              onClick={() =>
-                                openConfirm(
-                                  "Are you sure you want to approve this user?",
-                                  () =>
-                                    handleApprove(user._id),
-                                )
-                              }
-                            >
-                              Approve
-                            </ActionButton>
-
-                            <ActionButton
-                              variant="danger"
-                              onClick={() =>
-                                openConfirm(
-                                  "Are you sure you want to reject this user?",
-                                  () =>
-                                    handleReject(user._id),
-                                )
-                              }
-                            >
-                              Reject
-                            </ActionButton>
-                          </>
-                        )}
-
-                        {tab === "active" && (
-                          <ActionButton
-                            variant="danger"
-                            onClick={() =>
-                              openConfirm(
-                                "Are you sure you want to deactivate this user?",
-                                () =>
-                                  handleDeactivate(
-                                    user._id,
-                                  ),
-                              )
-                            }
-                          >
-                            Deactivate
-                          </ActionButton>
-                        )}
-
-                        {tab === "deactivated" && (
-                          <ActionButton
-                            variant="success"
-                            onClick={() =>
-                              openConfirm(
-                                "Are you sure you want to reactivate this user?",
-                                () =>
-                                  handleReactivate(
-                                    user._id,
-                                  ),
-                              )
-                            }
-                          >
-                            Reactivate
-                          </ActionButton>
-                        )}
-
-                        <ActionButton
-                          variant="secondary"
-                          onClick={() =>
-                            setSelectedUser(user)
-                          }
-                        >
-                          View / Edit
-                        </ActionButton>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                  <FilterButton
+                    active={filter === "Admin"}
+                    onClick={() => setFilter("Admin")}
+                  >
+                    Admins
+                  </FilterButton>
+                </div>
+              </div>
+            </div>
           </div>
+        </section>
+
+        {/* =========================
+            TABLE SECTION
+        ========================= */}
+
+        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+          {/* Table Header */}
+
+          <div className="border-b border-border px-5 py-5 sm:px-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+                    <Users size={18} />
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg font-bold text-text-primary">
+                      {pageTitle}
+                    </h2>
+
+                    <p className="mt-0.5 text-sm text-text-muted">
+                      {pageDescription}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="inline-flex w-fit items-center rounded-lg border border-border bg-slate-50 px-3 py-2">
+                <span className="text-xs font-bold text-text-muted">
+                  {filteredUsers.length} user
+                  {filteredUsers.length !== 1 ? "s" : ""} found
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Loading */}
+
+          {loading ? (
+            <div className="p-4 sm:p-5">
+              <TableSkeleton rows={8} columns={7} />
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            /* Empty State */
+
+            <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-14 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-text-subtle">
+                <Users size={28} />
+              </div>
+
+              <h3 className="mt-5 text-lg font-bold text-text-primary">
+                No users found
+              </h3>
+
+              <p className="mt-2 max-w-md text-sm leading-6 text-text-muted">
+                There are no users matching the current status,
+                role, or search filters.
+              </p>
+            </div>
+          ) : (
+            /* Table */
+
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-[1150px] text-left">
+                <thead className="bg-slate-50/80">
+                  <tr className="border-b border-border">
+                    <TableHeader>User</TableHeader>
+                    <TableHeader>Role</TableHeader>
+                    <TableHeader>Status</TableHeader>
+                    <TableHeader>Date Added</TableHeader>
+                    <TableHeader>License Proof</TableHeader>
+                    <TableHeader>Doctorate Proof</TableHeader>
+                    <TableHeader align="right">
+                      Actions
+                    </TableHeader>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-border-soft">
+                  {filteredUsers.map((user) => {
+                    const userName =
+                      user.name || "Unnamed User";
+
+                    const userInitial =
+                      userName.charAt(0).toUpperCase();
+
+                    return (
+                      <tr
+                        key={user._id}
+                        className="group transition-colors hover:bg-slate-50/70"
+                      >
+                        {/* User */}
+
+                        <td className="px-5 py-4">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedUser(user)}
+                            className="flex items-center gap-3 text-left"
+                          >
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-sm font-extrabold text-primary-700 transition group-hover:bg-primary-100">
+                              {userInitial}
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="max-w-[230px] truncate font-bold text-text-primary transition group-hover:text-primary-700">
+                                {userName}
+                              </p>
+
+                              <p className="mt-0.5 max-w-[230px] truncate text-xs text-text-muted">
+                                {user.email || "No email"}
+                              </p>
+                            </div>
+                          </button>
+                        </td>
+
+                        {/* Role */}
+
+                        <td className="px-5 py-4">
+                          <RoleBadge role={user.role} />
+                        </td>
+
+                        {/* Status */}
+
+                        <td className="px-5 py-4">
+                          <StatusBadge
+                            status={user.verificationStatus}
+                          />
+                        </td>
+
+                        {/* Date */}
+
+                        <td className="whitespace-nowrap px-5 py-4 text-sm font-medium text-text-secondary">
+                          {user.createdAt
+                            ? new Date(
+                                user.createdAt,
+                              ).toLocaleDateString()
+                            : "N/A"}
+                        </td>
+
+                        {/* License */}
+
+                        <td className="px-5 py-4">
+                          {user.role === "Doctor" &&
+                          user.doctorInfo?.proofOfLicense ? (
+                            <a
+                              href={
+                                user.doctorInfo.proofOfLicense
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
+                            >
+                              <FileCheck2 size={15} />
+                              View
+                            </a>
+                          ) : (
+                            <span className="text-text-subtle">
+                              —
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Doctorate */}
+
+                        <td className="px-5 py-4">
+                          {user.role === "Doctor" &&
+                          user.doctorInfo?.proofOfDoctorate ? (
+                            <a
+                              href={
+                                user.doctorInfo.proofOfDoctorate
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
+                            >
+                              <FileText size={15} />
+                              View
+                            </a>
+                          ) : (
+                            <span className="text-text-subtle">
+                              —
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+
+                        <td className="px-5 py-4">
+                          <div className="flex flex-wrap justify-end gap-2">
+                            {tab === "pending" && (
+                              <>
+                                <ActionButton
+                                  variant="success"
+                                  onClick={() =>
+                                    openConfirm(
+                                      "Are you sure you want to approve this user?",
+                                      () =>
+                                        handleApprove(
+                                          user._id,
+                                        ),
+                                    )
+                                  }
+                                >
+                                  Approve
+                                </ActionButton>
+
+                                <ActionButton
+                                  variant="danger"
+                                  onClick={() =>
+                                    openConfirm(
+                                      "Are you sure you want to reject this user?",
+                                      () =>
+                                        handleReject(
+                                          user._id,
+                                        ),
+                                    )
+                                  }
+                                >
+                                  Reject
+                                </ActionButton>
+                              </>
+                            )}
+
+                            {tab === "active" && (
+                              <ActionButton
+                                variant="danger"
+                                onClick={() =>
+                                  openConfirm(
+                                    "Are you sure you want to deactivate this user?",
+                                    () =>
+                                      handleDeactivate(
+                                        user._id,
+                                      ),
+                                  )
+                                }
+                              >
+                                Deactivate
+                              </ActionButton>
+                            )}
+
+                            {tab === "deactivated" && (
+                              <ActionButton
+                                variant="success"
+                                onClick={() =>
+                                  openConfirm(
+                                    "Are you sure you want to reactivate this user?",
+                                    () =>
+                                      handleReactivate(
+                                        user._id,
+                                      ),
+                                  )
+                                }
+                              >
+                                Reactivate
+                              </ActionButton>
+                            )}
+
+                            <ActionButton
+                              variant="secondary"
+                              onClick={() =>
+                                setSelectedUser(user)
+                              }
+                            >
+                              View / Edit
+                              <ChevronRight size={14} />
+                            </ActionButton>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* =========================
+            CONFIRM MODAL
+        ========================= */}
+
+        {confirmAction && (
+          <ConfirmModal
+            message={confirmMessage}
+            onConfirm={async () => {
+              const action = confirmAction;
+
+              closeConfirm();
+
+              await action();
+            }}
+            onCancel={closeConfirm}
+          />
+        )}
+
+        {/* =========================
+            EDIT USER MODAL
+        ========================= */}
+
+        {selectedUser && (
+          <EditUserModal
+            user={selectedUser}
+            onClose={() => setSelectedUser(null)}
+            onSuccess={async () => {
+              setSelectedUser(null);
+              await loadUsers();
+            }}
+          />
+        )}
+
+        {/* =========================
+            ADD USER MODAL
+        ========================= */}
+
+        {showCreateModal && (
+          <AddUserModal
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={async () => {
+              setShowCreateModal(false);
+              await loadUsers();
+            }}
+          />
+        )}
+
+        {/* =========================
+            ALERT
+        ========================= */}
+
+        {alertMessage && (
+          <AlertModal
+            message={alertMessage}
+            onClose={() => setAlertMessage("")}
+          />
         )}
       </div>
-
-      {/* =========================
-          CONFIRM MODAL
-      ========================= */}
-
-      {confirmAction && (
-        <ConfirmModal
-          message={confirmMessage}
-          onConfirm={async () => {
-            const action = confirmAction;
-
-            closeConfirm();
-
-            await action();
-          }}
-          onCancel={closeConfirm}
-        />
-      )}
-
-      {/* =========================
-          EDIT USER MODAL
-      ========================= */}
-
-      {selectedUser && (
-        <EditUserModal
-          user={selectedUser}
-          onClose={() => setSelectedUser(null)}
-          onSuccess={async () => {
-            setSelectedUser(null);
-            await loadUsers();
-          }}
-        />
-      )}
-
-      {/* =========================
-          ADD USER MODAL
-      ========================= */}
-
-      {showCreateModal && (
-        <AddUserModal
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={async () => {
-            setShowCreateModal(false);
-            await loadUsers();
-          }}
-        />
-      )}
-
-      {/* =========================
-          ALERT
-      ========================= */}
-
-      {alertMessage && (
-        <AlertModal
-          message={alertMessage}
-          onClose={() => setAlertMessage("")}
-        />
-      )}
     </div>
   );
 }
@@ -656,25 +796,67 @@ function UserManagement() {
    SMALL UI COMPONENTS
 ===================================================== */
 
-function FilterButton({ children, active, onClick }) {
+function MiniStatCard({
+  label,
+  value,
+  icon: Icon,
+  iconClassName,
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-subtle">
+            {label}
+          </p>
+
+          <p className="mt-3 text-3xl font-bold tracking-tight text-text-primary">
+            {value}
+          </p>
+        </div>
+
+        <div
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconClassName}`}
+        >
+          <Icon size={20} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilterButton({
+  children,
+  active,
+  onClick,
+  icon: Icon,
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+      className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold transition ${
         active
-          ? "bg-primary-700 text-white shadow-sm"
-          : "bg-slate-100 text-text-secondary hover:bg-slate-200"
+          ? "bg-blue-950 text-white shadow-sm"
+          : "border border-border bg-surface text-text-secondary hover:border-border-strong hover:bg-slate-50"
       }`}
     >
+      {Icon && <Icon size={15} />}
       {children}
     </button>
   );
 }
 
-function TableHeader({ children }) {
+function TableHeader({
+  children,
+  align = "left",
+}) {
   return (
-    <th className="whitespace-nowrap px-5 py-4 text-xs font-bold uppercase tracking-wide text-text-muted">
+    <th
+      className={`whitespace-nowrap px-5 py-4 text-xs font-extrabold uppercase tracking-[0.12em] text-text-subtle ${
+        align === "right" ? "text-right" : "text-left"
+      }`}
+    >
       {children}
     </th>
   );
@@ -687,20 +869,20 @@ function ActionButton({
 }) {
   const styles = {
     success:
-      "bg-status-stable-bg text-status-stable-text hover:bg-emerald-100",
+      "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
 
     danger:
-      "bg-status-critical-bg text-status-critical-text hover:bg-red-100",
+      "border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100",
 
     secondary:
-      "bg-slate-100 text-slate-700 hover:bg-slate-200",
+      "border border-border bg-surface text-slate-700 hover:border-border-strong hover:bg-slate-50",
   };
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-lg px-3 py-2 text-xs font-bold transition ${styles[variant]}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition focus:outline-none focus:ring-4 focus:ring-sky-400/10 active:scale-[0.98] ${styles[variant]}`}
     >
       {children}
     </button>
@@ -709,18 +891,36 @@ function ActionButton({
 
 function RoleBadge({ role }) {
   const styles = {
-    Admin: "bg-purple-50 text-purple-700",
-    Doctor: "bg-primary-50 text-primary-700",
-    Volunteer: "bg-status-stable-bg text-status-stable-text",
-    Pharmacist: "bg-status-watch-bg text-status-watch-text",
+    Admin:
+      "border border-purple-200 bg-purple-50 text-purple-700",
+
+    Doctor:
+      "border border-primary-200 bg-primary-50 text-primary-700",
+
+    Volunteer:
+      "border border-emerald-200 bg-emerald-50 text-emerald-700",
+
+    Pharmacist:
+      "border border-amber-200 bg-amber-50 text-amber-700",
   };
+
+  const icons = {
+    Admin: ShieldCheck,
+    Doctor: UserRound,
+    Volunteer: Users,
+    Pharmacist: UserCheck,
+  };
+
+  const Icon = icons[role];
 
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
-        styles[role] || "bg-slate-100 text-text-secondary"
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+        styles[role] ||
+        "border border-slate-200 bg-slate-100 text-text-secondary"
       }`}
     >
+      {Icon && <Icon size={13} />}
       {role || "Unknown"}
     </span>
   );
@@ -728,18 +928,36 @@ function RoleBadge({ role }) {
 
 function StatusBadge({ status }) {
   const styles = {
-    Approved: "bg-status-stable-bg text-status-stable-text",
-    Pending: "bg-status-watch-bg text-status-watch-text",
-    Rejected: "bg-status-critical-bg text-status-critical-text",
-    Deactivated: "bg-status-critical-bg text-status-critical-text",
+    Approved:
+      "border border-emerald-200 bg-emerald-50 text-emerald-700",
+
+    Pending:
+      "border border-amber-200 bg-amber-50 text-amber-700",
+
+    Rejected:
+      "border border-rose-200 bg-rose-50 text-rose-700",
+
+    Deactivated:
+      "border border-rose-200 bg-rose-50 text-rose-700",
   };
+
+  const icons = {
+    Approved: CheckCircle2,
+    Pending: CircleAlert,
+    Rejected: UserX,
+    Deactivated: UserX,
+  };
+
+  const Icon = icons[status];
 
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
-        styles[status] || "bg-slate-100 text-text-secondary"
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+        styles[status] ||
+        "border border-slate-200 bg-slate-100 text-text-secondary"
       }`}
     >
+      {Icon && <Icon size={13} />}
       {status || "Unknown"}
     </span>
   );

@@ -17,6 +17,7 @@ const GeneralStep = ({ form, setForm }) => {
     e.preventDefault();
 
     const container = e.currentTarget.closest(".step-wrapper");
+
     if (!container) return;
 
     const elements = Array.from(
@@ -25,15 +26,16 @@ const GeneralStep = ({ form, setForm }) => {
       ),
     );
 
-    const current = e.target.closest(".button-group") || e.target;
+    const current =
+      e.target.closest(".button-group") || e.target;
+
     const index = elements.indexOf(current);
     const next = elements[index + 1];
 
     if (next) {
       if (next.classList.contains("button-group")) {
-        next.focus();
-
-        const firstButton = next.querySelector("button");
+        const firstButton =
+          next.querySelector("button");
 
         if (firstButton) {
           firstButton.focus();
@@ -53,10 +55,13 @@ const GeneralStep = ({ form, setForm }) => {
       const today = new Date();
       const birth = new Date(birthdate);
 
-      age = today.getFullYear() - birth.getFullYear();
+      age =
+        today.getFullYear() -
+        birth.getFullYear();
 
       const monthDifference =
-        today.getMonth() - birth.getMonth();
+        today.getMonth() -
+        birth.getMonth();
 
       if (
         monthDifference < 0 ||
@@ -78,47 +83,72 @@ const GeneralStep = ({ form, setForm }) => {
   };
 
   const inputClass =
-    "w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-text-subtle focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10";
+    "w-full rounded-xl border border-border-soft bg-surface px-4 py-3 text-sm text-text-primary shadow-sm outline-none transition-all duration-200 placeholder:text-text-subtle hover:border-primary-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10";
 
   const readOnlyClass =
-    "w-full rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-semibold text-text-secondary outline-none";
+    "w-full rounded-xl border border-border-soft bg-surface-muted px-4 py-3 text-sm font-semibold text-text-secondary outline-none";
 
   const labelClass =
-    "mb-2 block text-sm font-semibold text-slate-700";
+    "mb-2 block text-sm font-semibold text-text-primary";
 
   const optionButton = (active) =>
-    `flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
+    `flex min-h-[48px] flex-1 items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold transition-all duration-200 ${
       active
-        ? "border-blue-700 bg-primary-700 text-white shadow-sm"
-        : "border-border bg-surface text-text-secondary hover:border-blue-300 hover:bg-primary-50"
+        ? "border-primary-700 bg-primary-700 text-white shadow-[0_6px_16px_rgba(30,42,94,0.18)]"
+        : "border-border-soft bg-surface text-text-secondary hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
     }`;
 
   return (
-    <div className="step-wrapper">
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
-        <div className="mb-6">
-          <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
-            Step 1
-          </p>
+    <div className="step-wrapper w-full">
+      <div className="rounded-[24px] border border-border-soft bg-surface p-5 shadow-[0_8px_30px_rgba(15,23,42,0.06)] sm:p-6 lg:p-8">
 
-          <h3 className="mt-1 text-xl font-bold text-text-primary">
-            General Information
-          </h3>
+        {/* ================= HEADER ================= */}
+        <div className="mb-8 border-b border-border-soft pb-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 
-          <p className="mt-1 text-sm text-text-muted">
-            Enter the patient's basic personal information.
-          </p>
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-primary-600" />
+
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary-600">
+                  Step 1 of Patient Registration
+                </p>
+              </div>
+
+              <h3 className="text-xl font-bold tracking-tight text-primary-900 sm:text-2xl">
+                General Information
+              </h3>
+
+              <p className="mt-2 max-w-xl text-sm leading-6 text-text-muted">
+                Enter the patient's basic personal and health information.
+              </p>
+            </div>
+
+            <div className="self-start rounded-xl bg-primary-50 px-3 py-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary-700">
+                Personal Profile
+              </span>
+            </div>
+
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {/* NAME */}
+        {/* ================= FORM ================= */}
+        <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+
+          {/* FULL NAME */}
           <div className="md:col-span-2">
-            <label className={labelClass}>Full Name</label>
+            <label className={labelClass}>
+              Full Name
+            </label>
 
             <input
               value={general.name || ""}
               onChange={(e) =>
-                handleChange("name", e.target.value)
+                handleChange(
+                  "name",
+                  e.target.value,
+                )
               }
               onKeyDown={handleEnterKey}
               placeholder="Enter patient's full name"
@@ -128,13 +158,17 @@ const GeneralStep = ({ form, setForm }) => {
 
           {/* BIRTHDATE */}
           <div>
-            <label className={labelClass}>Birthdate</label>
+            <label className={labelClass}>
+              Birthdate
+            </label>
 
             <input
               type="date"
               value={general.birthdate || ""}
               onChange={(e) =>
-                handleBirthdateChange(e.target.value)
+                handleBirthdateChange(
+                  e.target.value,
+                )
               }
               onKeyDown={handleEnterKey}
               className={inputClass}
@@ -143,7 +177,9 @@ const GeneralStep = ({ form, setForm }) => {
 
           {/* AGE */}
           <div>
-            <label className={labelClass}>Age</label>
+            <label className={labelClass}>
+              Age
+            </label>
 
             <input
               value={general.age || ""}
@@ -156,9 +192,11 @@ const GeneralStep = ({ form, setForm }) => {
 
           {/* SEX */}
           <div className="md:col-span-2">
-            <label className={labelClass}>Sex</label>
+            <label className={labelClass}>
+              Sex
+            </label>
 
-            <div className="button-group flex gap-3">
+            <div className="button-group flex flex-col gap-3 sm:flex-row">
               {["Male", "Female"].map((sex) => (
                 <button
                   key={sex}
@@ -167,7 +205,10 @@ const GeneralStep = ({ form, setForm }) => {
                     general.sex === sex,
                   )}
                   onClick={() =>
-                    handleChange("sex", sex)
+                    handleChange(
+                      "sex",
+                      sex,
+                    )
                   }
                   onKeyDown={handleEnterKey}
                 >
@@ -292,7 +333,9 @@ const GeneralStep = ({ form, setForm }) => {
               className={inputClass}
             />
           </div>
+
         </div>
+
       </div>
     </div>
   );

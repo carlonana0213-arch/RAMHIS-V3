@@ -28,58 +28,93 @@ const PerinatalStep = ({
       className="step-wrapper space-y-5"
       onKeyDown={handleEnterKey}
     >
-      {/* OBSTETRIC */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
-        <div className="mb-6">
-          <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
-            Maternal Information
-          </p>
+      {/* =====================================================
+          STEP INTRO
+      ====================================================== */}
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary-600">
+          Step Information
+        </p>
 
-          <h3 className="mt-1 text-xl font-bold text-text-primary">
+        <h3 className="mt-1 text-xl font-bold tracking-tight text-primary-900">
+          Perinatal & Obstetric History
+        </h3>
+
+        <p className="mt-2 text-sm text-text-muted">
+          Record relevant maternal, obstetric, and perinatal
+          information for the patient.
+        </p>
+      </div>
+
+      {/* =====================================================
+          OBSTETRIC HISTORY
+      ====================================================== */}
+      <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+        {/* SECTION HEADER */}
+        <div className="mb-6">
+          <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+            Maternal Information
+          </span>
+
+          <h4 className="text-lg font-bold tracking-tight text-text-primary">
             Obstetric History
-          </h3>
+          </h4>
 
           <p className="mt-1 text-sm text-text-muted">
-            Record relevant obstetric information.
+            Record the patient&apos;s pregnancy and obstetric
+            history.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {/* CONTRACEPTION */}
-          <div className="md:col-span-2">
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-slate-50 p-4">
-              <input
-                type="checkbox"
-                checked={
-                  form.obstetricHistory
-                    ?.contraception || false
-                }
-                onChange={(e) =>
-                  handleChange(
-                    "obstetricHistory",
-                    "contraception",
-                    e.target.checked,
-                  )
-                }
-                className="h-4 w-4 rounded border-border-strong text-primary-700 focus:ring-primary-500"
-              />
+        {/* CONTRACEPTION */}
+        <label
+          className={[
+            "mb-6 flex cursor-pointer items-center justify-between gap-4",
+            "rounded-2xl border p-4 transition",
+            form.obstetricHistory?.contraception
+              ? "border-primary-200 bg-primary-50"
+              : "border-border bg-slate-50 hover:border-primary-200",
+          ].join(" ")}
+        >
+          <div>
+            <p className="text-sm font-semibold text-text-primary">
+              Contraception Use
+            </p>
 
-              <span className="text-sm font-semibold text-slate-700">
-                Contraception
-              </span>
-            </label>
+            <p className="mt-1 text-xs text-text-muted">
+              Enable if the patient currently uses contraception.
+            </p>
           </div>
 
+          <input
+            type="checkbox"
+            checked={
+              form.obstetricHistory?.contraception ||
+              false
+            }
+            onChange={(e) =>
+              handleChange(
+                "obstetricHistory",
+                "contraception",
+                e.target.checked,
+              )
+            }
+            className="h-5 w-5 shrink-0 rounded border-border-strong text-primary-700 focus:ring-primary-500"
+          />
+        </label>
+
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+          {/* TYPE */}
           <div>
             <label className={labelClass}>
-              Type
+              Contraception Type
             </label>
 
             <input
-              placeholder="Contraception type"
+              placeholder="Enter contraception type"
               value={
-                form.obstetricHistory?.type ||
-                ""
+                form.obstetricHistory?.type || ""
               }
               onChange={(e) =>
                 handleChange(
@@ -92,6 +127,7 @@ const PerinatalStep = ({
             />
           </div>
 
+          {/* G/P */}
           <div>
             <label className={labelClass}>
               G/P (F/P/A/L)
@@ -100,8 +136,7 @@ const PerinatalStep = ({
             <input
               placeholder="e.g. G2P1"
               value={
-                form.obstetricHistory?.gpfpal ||
-                ""
+                form.obstetricHistory?.gpfpal || ""
               }
               onChange={(e) =>
                 handleChange(
@@ -114,13 +149,14 @@ const PerinatalStep = ({
             />
           </div>
 
+          {/* BF */}
           <div>
             <label className={labelClass}>
-              BF
+              Breastfeeding Information
             </label>
 
             <input
-              placeholder="Breastfeeding information"
+              placeholder="Enter breastfeeding information"
               value={
                 form.obstetricHistory?.bf || ""
               }
@@ -135,6 +171,7 @@ const PerinatalStep = ({
             />
           </div>
 
+          {/* BIRTH HISTORY */}
           <div>
             <label className={labelClass}>
               Birth History
@@ -157,6 +194,7 @@ const PerinatalStep = ({
             />
           </div>
 
+          {/* DELIVERY SITE */}
           <div>
             <label className={labelClass}>
               Delivery Site
@@ -179,6 +217,7 @@ const PerinatalStep = ({
             />
           </div>
 
+          {/* LMP */}
           <div>
             <label className={labelClass}>
               Last Menstrual Period
@@ -199,22 +238,32 @@ const PerinatalStep = ({
               className={inputClass}
             />
           </div>
+
         </div>
-      </div>
+      </section>
 
-      {/* PERINATAL */}
-      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+      {/* =====================================================
+          PERINATAL HISTORY
+      ====================================================== */}
+      <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+        {/* SECTION HEADER */}
         <div className="mb-6">
-          <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
+          <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
             Newborn Information
-          </p>
+          </span>
 
-          <h3 className="mt-1 text-xl font-bold text-text-primary">
+          <h4 className="text-lg font-bold tracking-tight text-text-primary">
             Perinatal History
-          </h3>
+          </h4>
+
+          <p className="mt-1 text-sm text-text-muted">
+            Record relevant birth and newborn history.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+          {/* BIRTH WEIGHT */}
           <div>
             <label className={labelClass}>
               Birth Weight
@@ -236,13 +285,14 @@ const PerinatalStep = ({
             />
           </div>
 
+          {/* BF */}
           <div>
             <label className={labelClass}>
-              BF
+              Breastfeeding Information
             </label>
 
             <input
-              placeholder="Breastfeeding information"
+              placeholder="Enter breastfeeding information"
               value={
                 form.perinatalHistory?.bf || ""
               }
@@ -257,6 +307,7 @@ const PerinatalStep = ({
             />
           </div>
 
+          {/* BIRTH HISTORY */}
           <div>
             <label className={labelClass}>
               Birth History
@@ -279,6 +330,7 @@ const PerinatalStep = ({
             />
           </div>
 
+          {/* DELIVERY SITE */}
           <div>
             <label className={labelClass}>
               Delivery Site
@@ -300,8 +352,9 @@ const PerinatalStep = ({
               className={inputClass}
             />
           </div>
+
         </div>
-      </div>
+      </section>
     </div>
   );
 };

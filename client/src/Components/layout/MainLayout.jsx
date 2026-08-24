@@ -8,6 +8,7 @@ export default function MainLayout() {
   const [collapsed, setCollapsed] = useState(false);
 
   const sidebarWidth = collapsed ? 76 : 250;
+  const contentGap = collapsed ? 16 : 16;
 
   return (
     <div
@@ -26,7 +27,7 @@ export default function MainLayout() {
       <div
         style={{
           minHeight: "100vh",
-          marginLeft: sidebarWidth,
+          marginLeft: sidebarWidth + contentGap,
           transition: "margin-left 0.25s ease",
         }}
       >

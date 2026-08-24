@@ -117,10 +117,24 @@ export const deleteDoctorRecord = async (
  * POST /api/prescriptions
  * ============================================================
  */
-export const savePrescription = async (data) => {
+export const savePrescription = async (patientId, data) => {
+  if (!patientId) {
+    throw new Error("Patient ID is required.");
+  }
+
   return apiFetch(`${API}/prescriptions`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      patient: patientId,
+      doctor: data.doctorId,
+      items: [
+        {
+          medicine: data.medicine,
+          quantity: data.quantity,
+          directions: data.directions,
+        },
+      ],
+    }),
   });
 };
 

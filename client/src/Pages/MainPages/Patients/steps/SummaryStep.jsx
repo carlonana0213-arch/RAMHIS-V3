@@ -3,12 +3,12 @@ const SummaryItem = ({
   value,
 }) => {
   return (
-    <div className="rounded-xl border border-border-soft bg-slate-50 p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-text-subtle">
+    <div className="rounded-xl border border-border-soft bg-surface-muted p-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text-subtle">
         {label}
       </p>
 
-      <p className="mt-1 break-words text-sm font-semibold text-slate-700">
+      <p className="mt-1.5 break-words text-sm font-semibold leading-5 text-text-primary">
         {value || "Not provided"}
       </p>
     </div>
@@ -17,72 +17,124 @@ const SummaryItem = ({
 
 const SummarySection = ({
   title,
+  subtitle,
   children,
 }) => {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-      <h4 className="mb-4 text-base font-bold text-text-primary">
-        {title}
-      </h4>
+    <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+      <div className="mb-5">
+        <h4 className="text-lg font-bold tracking-tight text-primary-900">
+          {title}
+        </h4>
+
+        {subtitle && (
+          <p className="mt-1 text-sm text-text-muted">
+            {subtitle}
+          </p>
+        )}
+      </div>
 
       {children}
-    </div>
+    </section>
   );
 };
 
 const SummaryStep = ({ form }) => {
-  const medicalHistory =
-    form.medicalHistory || [];
+  const formatHistory = (
+    history = [],
+    otherValue,
+  ) => {
+    const values = history.filter(
+      (item) => item !== "Other",
+    );
 
-  const familyHistory =
-    form.familyHistory || [];
+    if (
+      history.includes("Other") &&
+      otherValue
+    ) {
+      values.push(otherValue);
+    }
 
-  const medicalValues = [
-    ...medicalHistory,
-    medicalHistory.includes("Other")
-      ? form.medicalOther
-      : null,
-  ]
-    .filter(Boolean)
-    .join(", ");
+    return values.join(", ");
+  };
 
-  const familyValues = [
-    ...familyHistory,
-    familyHistory.includes("Other")
-      ? form.familyOther
-      : null,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const medicalValues = formatHistory(
+    form.medicalHistory,
+    form.medicalOther,
+  );
+
+  const familyValues = formatHistory(
+    form.familyHistory,
+    form.familyOther,
+  );
+
+  const formatDate = (date) => {
+    if (!date) return "";
+
+    const parsedDate = new Date(
+      `${date}T00:00:00`,
+    );
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return date;
+    }
+
+    return parsedDate.toLocaleDateString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      },
+    );
+  };
 
   return (
     <div className="step-container space-y-5">
-      {/* HEADER */}
-      <div className="rounded-2xl border border-blue-100 bg-primary-50 p-5">
-        <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
-          Final Review
-        </p>
 
-        <h3 className="mt-1 text-xl font-bold text-blue-950">
-          Review Patient Information
-        </h3>
+      {/* STEP HEADER */}
+      <div className="rounded-2xl border border-primary-100 bg-primary-50 p-5 sm:p-6">
+        <div className="flex items-start gap-3">
 
-        <p className="mt-1 text-sm text-blue-800/70">
-          Please review the information before saving the patient record.
-        </p>
+          <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-status-stable-dot" />
+
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary-700">
+              Final Review
+            </p>
+
+            <h3 className="mt-2 text-xl font-bold tracking-tight text-primary-900">
+              Review Patient Information
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-primary-800/70">
+              Review all recorded information before saving
+              the patient record.
+            </p>
+          </div>
+
+        </div>
       </div>
 
-      {/* GENERAL */}
-      <SummarySection title="General Information">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* GENERAL INFORMATION */}
+      <SummarySection
+        title="General Information"
+        subtitle="Basic personal and patient information."
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+
           <SummaryItem
-            label="Name"
+            label="Full Name"
             value={form.generalInfo?.name}
           />
 
           <SummaryItem
             label="Age"
-            value={form.generalInfo?.age}
+            value={
+              form.generalInfo?.age !== ""
+                ? form.generalInfo?.age
+                : ""
+            }
           />
 
           <SummaryItem
@@ -92,7 +144,9 @@ const SummaryStep = ({ form }) => {
 
           <SummaryItem
             label="Birthdate"
-            value={form.generalInfo?.birthdate}
+            value={formatDate(
+              form.generalInfo?.birthdate,
+            )}
           />
 
           <SummaryItem
@@ -104,12 +158,32 @@ const SummaryStep = ({ form }) => {
             label="Allergies"
             value={form.generalInfo?.allergies}
           />
+
+          <SummaryItem
+            label="Tobacco Use"
+            value={form.generalInfo?.tobacco}
+          />
+
+          <SummaryItem
+            label="Alcohol Use"
+            value={form.generalInfo?.alcohol}
+          />
+
+          <SummaryItem
+            label="Vaccination"
+            value={form.generalInfo?.vaccine}
+          />
+
         </div>
       </SummarySection>
 
       {/* EXAMINATION */}
-      <SummarySection title="Examination">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <SummarySection
+        title="Examination"
+        subtitle="Recorded physical examination measurements."
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+
           <SummaryItem
             label="Blood Pressure"
             value={form.examination?.bp}
@@ -117,7 +191,11 @@ const SummaryStep = ({ form }) => {
 
           <SummaryItem
             label="Temperature"
-            value={form.examination?.temp}
+            value={
+              form.examination?.temp
+                ? `${form.examination.temp} °C`
+                : ""
+            }
           />
 
           <SummaryItem
@@ -142,30 +220,43 @@ const SummaryStep = ({ form }) => {
                 : ""
             }
           />
+
         </div>
       </SummarySection>
 
-      {/* MEDICAL */}
-      <SummarySection title="Medical History">
-        <div className="rounded-xl border border-border-soft bg-slate-50 p-4">
-          <p className="text-sm leading-6 text-slate-700">
-            {medicalValues || "No medical history recorded"}
+      {/* MEDICAL HISTORY */}
+      <SummarySection
+        title="Medical History"
+        subtitle="Known medical conditions reported for the patient."
+      >
+        <div className="rounded-xl border border-border-soft bg-surface-muted p-4">
+          <p className="text-sm leading-6 text-text-secondary">
+            {medicalValues ||
+              "No medical history recorded"}
           </p>
         </div>
       </SummarySection>
 
-      {/* FAMILY */}
-      <SummarySection title="Family History">
-        <div className="rounded-xl border border-border-soft bg-slate-50 p-4">
-          <p className="text-sm leading-6 text-slate-700">
-            {familyValues || "No family history recorded"}
+      {/* FAMILY HISTORY */}
+      <SummarySection
+        title="Family History"
+        subtitle="Relevant conditions reported in the patient's family."
+      >
+        <div className="rounded-xl border border-border-soft bg-surface-muted p-4">
+          <p className="text-sm leading-6 text-text-secondary">
+            {familyValues ||
+              "No family history recorded"}
           </p>
         </div>
       </SummarySection>
 
-      {/* DEPARTMENT */}
-      <SummarySection title="Patient Assignment">
+      {/* PATIENT ASSIGNMENT */}
+      <SummarySection
+        title="Patient Assignment"
+        subtitle="Department and patient priority details."
+      >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
           <SummaryItem
             label="Department"
             value={form.department}
@@ -179,20 +270,22 @@ const SummaryStep = ({ form }) => {
                 : "Regular Patient"
             }
           />
+
         </div>
 
         {form.initComplaint && (
-          <div className="mt-3 rounded-xl border border-border-soft bg-slate-50 p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-text-subtle">
+          <div className="mt-4 rounded-xl border border-border-soft bg-surface-muted p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text-subtle">
               Initial Remarks
             </p>
 
-            <p className="mt-1 text-sm leading-6 text-slate-700">
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-text-secondary">
               {form.initComplaint}
             </p>
           </div>
         )}
       </SummarySection>
+
     </div>
   );
 };

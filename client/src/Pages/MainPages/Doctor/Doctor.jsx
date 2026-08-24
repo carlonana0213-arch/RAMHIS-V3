@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Stethoscope } from "lucide-react";
+
+import {
+  Stethoscope,
+  Users,
+  Clock3,
+  Activity,
+  Pill,
+  AlertTriangle,
+} from "lucide-react";
 
 import DoctorQueue from "./components/DoctorQueue";
 import PatientCard from "./components/PatientCard";
@@ -11,7 +19,6 @@ export default function Doctor() {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Consultation modal stays CLOSED initially.
   const [selectedPatient, setSelectedPatient] = useState(null);
 
   const [search, setSearch] = useState("");
@@ -89,37 +96,21 @@ export default function Doctor() {
     });
   }, [patients]);
 
-  // ============================================================
-  // OPEN CONSULTATION MODAL
-  // ============================================================
-
   const openDoctorView = (patient) => {
     if (!patient) return;
 
     setSelectedPatient(patient);
   };
 
-  // ============================================================
-  // CLOSE CONSULTATION MODAL
-  // ============================================================
-
   const handleCloseConsultation = () => {
     setSelectedPatient(null);
   };
-
-  // ============================================================
-  // AFTER RECORD IS SAVED
-  // ============================================================
 
   const handleRecordSaved = async () => {
     setSelectedPatient(null);
 
     await loadQueue();
   };
-
-  // ============================================================
-  // NEXT PATIENT
-  // ============================================================
 
   const handleNextPatient = () => {
     if (!currentPatient) return;
@@ -146,7 +137,6 @@ export default function Doctor() {
         status === "unconsulted" ||
         status === "beingseen"
       ) {
-        // Only open this patient's consultation modal.
         setSelectedPatient(patient);
         return;
       }
@@ -154,66 +144,90 @@ export default function Doctor() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 p-6">
-      <div className="mx-auto w-full max-w-[1600px]">
+    <div className="min-h-screen w-full bg-transparent p-4 sm:p-6">
+      <div className="mx-auto w-full max-w-[1800px]">
+
         {/* PAGE HEADER */}
+        <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
 
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-            <Stethoscope size={24} />
+          <div className="flex items-start gap-4">
+
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+              <Stethoscope size={22} />
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                Clinical Services
+              </p>
+
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+                Doctor Queue
+              </h1>
+
+              <p className="mt-1 text-sm text-text-muted">
+                Manage patient consultations and medical records.
+              </p>
+            </div>
+
           </div>
 
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary">
-              Doctor
-            </h1>
-
-            <p className="text-sm text-text-muted">
-              Manage patient consultations and medical records.
-            </p>
+          <div className="rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+            {stats.waiting.toLocaleString()} waiting
           </div>
+
         </div>
 
         {/* STATISTICS */}
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard
             label="Total Patients"
             value={stats.total}
-            valueClassName="text-text-primary"
+            icon={Users}
+            iconBg="bg-slate-100"
+            iconColor="text-slate-600"
           />
 
           <StatCard
             label="Waiting"
             value={stats.waiting}
-            valueClassName="text-amber-600"
+            icon={Clock3}
+            iconBg="bg-amber-50"
+            iconColor="text-amber-600"
           />
 
           <StatCard
             label="Being Served"
             value={stats.beingSeen}
-            valueClassName="text-primary-600"
+            icon={Activity}
+            iconBg="bg-primary-50"
+            iconColor="text-primary-700"
           />
 
           <StatCard
             label="For Pharmacy"
             value={stats.forPharmacy}
-            valueClassName="text-emerald-600"
+            icon={Pill}
+            iconBg="bg-emerald-50"
+            iconColor="text-emerald-600"
           />
 
           <StatCard
             label="Priority"
             value={stats.priority}
-            valueClassName="text-rose-600"
+            icon={AlertTriangle}
+            iconBg="bg-status-critical-bg"
+            iconColor="text-status-critical-text"
           />
+
         </div>
 
-        {/* CURRENT PATIENT + DOCTOR QUEUE */}
+        {/* MAIN CONTENT */}
+        <div className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-[380px_minmax(0,1fr)]">
 
-        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-          {/* LEFT SIDE */}
-
-          <div className="w-full xl:w-[360px]">
+          {/* CURRENT PATIENT */}
+          <div className="min-w-0">
             <PatientCard
               patient={currentPatient}
               onSelect={openDoctorView}
@@ -221,8 +235,7 @@ export default function Doctor() {
             />
           </div>
 
-          {/* RIGHT SIDE */}
-
+          {/* DOCTOR QUEUE */}
           <div className="min-w-0">
             <DoctorQueue
               patients={patients}
@@ -234,10 +247,10 @@ export default function Doctor() {
               onOpenDoctorView={openDoctorView}
             />
           </div>
+
         </div>
 
         {/* CONSULTATION MODAL */}
-
         {selectedPatient && (
           <PatientDoctorView
             patient={selectedPatient}
@@ -247,6 +260,7 @@ export default function Doctor() {
             refreshQueue={loadQueue}
           />
         )}
+
       </div>
     </div>
   );
@@ -255,19 +269,29 @@ export default function Doctor() {
 function StatCard({
   label,
   value,
-  valueClassName = "text-text-primary",
+  icon: Icon,
+  iconBg,
+  iconColor,
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-      <p className="text-sm font-medium text-text-muted">
-        {label}
-      </p>
+    <div className="group min-w-0 rounded-[20px] border border-border-soft bg-surface p-4 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(15,23,42,0.08)]">
 
-      <p
-        className={`mt-2 text-3xl font-bold ${valueClassName}`}
+      <div
+        className={`flex h-11 w-11 items-center justify-center rounded-2xl ${iconBg} ${iconColor}`}
       >
-        {value}
-      </p>
+        <Icon size={18} />
+      </div>
+
+      <div className="mt-5">
+        <p className="text-xs font-semibold text-text-muted">
+          {label}
+        </p>
+
+        <p className="mt-2 text-3xl font-bold leading-none tracking-tight text-primary-900">
+          {value.toLocaleString()}
+        </p>
+      </div>
+
     </div>
   );
 }

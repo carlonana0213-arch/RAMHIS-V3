@@ -4,7 +4,21 @@ import {
   useState,
 } from "react";
 
-import { X } from "lucide-react";
+import {
+  X,
+  Plus,
+  Trash2,
+  ClipboardList,
+  History,
+  Stethoscope,
+  Pill,
+  Send,
+  UserRound,
+  ChevronRight,
+  CheckCircle2,
+  PackageCheck,
+  RotateCcw,
+} from "lucide-react";
 
 import Modal from "../../../../Components/ui/modal";
 
@@ -61,8 +75,7 @@ function PatientDoctorView({
   refreshQueue,
 }) {
   const storedUser = JSON.parse(
-    localStorage.getItem("user") ||
-      "{}"
+    localStorage.getItem("user") || "{}"
   );
 
   const DEPARTMENTS = [
@@ -74,37 +87,26 @@ function PatientDoctorView({
     "General",
   ];
 
-  const [doctorSheet, setDoctorSheet] = useState(
-  createEmptyDoctorSheet("")
-);
+  const [doctorSheet, setDoctorSheet] =
+    useState(
+      createEmptyDoctorSheet("")
+    );
 
+  const [activeTab, setActiveTab] =
+    useState("current");
 
-
-const [activeTab, setActiveTab] = useState("current");
   const [
     existingPrescriptions,
     setExistingPrescriptions,
   ] = useState([]);
-  
-  const [recordMode, setRecordMode] = useState("existing");
 
-  const handleNewRecord = () => {
-  setRecordMode("new");
-
-  setDoctorSheet(
-    createEmptyDoctorSheet(
-      patient?.initComplaint || ""
-    )
-  );
-
-  setNewComplaint("");
-  setActiveTab("current");
-};
+  const [
+    recordMode,
+    setRecordMode,
+  ] = useState("existing");
 
   const [medicines, setMedicines] =
     useState([]);
-
-  
 
   const [
     nextPatientStatus,
@@ -132,14 +134,20 @@ const [activeTab, setActiveTab] = useState("current");
     setActiveDropdown,
   ] = useState(null);
 
-  const [showReferral, setShowReferral] =
-    useState(false);
+  const [
+    showReferral,
+    setShowReferral,
+  ] = useState(false);
 
-  const [referralDept, setReferralDept] =
-    useState("");
+  const [
+    referralDept,
+    setReferralDept,
+  ] = useState("");
 
-  const [referralReason, setReferralReason] =
-    useState("");
+  const [
+    referralReason,
+    setReferralReason,
+  ] = useState("");
 
   const [
     newComplaint,
@@ -178,79 +186,62 @@ const [activeTab, setActiveTab] = useState("current");
       existingPrescriptions,
     ]);
 
+  const patientName =
+    patient?.generalInfo?.name ||
+    "Unnamed Patient";
+
+  const patientAge =
+    patient?.generalInfo?.age ??
+    "--";
+
+  const patientSex =
+    patient?.generalInfo?.sex ||
+    patient?.generalInfo?.gender ||
+    "--";
+
+  const latestRecord =
+    hasHistory
+      ? patient.doctorSheets[
+          patient.doctorSheets.length - 1
+        ]
+      : null;
+
   /*
    * =========================================================
-   * INITIALIZE PATIENT
+   * NEW RECORD
    * =========================================================
    */
 
-useEffect(() => {
-  if (!patient?._id) {
-    return;
-  }
+  const handleNewRecord = () => {
+    setRecordMode("new");
 
-  // Do not overwrite the form when
-  // the doctor is creating a new record.
-  if (recordMode === "new") {
-    return;
-  }
-
-  setActiveTab("current");
-
-  if (
-    Array.isArray(patient.doctorSheets) &&
-    patient.doctorSheets.length > 0
-  ) {
-    const latest =
-      patient.doctorSheets[
-        patient.doctorSheets.length - 1
-      ];
-
-    setDoctorSheet({
-      examination: {
-        ...EMPTY_DOCTOR_SHEET.examination,
-        ...(latest.examination || {}),
-      },
-
-      initComplaint:
-        latest.initComplaint ||
-        patient.initComplaint ||
-        "",
-
-      diagnosis: latest.diagnosis || "",
-      treatment: latest.treatment || "",
-      medication: latest.medication || "",
-    });
-  } else {
     setDoctorSheet(
       createEmptyDoctorSheet(
-        patient.initComplaint || ""
+        patient?.initComplaint || ""
       )
     );
-  }
 
-  setPrescriptionItems([
-    {
-      medicine: "",
-      quantity: "",
-      directions: "",
-    },
-  ]);
+    setPrescriptionItems([
+      {
+        medicine: "",
+        quantity: "",
+        directions: "",
+      },
+    ]);
 
-  setMedicineSearch({});
-  setActiveDropdown(null);
-  setNextPatientStatus("forPharmacy");
-  setNewComplaint("");
-  setShowReferral(false);
-  setReferralDept("");
-  setReferralReason("");
-  setIsSaving(false);
+    setMedicineSearch({});
+    setActiveDropdown(null);
 
-  loadPrescriptions(patient._id);
-}, [
-  patient?._id,
-  recordMode,
-]);
+    setNewComplaint("");
+
+    setShowReferral(false);
+    setReferralDept("");
+    setReferralReason("");
+
+    setNextPatientStatus("forPharmacy");
+
+    setActiveTab("current");
+  };
 
   /*
    * =========================================================
@@ -287,6 +278,93 @@ useEffect(() => {
 
   /*
    * =========================================================
+   * INITIALIZE PATIENT
+   * =========================================================
+   */
+
+  useEffect(() => {
+    if (!patient?._id) {
+      return;
+    }
+
+    if (recordMode === "new") {
+      return;
+    }
+
+    setActiveTab("current");
+
+    if (
+      Array.isArray(
+        patient.doctorSheets
+      ) &&
+      patient.doctorSheets.length > 0
+    ) {
+      const latest =
+        patient.doctorSheets[
+          patient.doctorSheets.length - 1
+        ];
+
+      setDoctorSheet({
+        examination: {
+          ...EMPTY_DOCTOR_SHEET.examination,
+          ...(latest.examination || {}),
+        },
+
+        initComplaint:
+          latest.initComplaint ||
+          patient.initComplaint ||
+          "",
+
+        diagnosis:
+          latest.diagnosis || "",
+
+        treatment:
+          latest.treatment || "",
+
+        medication:
+          latest.medication || "",
+      });
+    } else {
+      setDoctorSheet(
+        createEmptyDoctorSheet(
+          patient.initComplaint || ""
+        )
+      );
+    }
+
+    setPrescriptionItems([
+      {
+        medicine: "",
+        quantity: "",
+        directions: "",
+      },
+    ]);
+
+    setMedicineSearch({});
+    setActiveDropdown(null);
+
+    setNextPatientStatus(
+      "forPharmacy"
+    );
+
+    setNewComplaint("");
+
+    setShowReferral(false);
+    setReferralDept("");
+    setReferralReason("");
+
+    setIsSaving(false);
+
+    loadPrescriptions(
+      patient._id
+    );
+  }, [
+    patient?._id,
+    recordMode,
+  ]);
+
+  /*
+   * =========================================================
    * LOAD MEDICINES
    * =========================================================
    */
@@ -301,8 +379,7 @@ useEffect(() => {
           setMedicines(
             Array.isArray(data)
               ? data
-              : data?.medicines ||
-                  []
+              : data?.medicines || []
           );
         } catch (error) {
           console.error(
@@ -320,8 +397,6 @@ useEffect(() => {
   /*
    * =========================================================
    * CLOSE WITHOUT FINALIZING
-   *
-   * Doctor.jsx will restore the previous status.
    * =========================================================
    */
 
@@ -335,11 +410,23 @@ useEffect(() => {
 
   /*
    * =========================================================
-   * UPDATE EXAMINATION
+   * FORM UPDATES
    * =========================================================
    */
 
-  const handleExaminationChange = (
+  const updateDoctorSheet = (
+    field,
+    value
+  ) => {
+    setDoctorSheet(
+      (previous) => ({
+        ...previous,
+        [field]: value,
+      })
+    );
+  };
+
+  const updateExamination = (
     field,
     value
   ) => {
@@ -357,9 +444,59 @@ useEffect(() => {
 
   /*
    * =========================================================
-   * PRESCRIPTION ITEM CHANGE
+   * PRESCRIPTIONS
    * =========================================================
    */
+
+  const addPrescriptionItem = () => {
+    setPrescriptionItems(
+      (previous) => [
+        ...previous,
+        {
+          medicine: "",
+          quantity: "",
+          directions: "",
+        },
+      ]
+    );
+  };
+
+  const removePrescriptionItem = (
+    index
+  ) => {
+    setPrescriptionItems(
+      (previous) => {
+        if (previous.length === 1) {
+          return [
+            {
+              medicine: "",
+              quantity: "",
+              directions: "",
+            },
+          ];
+        }
+
+        return previous.filter(
+          (_, itemIndex) =>
+            itemIndex !== index
+        );
+      }
+    );
+
+    setMedicineSearch(
+      (previous) => {
+        const updated = {
+          ...previous,
+        };
+
+        delete updated[index];
+
+        return updated;
+      }
+    );
+
+    setActiveDropdown(null);
+  };
 
   const updatePrescriptionItem = (
     index,
@@ -380,89 +517,84 @@ useEffect(() => {
     );
   };
 
-  const addPrescriptionItem = () => {
-    setPrescriptionItems(
-      (previous) => [
-        ...previous,
-        {
-          medicine: "",
-          quantity: "",
-          directions: "",
-        },
-      ]
-    );
-  };
-
-  const removePrescriptionItem = (
-    index
-  ) => {
-    setPrescriptionItems(
-      (previous) =>
-        previous.filter(
-          (_, itemIndex) =>
-            itemIndex !== index
-        )
-    );
-  };
-
-  /*
-   * =========================================================
-   * SAVE PRESCRIPTION
-   * =========================================================
-   */
-
   const handleSavePrescription =
-    async () => {
-      if (!patient?._id) {
-        return;
-      }
-
-      const validItems =
-  prescriptionItems
-    .filter(
-      (item) =>
-        item.medicine &&
-        Number(item.quantity) > 0
-    )
-    .map((item) => ({
-      medicine: item.medicine,
-      quantity: Number(item.quantity),
-      directions:
-        item.directions?.trim() || "As directed",
-    }));
+    async (index) => {
+      const item =
+        prescriptionItems[index];
 
       if (
-        validItems.length === 0
-      ) {
-        setAlertMessage(
-          "Add at least one valid medicine and quantity."
-        );
+  !item?.medicine ||
+  !String(item.medicine).trim()
+) {
+  setAlertMessage(
+    "Please select a medicine first."
+  );
+  return;
+}
 
+if (!item?.medicineId) {
+  setAlertMessage(
+    "Please select a medicine from the list."
+  );
+  return;
+}
+if (!item?.directions || !String(item.directions).trim) {
+    setAlertMessage("Please enter directions for this medicine.");
+    return;
+  }
+
+      if (
+        !patient?._id ||
+        isSaving
+      ) {
         return;
       }
 
       try {
-        await savePrescription({
-          patient: patient._id,
+        setIsSaving(true);
 
-          doctor:
-            storedUser?._id ||
-            storedUser?.id,
-
-          items: validItems,
-        });
+        await savePrescription(
+  patient._id,
+  {
+    medicine: item.medicineId,
+    quantity: item.quantity,
+    directions: item.directions,
+    doctorId:
+      storedUser?._id ||
+      storedUser?.id ||
+      undefined,
+  }
+);
 
         await loadPrescriptions(
           patient._id
         );
 
-        setPrescriptionItems([
-          {
-            medicine: "",
-            quantity: "",
-            directions: "",
-          },
-        ]);
+        setPrescriptionItems(
+          (previous) =>
+            previous.map(
+              (
+                prescription,
+                prescriptionIndex
+              ) =>
+                prescriptionIndex === index
+                  ? {
+                      medicine: "",
+                      quantity: "",
+                      directions: "",
+                    }
+                  : prescription
+            )
+        );
+
+        setMedicineSearch(
+          (previous) => ({
+            ...previous,
+            [index]: "",
+          })
+        );
+
+        setActiveDropdown(null);
 
         setAlertMessage(
           "Prescription saved successfully."
@@ -477,55 +609,60 @@ useEffect(() => {
           error?.message ||
             "Failed to save prescription."
         );
+      } finally {
+        setIsSaving(false);
       }
     };
 
-  /*
-   * =========================================================
-   * MARK MEDICINE GIVEN
-   * =========================================================
-   */
+  const handleMarkMedicineGiven =
+    (prescription) => {
+      const prescriptionId =
+        prescription?._id ||
+        prescription?.id;
 
-  const handleGiveMedicine = (
-    prescriptionId,
-    itemId
-  ) => {
-    setConfirmState({
-      message:
-        "Mark this medicine as given?",
+      if (!prescriptionId) {
+        return;
+      }
 
-      onConfirm: async () => {
-        try {
-          await markMedicineGiven(
-            prescriptionId,
-            itemId
-          );
+      setConfirmState({
+        message:
+          "Mark this medicine as given to the patient?",
 
-          await loadPrescriptions(
-            patient._id
-          );
+        onConfirm: async () => {
+          try {
+            setIsSaving(true);
 
-          setConfirmState(null);
+            await markMedicineGiven(
+              prescriptionId
+            );
 
-          setAlertMessage(
-            "Medicine marked as given."
-          );
-        } catch (error) {
-          console.error(
-            "Failed to give medicine:",
-            error
-          );
+            setConfirmState(null);
 
-          setConfirmState(null);
+            await loadPrescriptions(
+              patient._id
+            );
 
-          setAlertMessage(
-            error?.message ||
-              "Failed to update medicine."
-          );
-        }
-      },
-    });
-  };
+            setAlertMessage(
+              "Medicine marked as given."
+            );
+          } catch (error) {
+            console.error(
+              "Failed to update medicine status:",
+              error
+            );
+
+            setConfirmState(null);
+
+            setAlertMessage(
+              error?.message ||
+                "Failed to update medicine status."
+            );
+          } finally {
+            setIsSaving(false);
+          }
+        },
+      });
+    };
 
   /*
    * =========================================================
@@ -579,7 +716,7 @@ useEffect(() => {
 
   /*
    * =========================================================
-   * STATUS BUTTONS
+   * STATUS
    * =========================================================
    */
 
@@ -599,17 +736,6 @@ useEffect(() => {
   /*
    * =========================================================
    * FINALIZE CONSULTATION
-   *
-   * This is the important fix.
-   *
-   * Order:
-   *
-   * 1. Save doctor record
-   * 2. Update status
-   * 3. Refresh queue
-   * 4. Tell parent consultation was finalized
-   * 5. Parent closes modal
-   *
    * =========================================================
    */
 
@@ -636,34 +762,20 @@ useEffect(() => {
       }
 
       if (
-  nextPatientStatus !== "forPharmacy" &&
-  nextPatientStatus !== "released"
-) {
-  setAlertMessage(
-    "Please select For Pharmacy or Release Patient."
-  );
+        nextPatientStatus ===
+          "forPharmacy" &&
+        existingPrescriptions.length === 0
+      ) {
+        setAlertMessage(
+          "Please save at least one prescription before sending the patient to Pharmacy."
+        );
 
-  return;
-}
+        return;
+      }
 
-if (
-  nextPatientStatus === "forPharmacy" &&
-  existingPrescriptions.length === 0
-) {
-  setAlertMessage(
-    "Please save at least one prescription before sending the patient to Pharmacy."
-  );
-
-  return;
-}
-
-setIsSaving(true);
+      setIsSaving(true);
 
       try {
-        // =========================
-        // 1. SAVE DOCTOR RECORD
-        // =========================
-
         const savedPatient =
           await saveDoctorRecord(
             patient._id,
@@ -726,10 +838,6 @@ setIsSaving(true);
             }
           );
 
-        // =========================
-        // 2. UPDATE STATUS
-        // =========================
-
         const updatedPatient =
           await updatePatientStatus(
             patient._id,
@@ -749,21 +857,9 @@ setIsSaving(true);
           }
         );
 
-        // =========================
-        // 3. REFRESH QUEUE
-        // =========================
-
         if (refreshQueue) {
           await refreshQueue();
         }
-
-        // =========================
-        // 4. CLOSE AS FINALIZED
-        //
-        // This prevents Doctor.jsx
-        // from changing status back
-        // to waiting.
-        // =========================
 
         onClose({
           finalized: true,
@@ -860,6 +956,66 @@ setIsSaving(true);
       .slice(0, 10);
   };
 
+  const inputClass =
+    "w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-text-subtle focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10";
+
+  const textAreaClass =
+    "w-full resize-none rounded-xl border border-border bg-surface px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition placeholder:text-text-subtle focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10";
+
+  const labelClass =
+    "mb-2 block text-sm font-semibold text-slate-700";
+
+  const examinationFields = [
+    {
+      key: "generalAppearance",
+      label: "General Appearance",
+      placeholder:
+        "Describe the patient's overall appearance...",
+    },
+    {
+      key: "heent",
+      label: "HEENT",
+      placeholder:
+        "Head, eyes, ears, nose, and throat findings...",
+    },
+    {
+      key: "pulmonary",
+      label: "Pulmonary",
+      placeholder:
+        "Respiratory and lung examination findings...",
+    },
+    {
+      key: "cardiovascular",
+      label: "Cardiovascular",
+      placeholder:
+        "Cardiac and cardiovascular findings...",
+    },
+    {
+      key: "gastrointestinal",
+      label: "Gastrointestinal",
+      placeholder:
+        "Abdominal and gastrointestinal findings...",
+    },
+    {
+      key: "musculoskeletal",
+      label: "Musculoskeletal",
+      placeholder:
+        "Musculoskeletal examination findings...",
+    },
+    {
+      key: "genitourinary",
+      label: "Genitourinary",
+      placeholder:
+        "Genitourinary examination findings...",
+    },
+    {
+      key: "neuroPsych",
+      label: "Neurological / Psychological",
+      placeholder:
+        "Neurological or psychological findings...",
+    },
+  ];
+
   return (
     <>
       <Modal
@@ -867,595 +1023,426 @@ setIsSaving(true);
         onClose={handleCancelClose}
         title="Patient Consultation"
         subtitle={
-          patient?.generalInfo?.name ||
-          "Patient"
+          recordMode === "new"
+            ? "New consultation record"
+            : patientName
         }
         size="xl"
-        closeOnOverlay={
-          !isSaving
-        }
+        closeOnOverlay={!isSaving}
       >
-        <div className="max-h-[68vh] space-y-6 overflow-y-auto pr-1">
+        <div className="max-h-[72vh] space-y-5 overflow-y-auto pr-1">
 
-          {/* PATIENT INFO */}
+          {/* PATIENT SUMMARY */}
 
-          <section className="rounded-2xl border border-border bg-slate-50 p-4">
+          <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+            <div className="h-1.5 w-full bg-blue-950" />
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                  Patient
-                </p>
+                <div className="flex min-w-0 items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+                    <UserRound size={25} />
+                  </div>
 
-                <p className="mt-1 font-bold text-text-primary">
-                  {patient?.generalInfo
-                    ?.name ||
-                    "Unnamed Patient"}
-                </p>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                      Patient
+                    </p>
+
+                    <h3 className="truncate text-xl font-bold text-text-primary">
+                      {patientName}
+                    </h3>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-text-muted">
+                      <span>
+                        {patientAge} years old
+                      </span>
+
+                      <span>
+                        {patientSex}
+                      </span>
+
+                      <span>
+                        {patient?.department ||
+                          "General"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {patient?.isPriority && (
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1.5 text-[11px] font-bold text-amber-800 ring-1 ring-inset ring-amber-200">
+                      Priority Patient
+                    </span>
+                  )}
+
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-bold ${
+                      recordMode === "new"
+                        ? "bg-primary-100 text-primary-700 ring-1 ring-inset ring-primary-200"
+                        : "bg-slate-100 text-text-secondary ring-1 ring-inset ring-slate-200"
+                    }`}
+                  >
+                    {recordMode === "new"
+                      ? "New Record"
+                      : hasHistory
+                        ? "Existing Record"
+                        : "Initial Record"}
+                  </span>
+                </div>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                  Age
-                </p>
+              <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <PatientInfoItem
+                  label="Initial Complaint"
+                  value={
+                    patient?.initComplaint ||
+                    "Not provided"
+                  }
+                />
 
-                <p className="mt-1 font-bold text-text-primary">
-                  {patient?.generalInfo
-                    ?.age ??
-                    "--"}
-                </p>
-              </div>
+                <PatientInfoItem
+                  label="Department"
+                  value={
+                    patient?.department ||
+                    "General"
+                  }
+                />
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                  Sex
-                </p>
-
-                <p className="mt-1 font-bold text-text-primary">
-                  {patient?.generalInfo
-                    ?.gender ||
+                <PatientInfoItem
+                  label="Allergies"
+                  value={
                     patient?.generalInfo
-                      ?.sex ||
-                    "--"}
-                </p>
+                      ?.allergies ||
+                    "None recorded"
+                  }
+                />
+
+                <PatientInfoItem
+                  label="Insurance"
+                  value={
+                    patient?.generalInfo
+                      ?.insurance ||
+                    "Not provided"
+                  }
+                />
               </div>
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                  Department
-                </p>
-
-                <p className="mt-1 font-bold text-text-primary">
-                  {patient?.department ||
-                    "General"}
-                </p>
-              </div>
-
             </div>
-
           </section>
 
-          {/* TABS */}
+          {/* NAVIGATION */}
 
-          <div className="flex flex-wrap gap-2 border-b border-border pb-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+            <div className="inline-flex w-full rounded-xl bg-slate-100 p-1 sm:w-auto">
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveTab("current")
+                }
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition sm:flex-none ${
+                  activeTab === "current"
+                    ? "bg-surface text-primary-800 shadow-sm"
+                    : "text-text-muted hover:text-text-primary"
+                }`}
+              >
+                <ClipboardList size={16} />
+                Current Record
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveTab("history")
+                }
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition sm:flex-none ${
+                  activeTab === "history"
+                    ? "bg-surface text-primary-800 shadow-sm"
+                    : "text-text-muted hover:text-text-primary"
+                }`}
+              >
+                <History size={16} />
+                History
+
+                {hasHistory && (
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px]">
+                    {
+                      patient.doctorSheets
+                        .length
+                    }
+                  </span>
+                )}
+              </button>
+            </div>
 
             <button
               type="button"
-              onClick={() =>
-                setActiveTab(
-                  "current"
-                )
-              }
-              className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
-                activeTab ===
-                "current"
-                  ? "bg-blue-950 text-white"
-                  : "bg-slate-100 text-text-secondary hover:bg-slate-200"
-              }`}
+              onClick={handleNewRecord}
+              disabled={isSaving}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-bold text-primary-700 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Current Record
+              <Plus size={16} />
+              New Consultation
             </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setActiveTab(
-                  "history"
-                )
-              }
-              className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
-                activeTab ===
-                "history"
-                  ? "bg-blue-950 text-white"
-                  : "bg-slate-100 text-text-secondary hover:bg-slate-200"
-              }`}
-            >
-              Previous Records
-            </button>
-
-           <button
-  type="button"
-  onClick={handleNewRecord}
-  className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
->
-  + New Record
-</button>
-
           </div>
 
-          {/* =====================================================
-              CURRENT RECORD
-          ====================================================== */}
+          {/* CURRENT RECORD */}
 
-          {activeTab ===
-            "current" && (
-            <div className="space-y-6">
+          {activeTab === "current" && (
+            <div className="space-y-5">
+
+              {/* COMPLAINT */}
+
+              <SectionCard
+                icon={<ClipboardList size={18} />}
+                eyebrow="Consultation"
+                title="Patient Complaint"
+                description="Record the primary complaint for this consultation."
+              >
+                <div className="space-y-4">
+
+                  <div>
+                    <label
+                      className={
+                        labelClass
+                      }
+                    >
+                      Current Complaint
+                    </label>
+
+                    <textarea
+                      rows={4}
+                      value={
+                        newComplaint ||
+                        doctorSheet.initComplaint ||
+                        ""
+                      }
+                      onChange={(event) => {
+                        setNewComplaint(
+                          event.target.value
+                        );
+
+                        updateDoctorSheet(
+                          "initComplaint",
+                          event.target.value
+                        );
+                      }}
+                      placeholder="Describe the patient's current complaint..."
+                      className={
+                        textAreaClass
+                      }
+                    />
+                  </div>
+
+                  {recordMode ===
+                    "existing" &&
+                    latestRecord?.initComplaint && (
+                      <div className="rounded-xl border border-border-soft bg-slate-50 p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
+                          Previous Complaint
+                        </p>
+
+                        <p className="mt-2 text-sm leading-6 text-slate-700">
+                          {
+                            latestRecord.initComplaint
+                          }
+                        </p>
+                      </div>
+                    )}
+                </div>
+              </SectionCard>
 
               {/* EXAMINATION */}
 
-              <section>
-
-                <div className="mb-3">
-                  <h3 className="text-base font-extrabold text-text-primary">
-                    Examination
-                  </h3>
-
-                  <p className="text-sm text-text-muted">
-                    Record the clinical
-                    examination findings.
-                  </p>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-
-                  {Object.entries(
-                    doctorSheet.examination
-                  ).map(
-                    ([key, value]) => (
+              <SectionCard
+                icon={<Stethoscope size={18} />}
+                eyebrow="Clinical Assessment"
+                title="Physical Examination"
+                description="Document relevant examination findings."
+              >
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  {examinationFields.map(
+                    (field) => (
                       <div
-                        key={key}
+                        key={field.key}
                       >
-                        <label className="mb-1.5 block text-xs font-bold text-text-secondary">
-                          {key
-                            .replace(
-                              /([A-Z])/g,
-                              " $1"
-                            )
-                            .replace(
-                              /^./,
-                              (letter) =>
-                                letter.toUpperCase()
-                            )}
+                        <label
+                          className={
+                            labelClass
+                          }
+                        >
+                          {field.label}
                         </label>
 
                         <textarea
+                          rows={4}
                           value={
-                            value || ""
+                            doctorSheet
+                              .examination?.[
+                              field.key
+                            ] || ""
                           }
                           onChange={(
                             event
                           ) =>
-                            handleExaminationChange(
-                              key,
-                              event.target
-                                .value
+                            updateExamination(
+                              field.key,
+                              event.target.value
                             )
                           }
-                          rows={3}
-                          className="w-full resize-none rounded-xl border border-border bg-surface p-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
+                          placeholder={
+                            field.placeholder
+                          }
+                          className={
+                            textAreaClass
+                          }
                         />
                       </div>
                     )
                   )}
 
+                  <div className="lg:col-span-2">
+                    <label
+                      className={
+                        labelClass
+                      }
+                    >
+                      Additional Checkup Notes
+                    </label>
+
+                    <textarea
+                      rows={4}
+                      value={
+                        doctorSheet
+                          .examination
+                          ?.checkupPanel ||
+                        ""
+                      }
+                      onChange={(event) =>
+                        updateExamination(
+                          "checkupPanel",
+                          event.target.value
+                        )
+                      }
+                      placeholder="Enter additional clinical observations..."
+                      className={
+                        textAreaClass
+                      }
+                    />
+                  </div>
                 </div>
-
-              </section>
-
-              {/* COMPLAINT */}
-
-              <section>
-
-                <label className="mb-2 block text-sm font-extrabold text-text-primary">
-                  Chief Complaint
-                </label>
-
-                <textarea
-                  value={
-                    doctorSheet.initComplaint ||
-                    ""
-                  }
-                  onChange={(event) =>
-                    setDoctorSheet(
-                      (previous) => ({
-                        ...previous,
-
-                        initComplaint:
-                          event.target.value,
-                      })
-                    )
-                  }
-                  rows={3}
-                  className="w-full resize-none rounded-xl border border-border bg-surface p-3 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
-                />
-
-              </section>
-
-              {/* FOLLOW-UP COMPLAINT */}
-
-              {hasHistory && (
-                <section>
-
-                  <label className="mb-2 block text-sm font-extrabold text-text-primary">
-                    New Complaint
-                    (Follow-up)
-                  </label>
-
-                  <textarea
-                    value={
-                      newComplaint
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setNewComplaint(
-                        event.target.value
-                      )
-                    }
-                    rows={3}
-                    placeholder="Enter a new complaint if applicable..."
-                    className="w-full resize-none rounded-xl border border-border bg-surface p-3 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
-                  />
-
-                </section>
-              )}
+              </SectionCard>
 
               {/* DIAGNOSIS */}
 
-              <section>
-
-                <label className="mb-2 block text-sm font-extrabold text-text-primary">
-                  Diagnosis
-                </label>
-
+              <SectionCard
+                icon={<ClipboardList size={18} />}
+                eyebrow="Clinical Impression"
+                title="Diagnosis"
+                description="Record the diagnosis or clinical assessment."
+              >
                 <textarea
+                  rows={5}
                   value={
                     doctorSheet.diagnosis ||
                     ""
                   }
                   onChange={(event) =>
-                    setDoctorSheet(
-                      (previous) => ({
-                        ...previous,
-
-                        diagnosis:
-                          event.target.value,
-                      })
+                    updateDoctorSheet(
+                      "diagnosis",
+                      event.target.value
                     )
                   }
-                  rows={4}
-                  className="w-full resize-none rounded-xl border border-border bg-surface p-3 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
+                  placeholder="Enter diagnosis..."
+                  className={
+                    textAreaClass
+                  }
                 />
-
-              </section>
+              </SectionCard>
 
               {/* TREATMENT */}
 
-              <section>
-
-                <label className="mb-2 block text-sm font-extrabold text-text-primary">
-                  Treatment
-                </label>
-
+              <SectionCard
+                icon={<CheckCircle2 size={18} />}
+                eyebrow="Care Plan"
+                title="Treatment"
+                description="Document treatment, procedures, or medical advice."
+              >
                 <textarea
+                  rows={5}
                   value={
                     doctorSheet.treatment ||
                     ""
                   }
                   onChange={(event) =>
-                    setDoctorSheet(
-                      (previous) => ({
-                        ...previous,
-
-                        treatment:
-                          event.target.value,
-                      })
+                    updateDoctorSheet(
+                      "treatment",
+                      event.target.value
                     )
                   }
-                  rows={4}
-                  className="w-full resize-none rounded-xl border border-border bg-surface p-3 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
+                  placeholder="Enter treatment plan..."
+                  className={
+                    textAreaClass
+                  }
                 />
-
-              </section>
+              </SectionCard>
 
               {/* MEDICATION NOTES */}
 
-              <section>
-
-                <label className="mb-2 block text-sm font-extrabold text-text-primary">
-                  Medication Notes
-                </label>
-
+              <SectionCard
+                icon={<Pill size={18} />}
+                eyebrow="Medication Notes"
+                title="Medication Instructions"
+                description="Optional general medication instructions."
+              >
                 <textarea
+                  rows={4}
                   value={
                     doctorSheet.medication ||
                     ""
                   }
                   onChange={(event) =>
-                    setDoctorSheet(
-                      (previous) => ({
-                        ...previous,
-
-                        medication:
-                          event.target.value,
-                      })
+                    updateDoctorSheet(
+                      "medication",
+                      event.target.value
                     )
                   }
-                  rows={3}
-                  className="w-full resize-none rounded-xl border border-border bg-surface p-3 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
-                />
-
-              </section>
-
-              {/* REFERRAL */}
-
-              <section className="rounded-2xl border border-border p-4">
-
-                <button
-                  type="button"
-                  onClick={
-                    handleReferralToggle
+                  placeholder="Enter general medication notes..."
+                  className={
+                    textAreaClass
                   }
-                  className="text-sm font-extrabold text-blue-950"
-                >
-                  {showReferral
-                    ? "Hide Referral"
-                    : "Add Referral"}
-                </button>
+                />
+              </SectionCard>
 
-                {showReferral && (
+              {/* PRESCRIPTIONS */}
 
-                  <div className="mt-4 grid gap-4">
-
-                    <select
-                      value={
-                        referralDept
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setReferralDept(
-                          event.target.value
-                        )
-                      }
-                      className="h-11 rounded-xl border border-border bg-surface px-3 text-sm font-medium outline-none focus:border-sky-400"
-                    >
-                      <option value="">
-                        Select Department
-                      </option>
-
-                      {DEPARTMENTS.map(
-                        (
-                          department
-                        ) => (
-                          <option
-                            key={
-                              department
-                            }
-                            value={
-                              department
-                            }
-                          >
-                            {
-                              department
-                            }
-                          </option>
-                        )
-                      )}
-                    </select>
-
-                    <textarea
-                      value={
-                        referralReason
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setReferralReason(
-                          event.target.value
-                        )
-                      }
-                      placeholder="Referral reason"
-                      rows={3}
-                      className="resize-none rounded-xl border border-border p-3 text-sm outline-none focus:border-sky-400"
-                    />
-
-                  </div>
-
-                )}
-
-              </section>
-
-              {/* PRESCRIPTION */}
-
-              <section className="rounded-2xl border border-border p-4">
-
-                <div className="mb-4">
-
-                  <h3 className="text-base font-extrabold text-text-primary">
-                    Prescription
-                  </h3>
-
-                  <p className="text-sm text-text-muted">
-                    Add medicines for the
-                    patient.
-                  </p>
-
-                </div>
-
+              <SectionCard
+                icon={<Pill size={18} />}
+                eyebrow="Pharmacy"
+                title="Prescriptions"
+                description="Search medicines and create prescription records."
+              >
                 <div className="space-y-4">
 
                   {prescriptionItems.map(
                     (item, index) => (
-
                       <div
                         key={index}
-                        className="rounded-xl border border-border p-3"
+                        className="rounded-2xl border border-border bg-slate-50 p-4"
                       >
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-bold text-text-primary">
+                              Prescription{" "}
+                              {index + 1}
+                            </p>
 
-                        <div className="grid gap-3 md:grid-cols-4">
-
-                          {/* MEDICINE */}
-
-                          <div className="relative">
-
-                            <input
-                              type="text"
-                              value={
-                                medicineSearch[
-                                  index
-                                ] ||
-                                ""
-                              }
-                              placeholder="Search medicine"
-                              onFocus={() =>
-                                setActiveDropdown(
-                                  index
-                                )
-                              }
-                              onChange={(
-                                event
-                              ) => {
-                                updatePrescriptionItem(
-                                  index,
-                                  "medicine",
-                                  ""
-                                );
-
-                                setMedicineSearch(
-                                  (
-                                    previous
-                                  ) => ({
-                                    ...previous,
-
-                                    [index]:
-                                      event
-                                        .target
-                                        .value,
-                                  })
-                                );
-
-                                setActiveDropdown(
-                                  index
-                                );
-                              }}
-                              className="h-10 w-full rounded-xl border border-border px-3 text-sm outline-none focus:border-sky-400"
-                            />
-
-                            {activeDropdown ===
-                              index && (
-                              <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-xl">
-
-                                {filteredMedicines(
-                                  index
-                                ).map(
-                                  (
-                                    medicine
-                                  ) => (
-
-                                    <button
-                                      type="button"
-                                      key={
-                                        medicine._id
-                                      }
-                                      onClick={() => {
-                                        updatePrescriptionItem(
-                                          index,
-                                          "medicine",
-                                          medicine._id
-                                        );
-
-                                        setMedicineSearch(
-                                          (
-                                            previous
-                                          ) => ({
-                                            ...previous,
-
-                                            [index]:
-                                              getMedicineName(
-                                                medicine
-                                              ),
-                                          })
-                                        );
-
-                                        setActiveDropdown(
-                                          null
-                                        );
-                                      }}
-                                      className="block w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-100"
-                                    >
-                                      {getMedicineName(
-                                        medicine
-                                      )}
-
-                                      {medicine.dosage
-                                        ? ` (${medicine.dosage})`
-                                        : ""}
-                                    </button>
-
-                                  )
-                                )}
-
-                              </div>
-                            )}
-
+                            <p className="mt-0.5 text-xs text-text-muted">
+                              Add medicine and instructions.
+                            </p>
                           </div>
-
-                          {/* QUANTITY */}
-
-                          <input
-                            type="number"
-                            min="1"
-                            value={
-                              item.quantity
-                            }
-                            placeholder="Quantity"
-                            onChange={(
-                              event
-                            ) =>
-                              updatePrescriptionItem(
-                                index,
-                                "quantity",
-                                event.target
-                                  .value
-                              )
-                            }
-                            className="h-10 rounded-xl border border-border px-3 text-sm outline-none focus:border-sky-400"
-                          />
-
-                          {/* DIRECTIONS */}
-
-                          <input
-                            type="text"
-                            value={
-                              item.directions
-                            }
-                            placeholder="Directions"
-                            onChange={(
-                              event
-                            ) =>
-                              updatePrescriptionItem(
-                                index,
-                                "directions",
-                                event.target
-                                  .value
-                              )
-                            }
-                            className="h-10 rounded-xl border border-border px-3 text-sm outline-none focus:border-sky-400"
-                          />
-
-                          {/* REMOVE */}
 
                           <button
                             type="button"
@@ -1464,505 +1451,744 @@ setIsSaving(true);
                                 index
                               )
                             }
-                            disabled={
-                              prescriptionItems.length ===
-                              1
-                            }
-                            className="rounded-xl border border-status-critical-border px-3 text-sm font-bold text-rose-600 transition hover:bg-status-critical-bg disabled:opacity-40"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                            aria-label="Remove prescription"
                           >
-                            Remove
+                            <Trash2
+                              size={16}
+                            />
                           </button>
-
                         </div>
 
-                      </div>
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
 
+                          <div className="relative lg:col-span-1">
+                            <label
+                              className={
+                                labelClass
+                              }
+                            >
+                              Medicine
+                            </label>
+
+                            <input
+                              value={
+                                medicineSearch[
+                                  index
+                                ] ??
+                                item.medicine
+                              }
+                              onFocus={() =>
+                                setActiveDropdown(
+                                  index
+                                )
+                              }
+                              onChange={(
+                                event
+                              ) => {
+                                const value =
+                                  event.target
+                                    .value;
+
+                                setMedicineSearch(
+                                  (
+                                    previous
+                                  ) => ({
+                                    ...previous,
+                                    [index]:
+                                      value,
+                                  })
+                                );
+
+                                updatePrescriptionItem(
+                                  index,
+                                  "medicine",
+                                  value
+                                );
+
+                                setActiveDropdown(
+                                  index
+                                );
+                              }}
+                              placeholder="Search medicine..."
+                              className={
+                                inputClass
+                              }
+                            />
+
+                            {activeDropdown ===
+                              index && (
+                              <div className="absolute z-30 mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-xl">
+                                {filteredMedicines(
+                                  index
+                                ).length >
+                                0 ? (
+                                  filteredMedicines(
+                                    index
+                                  ).map(
+                                    (
+                                      medicine
+                                    ) => {
+                                      const name =
+                                        getMedicineName(
+                                          medicine
+                                        );
+
+                                      return (
+                                        <button
+                                          key={
+                                            medicine._id ||
+                                            medicine.id ||
+                                            `${name}-${index}`
+                                          }
+                                          type="button"
+                                          onClick={() => {
+  updatePrescriptionItem(
+    index,
+    "medicine",
+    name
+  );
+
+  updatePrescriptionItem(
+    index,
+    "medicineId",
+    medicine._id || medicine.id
+  );
+
+  setMedicineSearch(
+    (previous) => ({
+      ...previous,
+      [index]: name,
+    })
+  );
+
+  setActiveDropdown(null);
+}}
+                                          className="flex w-full items-start justify-between gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-slate-50"
+                                        >
+                                          <div>
+                                            <p className="text-sm font-semibold text-text-primary">
+                                              {name}
+                                            </p>
+
+                                            {medicine
+                                              ?.quantity !==
+                                              undefined && (
+                                              <p className="mt-1 text-xs text-text-muted">
+                                                Available:{" "}
+                                                {
+                                                  medicine.quantity
+                                                }
+                                              </p>
+                                            )}
+                                          </div>
+
+                                          <ChevronRight
+                                            size={16}
+                                            className="mt-0.5 shrink-0 text-text-subtle"
+                                          />
+                                        </button>
+                                      );
+                                    }
+                                  )
+                                ) : (
+                                  <div className="px-3 py-6 text-center text-sm text-text-muted">
+                                    No medicine found.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <label
+                              className={
+                                labelClass
+                              }
+                            >
+                              Quantity
+                            </label>
+
+                            <input
+                              value={
+                                item.quantity
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                updatePrescriptionItem(
+                                  index,
+                                  "quantity",
+                                  event.target
+                                    .value
+                                )
+                              }
+                              placeholder="e.g. 10"
+                              className={
+                                inputClass
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <label
+                              className={
+                                labelClass
+                              }
+                            >
+                              Directions
+                            </label>
+
+                            <input
+                              value={
+                                item.directions
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                updatePrescriptionItem(
+                                  index,
+                                  "directions",
+                                  event.target
+                                    .value
+                                )
+                              }
+                              placeholder="e.g. 1 tablet twice daily"
+                              className={
+                                inputClass
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            type="button"
+                            disabled={
+                              isSaving
+                            }
+                            onClick={() =>
+                              handleSavePrescription(
+                                index
+                              )
+                            }
+                            className="inline-flex items-center gap-2 rounded-xl bg-primary-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Pill
+                              size={16}
+                            />
+                            Save Prescription
+                          </button>
+                        </div>
+                      </div>
                     )
                   )}
-
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-3">
 
                   <button
                     type="button"
                     onClick={
                       addPrescriptionItem
                     }
-                    className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                    className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary-300 bg-primary-50 px-4 py-3 text-sm font-bold text-primary-700 transition hover:bg-primary-100"
                   >
-                    + Add Medicine
+                    <Plus size={17} />
+                    Add Another Medicine
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={
-                      handleSavePrescription
-                    }
-                    className="rounded-xl bg-blue-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-900"
-                  >
-                    Save Prescription
-                  </button>
+                  {/* SAVED PRESCRIPTIONS */}
 
+                  {activePrescriptions.length >
+                    0 && (
+                    <div className="border-t border-border pt-5">
+                      <div className="mb-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-text-primary">
+                            Saved Prescriptions
+                          </p>
+
+                          <p className="mt-1 text-xs text-text-muted">
+                            {activePrescriptions.length}{" "}
+                            prescription
+                            {activePrescriptions.length !==
+                            1
+                              ? "s"
+                              : ""}{" "}
+                            recorded
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {activePrescriptions.map(
+                          (
+                            prescription
+                          ) => {
+                            const isGiven =
+                              Boolean(
+                                prescription?.given ||
+                                  prescription?.isGiven ||
+                                  prescription?.status ===
+                                    "given"
+                              );
+
+                            return (
+                              <div
+                                key={
+                                  prescription._id ||
+                                  prescription.id
+                                }
+                                className="rounded-xl border border-border bg-surface p-4"
+                              >
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold text-text-primary">
+                                      {
+                                        prescription.medicine
+                                      }
+                                    </p>
+
+                                    <p className="mt-1 text-xs leading-5 text-text-muted">
+                                      Qty:{" "}
+                                      {
+                                        prescription.quantity ||
+                                        "--"
+                                      }
+                                      {" · "}
+                                      {
+                                        prescription.directions ||
+                                        "No directions"
+                                      }
+                                    </p>
+                                  </div>
+
+                                  {isGiven ? (
+                                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                                      <CheckCircle2
+                                        size={14}
+                                      />
+                                      Medicine Given
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleMarkMedicineGiven(
+                                          prescription
+                                        )
+                                      }
+                                      disabled={
+                                        isSaving
+                                      }
+                                      className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-xs font-bold text-primary-700 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      <PackageCheck
+                                        size={15}
+                                      />
+                                      Mark as Given
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          }
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </SectionCard>
+
+              {/* REFERRAL */}
+
+              <SectionCard
+                icon={<Send size={18} />}
+                eyebrow="Patient Routing"
+                title="Referral"
+                description="Refer the patient to another department when necessary."
+              >
+                <div className="space-y-4">
+
+                  <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-slate-50 p-4">
+                    <div>
+                      <p className="text-sm font-bold text-text-primary">
+                        Refer Patient
+                      </p>
+
+                      <p className="mt-1 text-xs text-text-muted">
+                        Enable referral for another medical department.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={
+                        showReferral
+                      }
+                      onClick={
+                        handleReferralToggle
+                      }
+                      className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+                        showReferral
+                          ? "bg-primary-700"
+                          : "bg-slate-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 h-5 w-5 rounded-full bg-surface shadow-sm transition ${
+                          showReferral
+                            ? "left-6"
+                            : "left-1"
+                        }`}
+                      />
+                    </button>
+                  </label>
+
+                  {showReferral && (
+                    <div className="grid grid-cols-1 gap-4 rounded-xl border border-primary-100 bg-primary-50 p-4 lg:grid-cols-2">
+
+                      <div>
+                        <label
+                          className={
+                            labelClass
+                          }
+                        >
+                          Referral Department
+                        </label>
+
+                        <select
+                          value={
+                            referralDept
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            setReferralDept(
+                              event.target
+                                .value
+                            )
+                          }
+                          className={
+                            inputClass
+                          }
+                        >
+                          <option value="">
+                            Select department
+                          </option>
+
+                          {DEPARTMENTS.map(
+                            (
+                              department
+                            ) => (
+                              <option
+                                key={
+                                  department
+                                }
+                                value={
+                                  department
+                                }
+                              >
+                                {
+                                  department
+                                }
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label
+                          className={
+                            labelClass
+                          }
+                        >
+                          Referral Reason
+                        </label>
+
+                        <textarea
+                          rows={3}
+                          value={
+                            referralReason
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            setReferralReason(
+                              event.target
+                                .value
+                            )
+                          }
+                          placeholder="Explain the reason for referral..."
+                          className={
+                            textAreaClass
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </SectionCard>
+
+              {/* FINAL STATUS */}
+
+              <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+                <div className="mb-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
+                    Consultation Outcome
+                  </p>
+
+                  <h3 className="mt-1 text-lg font-bold text-text-primary">
+                    Choose Patient Destination
+                  </h3>
+
+                  <p className="mt-1 text-sm text-text-muted">
+                    Select what should happen after this consultation.
+                  </p>
                 </div>
 
-              </section>
-
-              {/* STATUS SELECTION */}
-
-              <section className="rounded-2xl border border-border bg-slate-50 p-4">
-
-                <h3 className="text-base font-extrabold text-text-primary">
-                  Consultation Result
-                </h3>
-
-                <p className="mt-1 text-sm text-text-muted">
-                  Select the patient's next
-                  status before saving the
-                  consultation record.
-                </p>
-
-                <div className="mt-4 flex flex-wrap gap-3">
-
-                  {/* FOR PHARMACY */}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 
                   <button
                     type="button"
                     onClick={
                       handleSelectForPharmacy
                     }
-                    className={`rounded-xl px-5 py-2.5 text-sm font-bold text-white transition ${
+                    className={`rounded-2xl border p-4 text-left transition ${
                       nextPatientStatus ===
                       "forPharmacy"
-                        ? "bg-emerald-800 ring-4 ring-emerald-200"
-                        : "bg-emerald-600 hover:bg-emerald-700"
+                        ? "border-primary-300 bg-primary-50 ring-2 ring-primary-500/10"
+                        : "border-border bg-surface hover:border-primary-200 hover:bg-slate-50"
                     }`}
                   >
-                    For Pharmacy
-                  </button>
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                          nextPatientStatus ===
+                          "forPharmacy"
+                            ? "bg-primary-700 text-white"
+                            : "bg-primary-50 text-primary-700"
+                        }`}
+                      >
+                        <Pill size={18} />
+                      </div>
 
-                  {/* RELEASE */}
+                      <div>
+                        <p className="font-bold text-text-primary">
+                          Send to Pharmacy
+                        </p>
+
+                        <p className="mt-1 text-xs leading-5 text-text-muted">
+                          Patient will proceed to the pharmacy queue for prescribed medicines.
+                        </p>
+                      </div>
+                    </div>
+                  </button>
 
                   <button
                     type="button"
                     onClick={
                       handleSelectReleased
                     }
-                    className={`rounded-xl px-5 py-2.5 text-sm font-bold text-white transition ${
+                    className={`rounded-2xl border p-4 text-left transition ${
                       nextPatientStatus ===
                       "released"
-                        ? "bg-slate-900 ring-4 ring-slate-300"
-                        : "bg-slate-700 hover:bg-slate-800"
+                        ? "border-emerald-300 bg-emerald-50 ring-2 ring-emerald-500/10"
+                        : "border-border bg-surface hover:border-emerald-200 hover:bg-slate-50"
                     }`}
                   >
-                    Release Patient
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                          nextPatientStatus ===
+                          "released"
+                            ? "bg-emerald-600 text-white"
+                            : "bg-emerald-50 text-emerald-700"
+                        }`}
+                      >
+                        <CheckCircle2
+                          size={18}
+                        />
+                      </div>
+
+                      <div>
+                        <p className="font-bold text-text-primary">
+                          Release Patient
+                        </p>
+
+                        <p className="mt-1 text-xs leading-5 text-text-muted">
+                          Consultation is complete and no pharmacy processing is required.
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="mt-5 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+
+                  <button
+                    type="button"
+                    onClick={
+                      handleCancelClose
+                    }
+                    disabled={isSaving}
+                    className="rounded-xl border border-border bg-surface px-5 py-3 text-sm font-bold text-text-secondary transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Cancel
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={
+                      finalizeConsultation
+                    }
+                    disabled={isSaving}
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                      nextPatientStatus ===
+                      "released"
+                        ? "bg-emerald-600 hover:bg-emerald-700"
+                        : "bg-primary-700 hover:bg-primary-800"
+                    }`}
+                  >
+                    {isSaving ? (
+                      <>
+                        <RotateCcw
+                          size={17}
+                          className="animate-spin"
+                        />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        {nextPatientStatus ===
+                        "released" ? (
+                          <CheckCircle2
+                            size={17}
+                          />
+                        ) : (
+                          <Send size={17} />
+                        )}
+
+                        {nextPatientStatus ===
+                        "released"
+                          ? "Complete & Release"
+                          : "Complete & Send to Pharmacy"}
+                      </>
+                    )}
+                  </button>
                 </div>
-
-                <div className="mt-4 rounded-xl bg-surface p-3 text-sm">
-
-                  <span className="font-semibold text-text-muted">
-                    Selected status:{" "}
-                  </span>
-
-                  <span className="font-extrabold text-text-primary">
-                    {nextPatientStatus ===
-                    "forPharmacy"
-                      ? "For Pharmacy"
-                      : "Released"}
-                  </span>
-
-                </div>
-
               </section>
+            </div>
+          )}
 
-              {/* SAVE RECORD */}
+          {/* HISTORY */}
 
-              <div className="flex justify-end border-t border-border pt-5">
+          {activeTab === "history" && (
+            <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 
-                <button
-                  type="button"
-                  onClick={
-                    finalizeConsultation
-                  }
-                  disabled={
-                    isSaving
-                  }
-                  className="rounded-xl bg-blue-950 px-6 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSaving
-                    ? "Saving..."
-                    : "Save Record"}
-                </button>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
+                    Patient Records
+                  </p>
 
+                  <h3 className="mt-1 text-lg font-bold text-text-primary">
+                    Consultation History
+                  </h3>
+
+                  <p className="mt-1 text-sm text-text-muted">
+                    Review previous doctor consultations and records.
+                  </p>
+                </div>
+
+                {hasHistory && (
+                  <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-text-secondary">
+                    {
+                      patient.doctorSheets
+                        .length
+                    }{" "}
+                    record
+                    {patient.doctorSheets
+                      .length !== 1
+                      ? "s"
+                      : ""}
+                  </span>
+                )}
               </div>
 
-            </div>
-          )}
-
-          {/* =====================================================
-              PREVIOUS RECORDS
-          ====================================================== */}
-
-          {activeTab ===
-            "history" && (
-
-            <div className="space-y-6">
-
-              <section>
-
-                <h3 className="mb-4 text-base font-extrabold text-text-primary">
-                  Previous Doctor Records
-                </h3>
-
-                {Array.isArray(
-                  patient?.doctorSheets
-                ) &&
-                patient.doctorSheets.length >
-                  0 ? (
-
-                  <div className="space-y-4">
-
-                    {patient.doctorSheets
-                      .slice()
-                      .reverse()
-                      .map(
-                        (
-                          record,
-                          index
-                        ) => (
-
-                          <article
-                            key={
-                              record._id ||
-                              index
-                            }
-                            className="rounded-2xl border border-border bg-surface p-5 shadow-sm"
-                          >
-
-                            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border-soft pb-4">
-
-                              <div>
-
-                                <p className="font-extrabold text-text-primary">
-                                  {record.doctorName ||
-                                    "Unknown Doctor"}
-                                </p>
-
-                                <p className="mt-1 text-xs font-medium text-text-muted">
-                                  {record.department ||
-                                    "General"}
-
-                                  {" • "}
-
-                                  {record.date
-                                    ? new Date(
-                                        record.date
-                                      ).toLocaleString()
-                                    : "No date"}
-                                </p>
-
-                              </div>
-
-                              {record._id && (
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleDeleteRecord(
-                                      record._id
-                                    )
-                                  }
-                                  className="rounded-lg px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-status-critical-bg"
-                                >
-                                  Delete
-                                </button>
-
-                              )}
-
-                            </div>
-
-                            <div className="mt-4 grid gap-4 md:grid-cols-2">
-
-                              <div>
-                                <p className="text-xs font-bold uppercase text-text-muted">
-                                  Complaint
-                                </p>
-
-                                <p className="mt-1 text-sm text-slate-700">
-                                  {record.initComplaint ||
-                                    "-"}
-                                </p>
-                              </div>
-
-                              <div>
-                                <p className="text-xs font-bold uppercase text-text-muted">
-                                  Diagnosis
-                                </p>
-
-                                <p className="mt-1 text-sm text-slate-700">
-                                  {record.diagnosis ||
-                                    "-"}
-                                </p>
-                              </div>
-
-                              <div>
-                                <p className="text-xs font-bold uppercase text-text-muted">
-                                  Treatment
-                                </p>
-
-                                <p className="mt-1 text-sm text-slate-700">
-                                  {record.treatment ||
-                                    "-"}
-                                </p>
-                              </div>
-
-                              <div>
-                                <p className="text-xs font-bold uppercase text-text-muted">
-                                  Medication
-                                </p>
-
-                                <p className="mt-1 text-sm text-slate-700">
-                                  {record.medication ||
-                                    "-"}
-                                </p>
-                              </div>
-
-                            </div>
-
-                            <div className="mt-5">
-
-                              <p className="mb-3 text-xs font-bold uppercase text-text-muted">
-                                Examination
-                              </p>
-
-                              <div className="grid gap-3 md:grid-cols-2">
-
-                                {Object.entries(
-                                  record.examination ||
-                                    {}
-                                ).map(
-                                  (
-                                    [
-                                      key,
-                                      value,
-                                    ]
-                                  ) => (
-
-                                    <div
-                                      key={
-                                        key
-                                      }
-                                      className="rounded-xl bg-slate-50 p-3"
-                                    >
-
-                                      <p className="text-xs font-bold text-text-muted">
-                                        {key
-                                          .replace(
-                                            /([A-Z])/g,
-                                            " $1"
-                                          )
-                                          .replace(
-                                            /^./,
-                                            (
-                                              letter
-                                            ) =>
-                                              letter.toUpperCase()
-                                          )}
-                                      </p>
-
-                                      <p className="mt-1 text-sm text-slate-700">
-                                        {value ||
-                                          "-"}
-                                      </p>
-
-                                    </div>
-
-                                  )
-                                )}
-
-                              </div>
-
-                            </div>
-
-                            {record.referral
-                              ?.department && (
-
-                              <div className="mt-5 rounded-xl border border-blue-100 bg-primary-50 p-4">
-
-                                <p className="text-sm font-extrabold text-blue-950">
-                                  Referral:
-                                  {" "}
-                                  {
-                                    record
-                                      .referral
-                                      .department
-                                  }
-                                </p>
-
-                                <p className="mt-1 text-sm text-blue-900">
-                                  {record
-                                    .referral
-                                    .reason ||
-                                    "-"}
-                                </p>
-
-                              </div>
-
-                            )}
-
-                          </article>
-
-                        )
-                      )}
-
-                  </div>
-
-                ) : (
-
-                  <div className="rounded-2xl border border-dashed border-border-strong p-10 text-center">
-
-                    <p className="font-bold text-slate-700">
-                      No previous records
-                    </p>
-
-                    <p className="mt-1 text-sm text-text-muted">
-                      This patient does not
-                      have previous doctor
-                      consultation records.
-                    </p>
-
-                  </div>
-
-                )}
-
-              </section>
-
-              {/* PRESCRIPTION HISTORY */}
-
-              <section>
-
-                <h3 className="mb-4 text-base font-extrabold text-text-primary">
-                  Prescription History
-                </h3>
-
-                {activePrescriptions.length ===
-                0 ? (
-
-                  <div className="rounded-2xl border border-dashed border-border-strong p-10 text-center">
-
-                    <p className="font-bold text-slate-700">
-                      No previous prescriptions
-                    </p>
-
-                  </div>
-
-                ) : (
-
-                  <div className="space-y-4">
-
-                    {activePrescriptions.map(
+              {!hasHistory ? (
+                <div className="rounded-2xl border border-dashed border-border-strong bg-slate-50 px-5 py-12 text-center">
+                  <History
+                    size={34}
+                    className="mx-auto text-text-subtle"
+                  />
+
+                  <p className="mt-4 text-sm font-bold text-text-primary">
+                    No consultation history
+                  </p>
+
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-muted">
+                    This patient does not have any previous doctor records yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {[
+                    ...patient.doctorSheets,
+                  ]
+                    .reverse()
+                    .map(
                       (
-                        prescription
+                        record,
+                        index
                       ) => (
-
-                        <article
+                        <HistoryRecord
                           key={
-                            prescription._id
+                            record._id ||
+                            record.id ||
+                            index
                           }
-                          className="rounded-2xl border border-border bg-surface p-5"
-                        >
-
-                          {prescription.items?.map(
-                            (item) => (
-
-                              <div
-                                key={
-                                  item._id
-                                }
-                                className="border-b border-border-soft py-3 last:border-0"
-                              >
-
-                                <p className="font-bold text-text-primary">
-
-                                  {item
-                                    .medicine
-                                    ?.names?.join(
-                                      ", "
-                                    ) ||
-                                    item
-                                      .medicine
-                                      ?.name ||
-                                    "Unknown Medicine"}
-
-                                </p>
-
-                                <p className="mt-1 text-sm text-text-muted">
-
-                                  Quantity:
-                                  {" "}
-                                  {
-                                    item.quantity
-                                  }
-
-                                </p>
-
-                                <p className="mt-1 text-sm text-text-muted">
-
-                                  Directions:
-                                  {" "}
-                                  {
-                                    item.directions ||
-                                    "-"
-                                  }
-
-                                </p>
-
-                                {item.status !==
-                                  "given" &&
-                                  item._id && (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleGiveMedicine(
-                                          prescription._id,
-                                          item._id
-                                        )
-                                      }
-                                      className="mt-3 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700"
-                                    >
-                                      Mark as Given
-                                    </button>
-                                  )}
-
-                              </div>
-
+                          record={
+                            record
+                          }
+                          index={
+                            index
+                          }
+                          onDelete={() =>
+                            handleDeleteRecord(
+                              record._id ||
+                                record.id
                             )
-                          )}
-
-                        </article>
-
+                          }
+                        />
                       )
                     )}
-
-                  </div>
-
-                )}
-
-              </section>
-
-            </div>
-
+                </div>
+              )}
+            </section>
           )}
-
         </div>
       </Modal>
 
-      {/* CONFIRMATION */}
+      {alertMessage && (
+        <AlertModal
+          open={Boolean(
+            alertMessage
+          )}
+          message={
+            alertMessage
+          }
+          onClose={() =>
+            setAlertMessage("")
+          }
+        />
+      )}
 
       {confirmState && (
         <ConfirmModal
+          open={Boolean(
+            confirmState
+          )}
           message={
             confirmState.message
           }
@@ -1972,20 +2198,287 @@ setIsSaving(true);
           onCancel={() =>
             setConfirmState(null)
           }
-        />
-      )}
-
-      {/* ALERT */}
-
-      {alertMessage && (
-        <AlertModal
-          message={alertMessage}
           onClose={() =>
-            setAlertMessage("")
+            setConfirmState(null)
           }
         />
       )}
     </>
+  );
+}
+
+/*
+ * =========================================================
+ * SMALL UI COMPONENTS
+ * =========================================================
+ */
+
+function PatientInfoItem({
+  label,
+  value,
+}) {
+  return (
+    <div className="min-w-0 rounded-xl border border-border bg-slate-50 p-3">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
+        {label}
+      </p>
+
+      <p className="mt-1.5 truncate text-sm font-bold text-text-primary">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SectionCard({
+  icon,
+  eyebrow,
+  title,
+  description,
+  children,
+}) {
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="mb-5 flex gap-3">
+
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+          {icon}
+        </div>
+
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary-600">
+            {eyebrow}
+          </p>
+
+          <h3 className="mt-0.5 text-lg font-bold text-text-primary">
+            {title}
+          </h3>
+
+          {description && (
+            <p className="mt-1 text-sm text-text-muted">
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+function HistoryRecord({
+  record,
+  index,
+  onDelete,
+}) {
+  const examination =
+    record?.examination || {};
+
+  const recordDate =
+    record?.createdAt ||
+    record?.date;
+
+  const formattedDate =
+    recordDate
+      ? new Date(
+          recordDate
+        ).toLocaleString()
+      : "Date unavailable";
+
+  const examinationEntries = [
+    [
+      "General Appearance",
+      examination.generalAppearance,
+    ],
+    [
+      "HEENT",
+      examination.heent,
+    ],
+    [
+      "Pulmonary",
+      examination.pulmonary,
+    ],
+    [
+      "Cardiovascular",
+      examination.cardiovascular,
+    ],
+    [
+      "Gastrointestinal",
+      examination.gastrointestinal,
+    ],
+    [
+      "Musculoskeletal",
+      examination.musculoskeletal,
+    ],
+    [
+      "Genitourinary",
+      examination.genitourinary,
+    ],
+    [
+      "Neurological / Psychological",
+      examination.neuroPsych,
+    ],
+    [
+      "Additional Notes",
+      examination.checkupPanel,
+    ],
+  ].filter(
+    ([, value]) =>
+      value &&
+      String(value).trim()
+  );
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-border bg-surface">
+
+      <div className="border-b border-border bg-slate-50 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary-600">
+              Record{" "}
+              {index + 1}
+            </p>
+
+            <p className="mt-1 text-sm font-bold text-text-primary">
+              {formattedDate}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {record?.recordType && (
+              <span className="rounded-full bg-primary-100 px-3 py-1 text-[10px] font-bold text-primary-700">
+                {record.recordType}
+              </span>
+            )}
+
+            {record?._id ||
+            record?.id ? (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                title="Delete record"
+              >
+                <Trash2 size={15} />
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-5 p-4">
+
+        <HistoryBlock
+          title="Complaint"
+          value={
+            record?.initComplaint
+          }
+        />
+
+        <HistoryBlock
+          title="Diagnosis"
+          value={
+            record?.diagnosis
+          }
+        />
+
+        <HistoryBlock
+          title="Treatment"
+          value={
+            record?.treatment
+          }
+        />
+
+        <HistoryBlock
+          title="Medication"
+          value={
+            record?.medication
+          }
+        />
+
+        {record?.referral && (
+          <div className="rounded-xl border border-primary-100 bg-primary-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-primary-700">
+              Referral
+            </p>
+
+            <p className="mt-2 text-sm font-bold text-primary-900">
+              {
+                record.referral
+                  .department
+              }
+            </p>
+
+            {record.referral
+              .reason && (
+              <p className="mt-2 text-sm leading-6 text-primary-800">
+                {
+                  record.referral
+                    .reason
+                }
+              </p>
+            )}
+          </div>
+        )}
+
+        {examinationEntries.length >
+          0 && (
+          <div>
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-text-subtle">
+              Examination Findings
+            </p>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {examinationEntries.map(
+                ([
+                  label,
+                  value,
+                ]) => (
+                  <div
+                    key={label}
+                    className="rounded-xl border border-border bg-slate-50 p-3"
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
+                      {label}
+                    </p>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-700">
+                      {value}
+                    </p>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function HistoryBlock({
+  title,
+  value,
+}) {
+  if (
+    !value ||
+    !String(value).trim()
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-slate-50 p-4">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
+        {title}
+      </p>
+
+      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+        {value}
+      </p>
+    </div>
   );
 }
 

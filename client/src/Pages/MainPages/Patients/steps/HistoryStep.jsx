@@ -19,7 +19,7 @@ const HistoryChecklist = ({
   return (
     <div>
       <div className="mb-5">
-        <h3 className="text-lg font-bold text-text-primary">
+        <h3 className="text-lg font-bold tracking-tight text-text-primary">
           {title}
         </h3>
 
@@ -28,25 +28,26 @@ const HistoryChecklist = ({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {HISTORY_OPTIONS.map((option) => {
-          const checked =
-            values.includes(option);
+          const checked = values.includes(option);
 
           return (
             <label
               key={option}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition ${
+              className={[
+                "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3",
+                "transition-all duration-200",
                 checked
-                  ? "border-blue-700 bg-primary-50 text-blue-800"
-                  : "border-border bg-slate-50 text-text-secondary hover:border-blue-300"
-              }`}
+                  ? "border-primary-500 bg-primary-50 text-primary-800 shadow-sm"
+                  : "border-border bg-surface text-text-secondary hover:border-primary-300 hover:bg-primary-50/40",
+              ].join(" ")}
             >
               <input
                 type="checkbox"
                 checked={checked}
                 onChange={() => onToggle(option)}
-                className="h-4 w-4 rounded border-border-strong text-primary-700 focus:ring-primary-500"
+                className="h-4 w-4 shrink-0 rounded border-border-strong text-primary-700 focus:ring-primary-500"
               />
 
               <span className="text-sm font-semibold">
@@ -58,8 +59,8 @@ const HistoryChecklist = ({
       </div>
 
       {values.includes("Other") && (
-        <div className="mt-5 rounded-xl border border-blue-100 bg-primary-50 p-4">
-          <label className="mb-2 block text-sm font-semibold text-blue-900">
+        <div className="mt-5 rounded-2xl border border-primary-100 bg-primary-50/60 p-4">
+          <label className="mb-2 block text-sm font-semibold text-primary-900">
             Specify Other
           </label>
 
@@ -87,7 +88,9 @@ const HistoryStep = ({ form, setForm }) => {
       return {
         ...prev,
         medicalHistory: current.includes(value)
-          ? current.filter((v) => v !== value)
+          ? current.filter(
+              (item) => item !== value
+            )
           : [...current, value],
       };
     });
@@ -101,7 +104,9 @@ const HistoryStep = ({ form, setForm }) => {
       return {
         ...prev,
         familyHistory: current.includes(value)
-          ? current.filter((v) => v !== value)
+          ? current.filter(
+              (item) => item !== value
+            )
           : [...current, value],
       };
     });
@@ -109,6 +114,23 @@ const HistoryStep = ({ form, setForm }) => {
 
   return (
     <div className="step-wrapper space-y-5">
+
+      {/* STEP HEADER */}
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+        <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
+          Step 2
+        </p>
+
+        <h3 className="mt-1 text-xl font-bold text-text-primary">
+          Medical & Family History
+        </h3>
+
+        <p className="mt-1 text-sm text-text-muted">
+          Record the patient's existing medical conditions and relevant family history.
+        </p>
+      </div>
+
+      {/* MEDICAL HISTORY */}
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
         <HistoryChecklist
           title="Medical History"
@@ -124,6 +146,7 @@ const HistoryStep = ({ form, setForm }) => {
         />
       </div>
 
+      {/* FAMILY HISTORY */}
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
         <HistoryChecklist
           title="Family History"
@@ -138,6 +161,7 @@ const HistoryStep = ({ form, setForm }) => {
           }
         />
       </div>
+
     </div>
   );
 };
