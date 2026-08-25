@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -33,6 +34,8 @@ export default function Patients() {
       General: 0,
     });
 
+  const hasLoadedOnce = useRef(false);
+
   const [ongoingEvent, setOngoingEvent] =
     useState(null);
 
@@ -46,7 +49,10 @@ export default function Patients() {
     useState(1);
 
   const [search, setSearch] =
-    useState("");
+  useState("");
+
+  const [searchInput, setSearchInput] =
+  useState("");
 
   const [departmentFilter, setDepartmentFilter] =
     useState("All");
@@ -62,6 +68,16 @@ export default function Patients() {
 
   const [selectedPatient, setSelectedPatient] =
     useState(null);
+
+
+
+    useEffect(() => {
+  const timeout = setTimeout(() => {
+    setSearch(searchInput);
+  }, 400);
+
+  return () => clearTimeout(timeout);
+}, [searchInput]);
 
 
     /*
@@ -99,14 +115,14 @@ const fetchCurrentMission = useCallback(async () => {
   */
 
   const fetchQueue = useCallback(
-    async (silent = false) => {
-      if (!silent) {
-        setLoading(true);
-      }
+  async (silent = false) => {
+    if (!silent && !hasLoadedOnce.current) {
+      setLoading(true);
+    }
 
-      try {
-        const result =
-          await getPatientQueue({
+    try {
+      const result =
+        await getPatientQueue({
             page: currentPage,
             limit: ITEMS_PER_PAGE,
             search,
@@ -141,8 +157,9 @@ const fetchCurrentMission = useCallback(async () => {
         setTotalPatients(0);
         setTotalPages(1);
         setOngoingEvent(null);
-      } finally {
+            } finally {
         setLoading(false);
+        hasLoadedOnce.current = true;
       }
     },
     [
@@ -411,10 +428,11 @@ useEffect(() => {
         {/* QUEUE */}
         <div className="mt-6">
           <PatientQueue
-            patients={patients}
-            loading={loading}
-            search={search}
-            setSearch={setSearch}
+  patients={patients}
+  loading={loading}
+  search={searchInput}
+  setSearch={setSearchInput}
+
             departmentFilter={
               departmentFilter
             }

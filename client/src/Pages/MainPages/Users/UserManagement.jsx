@@ -29,7 +29,6 @@ import ConfirmModal from "../../../Components/ui/ConfirmModal";
 import AlertModal from "../../../Components/ui/AlertModal";
 import TableSkeleton from "../../../Components/ui/TableSkeleton";
 import CardSkeleton from "../../../Components/ui/CardSkeleton";
-import UserDashboard from "../../../Components/admin/UserDashboard";
 import AddUserModal from "../../../Components/admin/AddUserModal";
 import EditUserModal from "../../../Components/admin/EditUserModal";
 
@@ -299,42 +298,38 @@ function UserManagement() {
         ========================= */}
 
         {loading ? (
-          <CardSkeleton count={4} />
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <MiniStatCard
-                label="Total Users"
-                value={users.length}
-                icon={Users}
-                iconClassName="bg-primary-100 text-primary-700"
-              />
+  <CardSkeleton count={4} />
+) : (
+  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <MiniStatCard
+      label="Total Users"
+      value={users.length}
+      icon={Users}
+      iconClassName="bg-primary-100 text-primary-700"
+    />
 
-              <MiniStatCard
-                label="Active Accounts"
-                value={activeCount}
-                icon={UserCheck}
-                iconClassName="bg-emerald-50 text-emerald-600"
-              />
+    <MiniStatCard
+      label="Active Accounts"
+      value={activeCount}
+      icon={UserCheck}
+      iconClassName="bg-emerald-50 text-emerald-600"
+    />
 
-              <MiniStatCard
-                label="Pending Approval"
-                value={pendingCount}
-                icon={CircleAlert}
-                iconClassName="bg-amber-50 text-amber-600"
-              />
+    <MiniStatCard
+      label="Pending Approval"
+      value={pendingCount}
+      icon={CircleAlert}
+      iconClassName="bg-amber-50 text-amber-600"
+    />
 
-              <MiniStatCard
-                label="Inactive Accounts"
-                value={deactivatedCount}
-                icon={UserX}
-                iconClassName="bg-rose-50 text-rose-600"
-              />
-            </div>
-
-            <UserDashboard users={users} />
-          </>
-        )}
+    <MiniStatCard
+      label="Inactive Accounts"
+      value={deactivatedCount}
+      icon={UserX}
+      iconClassName="bg-rose-50 text-rose-600"
+    />
+  </div>
+)}
 
         {/* =========================
             FILTER SECTION
