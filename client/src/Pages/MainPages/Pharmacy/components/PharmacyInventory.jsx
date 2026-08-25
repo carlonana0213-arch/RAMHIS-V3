@@ -240,46 +240,53 @@ function PharmacyInventory() {
   return (
     <section className="space-y-5">
 
-      {/* =========================
-          SECTION HEADER
-      ========================= */}
+{/* =========================
+    SECTION HEADER
+========================= */}
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+<div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 
-        <div>
-          <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-            Pharmacy Management
-          </span>
+  <div className="flex items-start gap-4">
 
-          <h2 className="text-2xl font-bold tracking-tight text-primary-900">
-            Medicine Inventory
-          </h2>
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+      <Package size={22} />
+    </div>
 
-          <p className="mt-1 text-sm text-text-muted">
-            Manage medicine stocks and monitor
-            inventory availability.
-          </p>
-        </div>
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+        Pharmacy Management
+      </p>
 
-        <div className="flex flex-wrap gap-2">
+      <h2 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+        Medicine Inventory
+      </h2>
 
-          <span
-            className={`${dashboardBadgeVariants.base} ${dashboardBadgeVariants.overview}`}
-          >
-            {totalMedicines.toLocaleString()} Medicines
-          </span>
+      <p className="mt-1 text-sm text-text-muted">
+        Manage medicine stocks and monitor inventory availability.
+      </p>
+    </div>
 
-          {lowStockCount > 0 && (
-            <span
-              className={`${statusPillVariants.base} ${statusPillVariants.watch}`}
-            >
-              {lowStockCount} Low Stock
-            </span>
-          )}
+  </div>
 
-        </div>
+  <div className="flex flex-wrap gap-2">
 
-      </div>
+    <span
+      className={`${dashboardBadgeVariants.base} ${dashboardBadgeVariants.overview}`}
+    >
+      {totalMedicines.toLocaleString()} Medicines
+    </span>
+
+    {lowStockCount > 0 && (
+      <span
+        className={`${statusPillVariants.base} ${statusPillVariants.watch}`}
+      >
+        {lowStockCount} Low Stock
+      </span>
+    )}
+
+  </div>
+
+</div>
 
       {/* =========================
           INVENTORY METRICS

@@ -367,55 +367,36 @@ function PharmacyQueue() {
   return (
     <section className="space-y-5">
 
-      {/* HEADER */}
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+{/* HEADER */}
+<div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
 
-        <div>
-          <div className="mb-2 flex items-center gap-2">
+  <div className="flex items-start gap-4">
 
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-status-stable-dot opacity-40" />
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+      <Package size={22} />
+    </div>
 
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-status-stable-dot" />
-            </span>
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+        Medicine Distribution
+      </p>
 
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
-              Medicine Distribution
-            </span>
+      <h2 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+        Pharmacy Queue
+      </h2>
 
-          </div>
+      <p className="mt-1 text-sm text-text-muted">
+        Manage prescription fulfillment and medicine distribution.
+      </p>
+    </div>
 
-          <h2 className="text-2xl font-bold tracking-tight text-primary-900 sm:text-3xl">
-            Pharmacy Queue
-          </h2>
+  </div>
 
-          <p className="mt-1 text-sm text-text-muted">
-            Manage prescription fulfillment and
-            medicine distribution.
-          </p>
-        </div>
+  <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+    {pendingCount.toLocaleString()} Pending
+  </div>
 
-        <div className="flex w-full items-center gap-3 sm:w-auto">
-
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-            <Package size={20} />
-          </div>
-
-          <div className="rounded-2xl border border-border-soft bg-surface px-4 py-2.5 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-
-            <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">
-              Queue Status
-            </span>
-
-            <strong className="mt-0.5 block text-sm font-semibold text-primary-900">
-              {pendingCount.toLocaleString()} Pending
-            </strong>
-
-          </div>
-
-        </div>
-
-      </div>
+</div>
 
       {/* STAT CARDS */}
       <div className="grid gap-4 sm:grid-cols-2">

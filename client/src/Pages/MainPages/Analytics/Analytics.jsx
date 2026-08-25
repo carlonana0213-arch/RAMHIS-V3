@@ -150,44 +150,36 @@ const Analytics = () => {
       <div className="mx-auto max-w-[1500px]">
 
         {/* =====================================================
-            HEADER
-        ====================================================== */}
+    HEADER
+====================================================== */}
 
-        <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="rounded-full bg-primary-50 px-3 py-1 text-[10px] font-extrabold tracking-[0.12em] text-primary-700">
-                RAMHIS ANALYTICS
-              </span>
-            </div>
+<div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+  <div className="flex items-start gap-4">
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+      <FiActivity size={22} />
+    </div>
 
-            <h1 className="text-2xl font-extrabold tracking-tight text-text-primary sm:text-3xl">
-              Predictive Analytics
-            </h1>
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+        RAMHIS Analytics
+      </p>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-text-muted">
-              Forecast upcoming mission needs using historical
-              patient and mission records.
-            </p>
-          </div>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+        Predictive Analytics
+      </h1>
 
-          {analytics && (
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 shadow-sm">
-              <FiActivity className="text-primary-600" />
+      <p className="mt-1 text-sm text-text-muted">
+        Forecast upcoming mission needs using historical patient and mission records.
+      </p>
+    </div>
+  </div>
 
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-text-subtle">
-                  Forecast Status
-                </p>
-
-                <p className="text-sm font-bold text-slate-700">
-                  Generated successfully
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
+  {analytics && (
+    <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+      Forecast generated
+    </div>
+  )}
+</div>
         {/* =====================================================
             FORECAST CONFIGURATION
         ====================================================== */}

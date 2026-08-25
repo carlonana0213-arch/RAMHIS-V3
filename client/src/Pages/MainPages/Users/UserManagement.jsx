@@ -258,40 +258,41 @@ function UserManagement() {
   return (
     <div className="min-h-screen w-full bg-slate-50 p-5 sm:p-6 lg:p-8">
       <div className="mx-auto w-full max-w-[1700px] space-y-6">
-        {/* =========================
-            PAGE HEADER
-        ========================= */}
 
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-              <UserCog size={24} />
-            </div>
+{/* =========================
+    PAGE HEADER
+========================= */}
 
-            <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-subtle">
-                System Administration
-              </p>
+<header className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+  <div className="flex items-start gap-4">
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+      <Users size={22} />
+    </div>
 
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-text-primary">
-                Account Management
-              </h1>
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+        System Administration
+      </p>
 
-              <p className="mt-1 text-sm text-text-muted">
-                Manage system users, approvals, roles, and account status.
-              </p>
-            </div>
-          </div>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+        Account Management
+      </h1>
 
-          <button
-            type="button"
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-sky-400/20 active:scale-[0.98] sm:w-auto"
-          >
-            <Plus size={18} />
-            Add User
-          </button>
-        </div>
+      <p className="mt-1 text-sm text-text-muted">
+        Manage system users, approvals, and account status.
+      </p>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    onClick={() => setShowCreateModal(true)}
+    className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl bg-primary-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:self-auto"
+  >
+    <span className="text-lg leading-none">+</span>
+    Add User
+  </button>
+</header>
 
         {/* =========================
             USER STATISTICS

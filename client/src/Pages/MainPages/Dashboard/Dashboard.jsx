@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LayoutDashboard } from "lucide-react";
 
 import {
   getDashboardSummary,
@@ -39,9 +40,9 @@ function Dashboard() {
         setDiagnosisData(diagnosisResult || []);
         setTopMedicines(medicinesResult || []);
       } catch (err) {
-  console.error("Failed to load dashboard:", err);
-  setError("Unable to load dashboard data.");
-}finally {
+        console.error("Failed to load dashboard:", err);
+        setError("Unable to load dashboard data.");
+      } finally {
         setLoading(false);
       }
     };
@@ -76,29 +77,28 @@ function Dashboard() {
       <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-5">
 
         {/* HEADER */}
-        <header className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-status-stable-dot opacity-40" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-status-stable-dot" />
-              </span>
-
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
-                System Operational
-              </span>
+        <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+              <LayoutDashboard size={21} />
             </div>
 
-            <h1 className="text-3xl font-bold tracking-tight text-primary-900 lg:text-4xl">
-              Dashboard
-            </h1>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                System Overview
+              </p>
 
-            <p className="mt-1 text-sm text-text-muted">
-              Monitor your healthcare operations and system activity.
-            </p>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+                Dashboard
+              </h1>
+
+              <p className="mt-1 text-sm text-text-muted">
+                Monitor your healthcare operations and system activity.
+              </p>
+            </div>
           </div>
 
-          <div className="w-full rounded-2xl border border-border-soft bg-surface px-5 py-3 shadow-[0_4px_20px_rgba(0,0,0,0.06)] sm:w-auto">
+          <div className="shrink-0 sm:text-right">
             <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">
               Today
             </span>
