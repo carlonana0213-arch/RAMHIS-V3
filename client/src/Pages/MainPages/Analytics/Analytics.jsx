@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
-import { API_BASE_URL, FASTAPI_BASE_URL } from "../../../Services/apiConfig";
+
+import {
+  API_BASE_URL,
+  FASTAPI_BASE_URL,
+} from "../../../Services/apiConfig";
 
 import {
   ResponsiveContainer,
+  LineChart,
+  Line,
   CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
-  AreaChart,
-  Area,
 } from "recharts";
 
 import {
@@ -25,16 +29,26 @@ import {
   FiPackage,
   FiCheckCircle,
   FiInfo,
+  FiArrowRight,
+  FiBarChart2,
+  FiTarget,
+  FiDatabase,
+  FiAlertCircle,
 } from "react-icons/fi";
 
+
+
+
+
+
 const Analytics = () => {
+  const [analytics, setAnalytics] = useState(null);
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [nextMissionDate, setNextMissionDate] = useState("");
   const [missionDays, setMissionDays] = useState(1);
 
-  const [analytics, setAnalytics] = useState(null);
-  const [loading, setLoading] = useState(false);
+const [historicalPatients, setHistoricalPatients] = useState([]);  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchLocations();
@@ -76,6 +90,10 @@ const Analytics = () => {
       );
 
       setAnalytics(res.data);
+
+await fetchHistoricalPatients();
+
+      
     } catch (error) {
       console.error("Forecast error:", error);
       alert("Failed to generate analytics");
@@ -84,16 +102,45 @@ const Analytics = () => {
     }
   };
 
+  const fetchHistoricalPatients = async () => {
+  try {
+    if (!selectedLocation) {
+      setHistoricalPatients([]);
+      return;
+    }
+
+    const res = await axios.get(
+      `${API_BASE_URL}/api/patients/analytics`,
+      {
+        params: {
+          location: selectedLocation,
+          page: 1,
+          limit: 10000,
+        },
+      },
+    );
+
+    setHistoricalPatients(res.data?.patients || []);
+  } catch (error) {
+    console.error(
+      "Failed to load historical patients:",
+      error,
+    );
+
+    setHistoricalPatients([]);
+  }
+};
+
   const smartInsights = useMemo(() => {
-    if (!analytics) return [];
+    if (!Analytics) return [];
 
     const insights = [];
 
     const predictedPatients =
-      analytics?.predictedPatients || 0;
+      Analytics?.predictedPatients || 0;
 
     const range =
-      (analytics?.confidenceRange?.max || 0) -
+      (Analytics?.confidenceRange?.max || 0) -
       (analytics?.confidenceRange?.min || 0);
 
     if (predictedPatients > 100) {
@@ -111,7 +158,7 @@ const Analytics = () => {
     }
 
     if (
-      (analytics?.medicineForecast || []).some(
+      (Analytics?.medicineForecast || []).some(
         (med) => med.risk === "HIGH",
       )
     ) {
@@ -121,44 +168,111 @@ const Analytics = () => {
       });
     }
 
-    if (analytics?.confidence === "VERY LOW") {
+    if (Analytics?.confidence === "VERY LOW") {
       insights.push({
         type: "danger",
-        text: "Historical mission data is limited and forecast reliability is low.",
+        text:
+          "Historical mission data is limited and forecast reliability is low.",
       });
     }
 
     return insights;
-  }, [analytics]);
+  }, [Analytics]);
 
   const confidenceStyles = {
-    HIGH: "bg-status-stable-bg text-status-stable-text ring-emerald-200",
-    MEDIUM: "bg-primary-50 text-primary-700 ring-blue-200",
-    LOW: "bg-status-watch-bg text-status-watch-text ring-amber-200",
+    HIGH:
+      "border-emerald-200 bg-status-stable-bg text-status-stable-text",
+    MEDIUM:
+      "border-blue-200 bg-primary-50 text-primary-700",
+    LOW:
+      "border-amber-200 bg-status-watch-bg text-status-watch-text",
     "VERY LOW":
-      "bg-status-critical-bg text-status-critical-text ring-red-200",
+      "border-red-200 bg-status-critical-bg text-status-critical-text",
   };
 
   const riskStyles = {
-    HIGH: "bg-status-critical-bg text-status-critical-text ring-red-200",
-    MEDIUM: "bg-status-watch-bg text-status-watch-text ring-amber-200",
-    LOW: "bg-status-stable-bg text-status-stable-text ring-emerald-200",
+    HIGH:
+      "border-red-200 bg-status-critical-bg text-status-critical-text",
+    MEDIUM:
+      "border-amber-200 bg-status-watch-bg text-status-watch-text",
+    LOW:
+      "border-emerald-200 bg-status-stable-bg text-status-stable-text",
   };
 
+  const formatDate = (date) => {
+    if (!date) return "Not selected";
+
+    return new Date(date).toLocaleDateString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      },
+    );
+  };
+
+  const chartData = useMemo(() => {
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  const monthlyCounts = Array(12).fill(0);
+
+  historicalPatients.forEach((patient) => {
+    if (!patient.visitDate) {
+      return;
+    }
+
+    const date = new Date(patient.visitDate);
+
+    if (Number.isNaN(date.getTime())) {
+      return;
+    }
+
+    const monthIndex = date.getMonth();
+
+    monthlyCounts[monthIndex] += 1;
+  });
+
+  return months.map((month, index) => ({
+    month,
+    patients: monthlyCounts[index],
+  }));
+}, [historicalPatients]);
+  
+
+
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
+
+    <div className="min-h-full bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1500px]">
 
         {/* =====================================================
-            HEADER
+            PAGE HEADER
         ====================================================== */}
 
-        <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="rounded-full bg-primary-50 px-3 py-1 text-[10px] font-extrabold tracking-[0.12em] text-primary-700">
-                RAMHIS ANALYTICS
-              </span>
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700">
+                <FiActivity size={15} />
+              </div>
+
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-primary-700">
+                Analytics & Forecasting
+              </p>
             </div>
 
             <h1 className="text-2xl font-extrabold tracking-tight text-text-primary sm:text-3xl">
@@ -166,52 +280,66 @@ const Analytics = () => {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-text-muted">
-              Forecast upcoming mission needs using historical
-              patient and mission records.
+              Generate data-driven forecasts to support mission planning,
+              patient demand preparation, and medicine inventory decisions.
             </p>
           </div>
 
           {analytics && (
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 shadow-sm">
-              <FiActivity className="text-primary-600" />
+            <div className="flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-surface px-4 py-3.5 shadow-sm xl:w-auto">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-status-stable-bg text-status-stable-text">
+                <FiCheckCircle size={18} />
+              </div>
 
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-text-subtle">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text-subtle">
                   Forecast Status
                 </p>
 
-                <p className="text-sm font-bold text-slate-700">
-                  Generated successfully
+                <p className="mt-0.5 text-sm font-extrabold text-text-primary">
+                  Forecast generated successfully
                 </p>
               </div>
             </div>
           )}
         </div>
 
+    
+
+
         {/* =====================================================
-            FORECAST CONFIGURATION
+            FORECAST SETUP
         ====================================================== */}
 
         <section className="mb-7 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-          <div className="border-b border-border-soft px-5 py-5 sm:px-6">
+          <div className="flex flex-col gap-4 border-b border-border-soft px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
-                <FiTrendingUp size={18} />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+                <FiTarget size={19} />
               </div>
 
               <div>
-                <h2 className="text-sm font-extrabold text-text-primary">
-                  Forecast Configuration
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
+                  Mission Forecast Setup
+                </p>
+
+                <h2 className="mt-0.5 text-base font-extrabold text-text-primary">
+                  Configure your prediction
                 </h2>
 
-                <p className="mt-0.5 text-xs text-text-muted">
-                  Select the mission details used to generate the forecast.
+                <p className="mt-1 text-xs text-text-muted">
+                  Select the mission details used as input for the forecast.
                 </p>
               </div>
             </div>
+
+            <div className="hidden items-center gap-2 text-xs font-medium text-text-muted sm:flex">
+              <FiDatabase className="text-text-subtle" />
+              Uses historical RAMHIS records
+            </div>
           </div>
 
-          <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4 sm:p-6">
+          <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
 
             {/* LOCATION */}
 
@@ -226,10 +354,10 @@ const Analytics = () => {
                 onChange={(e) =>
                   setSelectedLocation(e.target.value)
                 }
-                className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-blue-50"
+                className="h-12 w-full rounded-xl border border-border bg-surface px-3 text-sm font-medium text-slate-700 outline-none transition hover:border-border-strong focus:border-primary-500 focus:ring-4 focus:ring-blue-50"
               >
                 <option value="">
-                  Select Location
+                  Select location
                 </option>
 
                 {locations.map((location) => (
@@ -257,11 +385,11 @@ const Analytics = () => {
                 onChange={(e) =>
                   setNextMissionDate(e.target.value)
                 }
-                className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-blue-50"
+                className="h-12 w-full rounded-xl border border-border bg-surface px-3 text-sm font-medium text-slate-700 outline-none transition hover:border-border-strong focus:border-primary-500 focus:ring-4 focus:ring-blue-50"
               />
             </div>
 
-            {/* DAYS */}
+            {/* DURATION */}
 
             <div>
               <label className="mb-2 flex items-center gap-2 text-xs font-bold text-text-secondary">
@@ -269,193 +397,272 @@ const Analytics = () => {
                 Mission Duration
               </label>
 
-              <input
-                type="number"
-                min="1"
-                value={missionDays}
-                onChange={(e) =>
-                  setMissionDays(e.target.value)
-                }
-                className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-primary-500 focus:ring-4 focus:ring-blue-50"
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  min="1"
+                  value={missionDays}
+                  onChange={(e) =>
+                    setMissionDays(e.target.value)
+                  }
+                  className="h-12 w-full rounded-xl border border-border bg-surface px-3 pr-14 text-sm font-medium text-slate-700 outline-none transition hover:border-border-strong focus:border-primary-500 focus:ring-4 focus:ring-blue-50"
+                />
+
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-text-subtle">
+                  Day{Number(missionDays) === 1 ? "" : "s"}
+                </span>
+              </div>
             </div>
 
             {/* BUTTON */}
 
-            <div className="flex items-end">
+            <div className="flex flex-col justify-end">
               <button
                 type="button"
                 onClick={generateAnalytics}
                 disabled={loading}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? (
                   <>
                     <FiRefreshCw className="animate-spin" />
-                    Generating...
+                    Generating Forecast...
                   </>
                 ) : (
                   <>
-                    <FiActivity />
                     Generate Forecast
+                    <FiArrowRight />
                   </>
                 )}
               </button>
             </div>
           </div>
+
+          {/* Current selection summary */}
+
+          <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border-soft bg-slate-50/70 px-5 py-3.5 text-xs sm:px-6">
+            <span className="text-text-muted">
+              Location:{" "}
+              <strong className="text-text-primary">
+                {selectedLocation || "Not selected"}
+              </strong>
+            </span>
+
+            <span className="text-text-muted">
+              Mission date:{" "}
+              <strong className="text-text-primary">
+                {formatDate(nextMissionDate)}
+              </strong>
+            </span>
+
+            <span className="text-text-muted">
+              Duration:{" "}
+              <strong className="text-text-primary">
+                {missionDays || 1} day
+                {Number(missionDays) === 1 ? "" : "s"}
+              </strong>
+            </span>
+          </div>
         </section>
+
+        {/* =====================================================
+            LOADING STATE
+        ====================================================== */}
+
+        {loading && (
+          <section className="mb-7 rounded-2xl border border-border bg-surface p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+                <FiRefreshCw className="animate-spin" size={20} />
+              </div>
+
+              <div>
+                <h2 className="text-sm font-extrabold text-text-primary">
+                  Generating predictive forecast
+                </h2>
+
+                <p className="mt-1 text-sm text-text-muted">
+                  Analyzing historical records and preparing mission
+                  predictions...
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* =====================================================
             EMPTY STATE
         ====================================================== */}
 
         {!analytics && !loading && (
-          <div className="rounded-2xl border border-dashed border-border-strong bg-surface px-6 py-20 text-center shadow-sm">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
-              <FiTrendingUp size={25} />
+          <section className="overflow-hidden rounded-2xl border border-dashed border-border-strong bg-surface shadow-sm">
+            <div className="px-6 py-16 text-center sm:py-20">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+                <FiTrendingUp size={28} />
+              </div>
+
+              <h2 className="mt-6 text-lg font-extrabold text-text-primary">
+                Ready to generate a forecast
+              </h2>
+
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-muted">
+                Select a mission location, date, and duration to analyze
+                historical records and prepare a predictive forecast.
+              </p>
+
+              <div className="mx-auto mt-7 flex max-w-xl flex-wrap justify-center gap-2">
+                {[
+                  "Patient demand",
+                  "Department workload",
+                  "Medicine needs",
+                  "Mission insights",
+                ].map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-border bg-slate-50 px-3 py-1.5 text-xs font-semibold text-text-secondary"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
             </div>
-
-            <h2 className="mt-5 text-base font-extrabold text-text-primary">
-              Ready to generate a forecast
-            </h2>
-
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-muted">
-              Select a mission location, date, and duration above
-              to view predictive analytics.
-            </p>
-          </div>
+          </section>
         )}
 
         {/* =====================================================
             RESULTS
         ====================================================== */}
 
-        {analytics && (
+        {analytics && !loading && (
           <div className="space-y-7">
 
             {/* SUMMARY CARDS */}
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section>
+              <div className="mb-4">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
+                  Forecast Overview
+                </p>
 
-              <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-text-muted">
-                      Forecasted Patients
-                    </p>
+                <h2 className="mt-1 text-lg font-extrabold text-text-primary">
+                  Mission prediction summary
+                </h2>
+              </div>
 
-                    <p className="mt-2 text-3xl font-extrabold tracking-tight text-text-primary">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+                {/* PRIMARY CARD */}
+
+                <div className="relative overflow-hidden rounded-2xl bg-primary-800 p-5 shadow-sm">
+                  <div className="absolute right-[-18px] top-[-18px] h-28 w-28 rounded-full bg-white/5" />
+                  <div className="absolute bottom-[-42px] right-8 h-24 w-24 rounded-full bg-white/5" />
+
+                  <div className="relative">
+                    <div className="flex items-start justify-between">
+                      <p className="text-xs font-bold text-blue-100">
+                        Forecasted Patients
+                      </p>
+
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white">
+                        <FiUsers />
+                      </div>
+                    </div>
+
+                    <p className="mt-5 text-4xl font-extrabold tracking-tight text-white">
                       {analytics?.predictedPatients || 0}
                     </p>
 
-                    <p className="mt-2 text-xs text-text-muted">
-                      95% range:{" "}
-                      <span className="font-bold text-slate-700">
-                        {analytics?.confidenceRange?.min || 0}
-                        {" – "}
-                        {analytics?.confidenceRange?.max || 0}
-                      </span>
+                    <p className="mt-3 text-xs leading-5 text-blue-100">
+                      Expected patient turnout for the planned mission.
                     </p>
-                  </div>
 
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
-                    <FiUsers />
+                    <div className="mt-4 inline-flex rounded-lg bg-white/10 px-3 py-2 text-xs font-bold text-white">
+                      Range:{" "}
+                      {analytics?.confidenceRange?.min || 0}
+                      {" – "}
+                      {analytics?.confidenceRange?.max || 0}
+                    </div>
                   </div>
                 </div>
+
+                <MetricCard
+                  label="Forecast Method"
+                  value={
+                    analytics?.forecastMethod === "prophet"
+                      ? "Prophet"
+                      : "Weighted Statistical"
+                  }
+                  description="Prediction model used"
+                  icon={<FiActivity />}
+                  iconClass="bg-indigo-50 text-indigo-700"
+                >
+                  <span
+                    className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${
+                      confidenceStyles[
+                        analytics?.confidence
+                      ] ||
+                      "border-slate-200 bg-slate-100 text-text-secondary"
+                    }`}
+                  >
+                    {analytics?.confidence || "UNKNOWN"} CONFIDENCE
+                  </span>
+                </MetricCard>
+
+                <MetricCard
+                  label="Historical Missions"
+                  value={
+                    analytics?.historicalMissionCount || 0
+                  }
+                  description="Records used for prediction"
+                  icon={<FiCalendar />}
+                  iconClass="bg-slate-100 text-slate-700"
+                />
+
+                <MetricCard
+                  label="Mission Duration"
+                  value={missionDays}
+                  description={`Day${
+                    Number(missionDays) === 1 ? "" : "s"
+                  } planned`}
+                  icon={<FiClock />}
+                  iconClass="bg-status-stable-bg text-status-stable-text"
+                />
               </div>
+            </section>
 
-              <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-text-muted">
-                      Forecast Method
-                    </p>
-
-                    <p className="mt-2 text-xl font-extrabold text-text-primary">
-                      {analytics?.forecastMethod === "prophet"
-                        ? "Prophet"
-                        : "Weighted Statistical"}
-                    </p>
-
-                    <span
-                      className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ring-1 ring-inset ${
-                        confidenceStyles[
-                          analytics?.confidence
-                        ] ||
-                        "bg-slate-100 text-text-secondary ring-slate-200"
-                      }`}
-                    >
-                      {analytics?.confidence || "UNKNOWN"} CONFIDENCE
-                    </span>
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
-                    <FiActivity />
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-text-muted">
-                      Historical Missions
-                    </p>
-
-                    <p className="mt-2 text-3xl font-extrabold text-text-primary">
-                      {analytics?.historicalMissionCount || 0}
-                    </p>
-
-                    <p className="mt-2 text-xs text-text-muted">
-                      Records used for prediction
-                    </p>
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-                    <FiCalendar />
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-text-muted">
-                      Mission Duration
-                    </p>
-
-                    <p className="mt-2 text-3xl font-extrabold text-text-primary">
-                      {missionDays}
-                    </p>
-
-                    <p className="mt-2 text-xs text-text-muted">
-                      Day{Number(missionDays) === 1 ? "" : "s"} planned
-                    </p>
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-status-stable-bg text-status-stable-text">
-                    <FiClock />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* FORECAST TREND */}
+            {/* =====================================================
+                FORECAST TREND
+            ====================================================== */}
 
             {analytics?.forecastMethod === "prophet" &&
               analytics?.forecastTrend?.length > 0 && (
                 <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-                  <div className="border-b border-border-soft px-5 py-5 sm:px-6">
-                    <h2 className="text-base font-extrabold text-text-primary">
-                      Forecast Trend
-                    </h2>
+                  <div className="flex flex-col gap-4 border-b border-border-soft px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <FiBarChart2 className="text-primary-600" />
 
-                    <p className="mt-1 text-xs text-text-muted">
-                      Projected patient demand based on historical trends.
-                    </p>
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
+                          Patient Demand
+                        </p>
+                      </div>
+
+                      <h2 className="mt-2 text-base font-extrabold text-text-primary">
+                        Forecast Trend
+                      </h2>
+
+                      <p className="mt-1 text-xs text-text-muted">
+                        Projected patient demand based on historical
+                        mission patterns.
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-border bg-slate-50 px-3 py-2 text-xs text-text-muted">
+                      Forecasted patient volume over time
+                    </div>
                   </div>
 
-                  <div className="h-[350px] w-full p-4 sm:p-6">
+                  <div className="h-[320px] w-full p-4 sm:h-[390px] sm:p-6">
                     <ResponsiveContainer
                       width="100%"
                       height="100%"
@@ -480,13 +687,13 @@ const Analytics = () => {
                             <stop
                               offset="0%"
                               stopColor="#2563eb"
-                              stopOpacity={0.22}
+                              stopOpacity={0.24}
                             />
 
                             <stop
                               offset="100%"
                               stopColor="#2563eb"
-                              stopOpacity={0.02}
+                              stopOpacity={0.01}
                             />
                           </linearGradient>
                         </defs>
@@ -506,7 +713,9 @@ const Analytics = () => {
                             fontSize: 11,
                           }}
                           tickFormatter={(value) =>
-                            new Date(value).toLocaleDateString(
+                            new Date(
+                              value,
+                            ).toLocaleDateString(
                               "en-US",
                               {
                                 month: "short",
@@ -527,14 +736,17 @@ const Analytics = () => {
 
                         <Tooltip
                           contentStyle={{
-                            border: "1px solid #e2e8f0",
-                            borderRadius: "12px",
+                            border:
+                              "1px solid #e2e8f0",
+                            borderRadius: "14px",
                             boxShadow:
-                              "0 10px 30px rgba(15, 23, 42, 0.08)",
+                              "0 12px 30px rgba(15, 23, 42, 0.12)",
                             fontSize: "12px",
                           }}
                           labelFormatter={(value) =>
-                            new Date(value).toLocaleDateString(
+                            new Date(
+                              value,
+                            ).toLocaleDateString(
                               "en-US",
                               {
                                 month: "long",
@@ -548,6 +760,7 @@ const Analytics = () => {
                         <Area
                           type="monotone"
                           dataKey="yhat"
+                          name="Predicted Patients"
                           stroke="#2563eb"
                           strokeWidth={3}
                           fill="url(#forecastFill)"
@@ -558,50 +771,101 @@ const Analytics = () => {
                 </section>
               )}
 
-            {/* TWO TABLES */}
+            {/* =====================================================
+                OPERATIONAL FORECASTS
+            ====================================================== */}
 
-            <div className="grid gap-6 xl:grid-cols-2">
+          <section>
+  <div className="mb-4">
+    <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
+      Operational Planning
+    </p>
 
-              {/* DEPARTMENT */}
+    <h2 className="mt-1 text-lg font-extrabold text-text-primary">
+      Department & patient insights
+    </h2>
+  </div>
 
-              <AnalyticsTableCard
-                title="Department Forecast"
-                subtitle="Predicted patient demand by department."
-                headers={["Department", "Predicted Patients"]}
-                rows={(analytics?.departmentForecast || []).map(
-                  (item) => [
-                    item.department,
-                    item.predictedPatients,
-                  ],
-                )}
-              />
+  <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+    <div className="border-b border-border-soft px-5 py-5 sm:px-6">
+      <h3 className="text-base font-extrabold text-text-primary">
+        Patient Trend Forecast
+      </h3>
 
-              {/* DIAGNOSES */}
+      <p className="mt-1 text-xs text-text-muted">
+        Projected monthly patient visits from January to December.
+      </p>
+    </div>
 
-              <AnalyticsTableCard
-                title="Top Diagnoses"
-                subtitle="Most frequently recorded conditions in the forecast data."
-                headers={["Diagnosis", "Count"]}
-                rows={(analytics?.topDiagnoses || []).map(
-                  (item) => [
-                    item.diagnosis,
-                    item.count,
-                  ],
-                )}
-              />
-            </div>
+    <div className="h-[380px] p-5 sm:p-8">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={chartData}
+          margin={{
+            top: 20,
+            right: 20,
+            left: 0,
+            bottom: 5,
+          }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            vertical={false}
+          />
 
-            {/* MEDICINE */}
+          <XAxis
+            dataKey="month"
+            axisLine={false}
+            tickLine={false}
+          />
+
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            allowDecimals={false}
+          />
+
+          <Tooltip />
+
+          <Line
+            type="monotone"
+            dataKey="patients"
+            name="Predicted Patients"
+            stroke="#1f2937"
+            strokeWidth={3}
+            dot={{
+              r: 5,
+              strokeWidth: 2,
+            }}
+            activeDot={{
+              r: 7,
+            }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  </section>
+</section>
+
+            
+
+            {/* =====================================================
+                MEDICINE FORECAST
+            ====================================================== */}
 
             <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-              <div className="border-b border-border-soft px-5 py-5 sm:px-6">
+              <div className="flex flex-col gap-4 border-b border-border-soft px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
-                    <FiPackage />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+                    <FiPackage size={19} />
                   </div>
 
                   <div>
-                    <h2 className="text-base font-extrabold text-text-primary">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
+                      Inventory Planning
+                    </p>
+
+                    <h2 className="mt-1 text-base font-extrabold text-text-primary">
                       Medicine Forecast
                     </h2>
 
@@ -610,29 +874,34 @@ const Analytics = () => {
                     </p>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-2 text-xs font-medium text-text-muted">
+                  <FiAlertTriangle className="text-status-watch-text" />
+                  Review high-risk medicines before the mission
+                </div>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[600px] border-collapse text-left">
+                <table className="w-full min-w-[620px] border-collapse text-left">
                   <thead>
                     <tr className="border-b border-border bg-slate-50/80">
                       <th className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-text-muted">
                         Medicine
                       </th>
 
-                      <th className="px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-text-muted">
+                      <th className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-text-muted">
                         Estimated Need
                       </th>
 
-                      <th className="px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-text-muted">
-                        Risk
+                      <th className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-text-muted">
+                        Inventory Risk
                       </th>
                     </tr>
                   </thead>
 
                   <tbody className="divide-y divide-border-soft">
-                    {(analytics?.medicineForecast || []).length ===
-                    0 ? (
+                    {(analytics?.medicineForecast || [])
+                      .length === 0 ? (
                       <tr>
                         <td
                           colSpan={3}
@@ -645,22 +914,24 @@ const Analytics = () => {
                       analytics.medicineForecast.map(
                         (item, index) => (
                           <tr
-                            key={index}
+                            key={`${item.medicine}-${index}`}
                             className="transition-colors hover:bg-primary-50/30"
                           >
                             <td className="px-5 py-4 text-sm font-bold text-text-primary">
                               {item.medicine}
                             </td>
 
-                            <td className="px-4 py-4 text-sm font-semibold text-text-secondary">
+                            <td className="px-5 py-4 text-sm font-semibold text-text-secondary">
                               {item.estimatedNeed}
                             </td>
 
-                            <td className="px-4 py-4">
+                            <td className="px-5 py-4">
                               <span
-                                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${
-                                  riskStyles[item.risk] ||
-                                  "bg-slate-100 text-text-secondary ring-slate-200"
+                                className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-extrabold ${
+                                  riskStyles[
+                                    item.risk
+                                  ] ||
+                                  "border-slate-200 bg-slate-100 text-text-secondary"
                                 }`}
                               >
                                 {item.risk || "UNKNOWN"}
@@ -675,84 +946,47 @@ const Analytics = () => {
               </div>
             </section>
 
-            {/* INSIGHTS */}
+            {/* =====================================================
+                INSIGHTS
+            ====================================================== */}
 
-            <div className="grid gap-6 lg:grid-cols-2">
-
+            <section className="grid gap-6 xl:grid-cols-2">
               <InsightCard
                 title="Summary Insights"
+                subtitle="Key observations from the generated forecast."
                 items={analytics?.summaryInsights || []}
                 icon={<FiCheckCircle />}
                 emptyText="No summary insights available."
+                iconClass="bg-status-stable-bg text-status-stable-text"
               />
 
-              <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-                <div className="border-b border-border-soft px-5 py-5 sm:px-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-status-watch-bg text-amber-600">
-                      <FiAlertTriangle />
-                    </div>
+              <SmartInsightsCard
+                insights={smartInsights}
+              />
+            </section>
 
-                    <div>
-                      <h2 className="text-base font-extrabold text-text-primary">
-                        Smart Insights
-                      </h2>
+            {/* =====================================================
+                DISCLAIMER
+            ====================================================== */}
 
-                      <p className="mt-1 text-xs text-text-muted">
-                        Automatically detected forecast observations.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3 p-5 sm:p-6">
-                  {smartInsights.length === 0 ? (
-                    <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
-                      <FiInfo className="shrink-0 text-text-subtle" />
-
-                      <p className="text-sm text-text-muted">
-                        No additional insights available.
-                      </p>
-                    </div>
-                  ) : (
-                    smartInsights.map((insight, index) => {
-                      const styles = {
-                        warning:
-                          "bg-status-watch-bg text-status-watch-text border-amber-100",
-                        danger:
-                          "bg-status-critical-bg text-status-critical-text border-red-100",
-                        info:
-                          "bg-primary-50 text-primary-700 border-blue-100",
-                      };
-
-                      return (
-                        <div
-                          key={index}
-                          className={`rounded-xl border p-4 text-sm font-medium leading-6 ${
-                            styles[insight.type]
-                          }`}
-                        >
-                          {insight.text}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+            <div className="flex gap-3 rounded-2xl border border-blue-100 bg-primary-50/70 p-4 sm:p-5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-primary-700 shadow-sm">
+                <FiInfo />
               </div>
-            </div>
 
-            {/* DISCLAIMER */}
+              <div>
+                <p className="text-sm font-bold text-blue-900">
+                  Analytics Support Notice
+                </p>
 
-            <div className="flex gap-3 rounded-2xl border border-blue-100 bg-primary-50/60 p-4">
-              <FiInfo className="mt-0.5 shrink-0 text-primary-600" />
-
-              <p className="text-xs leading-5 text-blue-800">
-                Predictive analytics are based on historical records
-                and are intended to support mission planning,
-                reporting, and administrative decisions. Forecast
-                results should not be treated as medical diagnosis
-                or clinical treatment recommendations.
-              </p>
+                <p className="mt-1 text-xs leading-5 text-blue-800">
+                  Predictive analytics are based on historical records
+                  and are intended to support mission planning,
+                  reporting, and administrative decisions. Forecast
+                  results should not be treated as medical diagnosis or
+                  clinical treatment recommendations.
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -760,6 +994,51 @@ const Analytics = () => {
     </div>
   );
 };
+
+/* ============================================================
+   METRIC CARD
+============================================================ */
+
+function MetricCard({
+  label,
+  value,
+  description,
+  icon,
+  iconClass,
+  children,
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-text-muted">
+            {label}
+          </p>
+
+          <div className="mt-2">
+            <p className="truncate text-2xl font-extrabold tracking-tight text-text-primary">
+              {value}
+            </p>
+          </div>
+
+          {children ? (
+            <div className="mt-3">{children}</div>
+          ) : (
+            <p className="mt-3 text-xs text-text-muted">
+              {description}
+            </p>
+          )}
+        </div>
+
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconClass}`}
+        >
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ============================================================
    TABLE CARD
@@ -811,12 +1090,12 @@ function AnalyticsTableCard({
             ) : (
               rows.map((row, rowIndex) => (
                 <tr
-                  key={rowIndex}
+                  key={`${row[0]}-${rowIndex}`}
                   className="transition-colors hover:bg-primary-50/30"
                 >
                   {row.map((value, columnIndex) => (
                     <td
-                      key={columnIndex}
+                      key={`${rowIndex}-${columnIndex}`}
                       className={`px-5 py-4 text-sm ${
                         columnIndex === 0
                           ? "font-bold text-text-primary"
@@ -837,20 +1116,24 @@ function AnalyticsTableCard({
 }
 
 /* ============================================================
-   INSIGHT CARD
+   SUMMARY INSIGHT CARD
 ============================================================ */
 
 function InsightCard({
   title,
+  subtitle,
   items,
   icon,
   emptyText,
+  iconClass,
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
       <div className="border-b border-border-soft px-5 py-5 sm:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-status-stable-bg text-emerald-600">
+          <div
+            className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconClass}`}
+          >
             {icon}
           </div>
 
@@ -860,7 +1143,7 @@ function InsightCard({
             </h2>
 
             <p className="mt-1 text-xs text-text-muted">
-              Key observations from the generated forecast.
+              {subtitle}
             </p>
           </div>
         </div>
@@ -868,21 +1151,89 @@ function InsightCard({
 
       <div className="space-y-3 p-5 sm:p-6">
         {items.length === 0 ? (
-          <p className="rounded-xl bg-slate-50 p-4 text-sm text-text-muted">
-            {emptyText}
-          </p>
+          <div className="rounded-xl bg-slate-50 p-4">
+            <p className="text-sm text-text-muted">
+              {emptyText}
+            </p>
+          </div>
         ) : (
           items.map((item, index) => (
             <div
-              key={index}
-              className="flex gap-3 rounded-xl bg-slate-50 p-4"
+              key={`${item}-${index}`}
+              className="flex gap-3 rounded-xl border border-border-soft bg-slate-50/80 p-4"
             >
-              <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-extrabold text-primary-700">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-extrabold text-primary-700">
                 {index + 1}
               </span>
 
               <p className="text-sm font-medium leading-6 text-text-secondary">
                 {item}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   SMART INSIGHTS
+============================================================ */
+
+function SmartInsightsCard({
+  insights,
+}) {
+  const insightStyles = {
+    warning:
+      "border-amber-100 bg-status-watch-bg text-status-watch-text",
+    danger:
+      "border-red-100 bg-status-critical-bg text-status-critical-text",
+    info:
+      "border-blue-100 bg-primary-50 text-primary-700",
+  };
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+      <div className="border-b border-border-soft px-5 py-5 sm:px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-status-watch-bg text-status-watch-text">
+            <FiAlertTriangle />
+          </div>
+
+          <div>
+            <h2 className="text-base font-extrabold text-text-primary">
+              Smart Insights
+            </h2>
+
+            <p className="mt-1 text-xs text-text-muted">
+              Automatically detected forecast observations.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3 p-5 sm:p-6">
+        {insights.length === 0 ? (
+          <div className="flex gap-3 rounded-xl bg-slate-50 p-4">
+            <FiInfo className="mt-0.5 shrink-0 text-text-subtle" />
+
+            <p className="text-sm text-text-muted">
+              No additional planning risks were detected for this forecast.
+            </p>
+          </div>
+        ) : (
+          insights.map((insight, index) => (
+            <div
+              key={`${insight.type}-${index}`}
+              className={`flex gap-3 rounded-xl border p-4 ${
+                insightStyles[insight.type]
+              }`}
+            >
+              <FiAlertCircle className="mt-0.5 shrink-0" />
+
+              <p className="text-sm font-medium leading-6">
+                {insight.text}
               </p>
             </div>
           ))

@@ -22,6 +22,13 @@ const PatientsTable = ({
     ),
   );
 
+  // NEW: Return to page 1 when the filtered
+  // patient list changes.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [patients.length]);
+
+  // Keep current page valid.
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -46,6 +53,37 @@ const PatientsTable = ({
 
     setCurrentPage(page);
   };
+
+  // NEW: Avoid displaying an excessive number
+  // of pagination buttons.
+  const getPageNumbers = () => {
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      return Array.from(
+        { length: totalPages },
+        (_, i) => i + 1,
+      );
+    }
+
+    const pages = new Set([
+      1,
+      totalPages,
+      currentPage,
+      currentPage - 1,
+      currentPage + 1,
+    ]);
+
+    return [...pages]
+      .filter(
+        (page) =>
+          page >= 1 &&
+          page <= totalPages,
+      )
+      .sort((a, b) => a - b);
+  };
+
+  const pageNumbers = getPageNumbers();
 
   if (!patients.length) {
     return (
@@ -124,16 +162,24 @@ const PatientsTable = ({
           </thead>
 
           <tbody className="divide-y divide-border-soft">
-            {currentPatients.map((p) => {
+            {currentPatients.map((p, index) => {
               const patientName =
                 p.name || "Unnamed Patient";
 
+              // NEW: Support MongoDB _id and id.
+              const patientId =
+                p._id ||
+                p.id ||
+                `${patientName}-${index}`;
+
               return (
                 <tr
-                  key={p.id}
+                  key={patientId}
                   onClick={() =>
                     onSelectPatient &&
-                    onSelectPatient(p.id)
+                    onSelectPatient(
+                      p._id || p.id,
+                    )
                   }
                   className="group cursor-pointer transition-colors hover:bg-primary-50/40"
                 >
@@ -162,7 +208,7 @@ const PatientsTable = ({
                   </td>
 
                   <td className="px-4 py-4 text-center text-sm font-medium text-text-secondary">
-                    {p.age || "—"}
+                    {p.age ?? "—"}
                   </td>
 
                   <td className="max-w-[240px] px-4 py-4">
@@ -173,10 +219,10 @@ const PatientsTable = ({
 
                   <td className="px-4 py-4 text-center text-sm font-medium text-text-secondary">
                     {p.visitDate &&
-                    !isNaN(
+                    !Number.isNaN(
                       new Date(
                         p.visitDate,
-                      ),
+                      ).getTime(),
                     )
                       ? new Date(
                           p.visitDate,
@@ -222,28 +268,49 @@ const PatientsTable = ({
               goToPage(currentPage - 1)
             }
             disabled={currentPage === 1}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Previous page"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <FiChevronLeft size={15} />
           </button>
 
-          {Array.from(
-            { length: totalPages },
-            (_, i) => i + 1,
-          ).map((page) => (
-            <button
-              key={page}
-              type="button"
-              onClick={() => goToPage(page)}
-              className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-2 text-xs font-bold transition ${
-                currentPage === page
-                  ? "bg-primary-700 text-white shadow-sm"
-                  : "border border-border bg-surface text-text-secondary hover:bg-primary-50 hover:text-primary-700"
-              }`}
-            >
-              {page}
-            </button>
-          ))}
+          {pageNumbers.map(
+            (page, index) => {
+              const previousPage =
+                pageNumbers[index - 1];
+
+              const showEllipsis =
+                previousPage &&
+                page - previousPage > 1;
+
+              return (
+                <div
+                  key={page}
+                  className="flex items-center gap-1.5"
+                >
+                  {showEllipsis && (
+                    <span className="px-1 text-xs font-bold text-text-subtle">
+                      ...
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      goToPage(page)
+                    }
+                    className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-2 text-xs font-bold transition active:scale-95 ${
+                      currentPage === page
+                        ? "bg-primary-700 text-white shadow-sm"
+                        : "border border-border bg-surface text-text-secondary hover:bg-primary-50 hover:text-primary-700"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                </div>
+              );
+            },
+          )}
 
           <button
             type="button"
@@ -253,7 +320,8 @@ const PatientsTable = ({
             disabled={
               currentPage === totalPages
             }
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Next page"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <FiChevronRight size={15} />
           </button>
