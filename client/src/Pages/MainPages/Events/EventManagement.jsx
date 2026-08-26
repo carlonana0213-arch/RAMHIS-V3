@@ -340,60 +340,45 @@ const EventManagement = () => {
       <div className="mx-auto max-w-[1600px] space-y-5">
 
         {/* ======================================================
-            PAGE HEADER
-        ====================================================== */}
+    PAGE HEADER
+====================================================== */}
 
-        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+<div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
 
-          <div className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+  <div className="flex items-start gap-4">
 
-            <div>
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+      <FaCalendarAlt size={22} />
+    </div>
 
-              <div className="mb-2 flex items-center gap-2">
+    <div>
 
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+        Mission Management
+      </p>
 
-                  <FaCalendarAlt size={18} />
+      <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+        Event Management
+      </h1>
 
-                </div>
+      <p className="mt-1 text-sm text-text-muted">
+        Create, manage, and monitor community health missions.
+      </p>
 
-                <span className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary-700">
+    </div>
 
-                  Mission Management
+  </div>
 
-                </span>
+  <button
+    type="button"
+    onClick={handleCreateEvent}
+    className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl bg-primary-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:self-auto"
+  >
+    <FaPlus size={14} />
+    Create New Event
+  </button>
 
-              </div>
-
-              <h1 className="text-2xl font-extrabold tracking-tight text-text-primary sm:text-3xl">
-
-                Event Management
-
-              </h1>
-
-              <p className="mt-1 text-sm font-medium text-text-muted">
-
-                Create, manage, and monitor community health missions.
-
-              </p>
-
-            </div>
-
-            <button
-              type="button"
-              onClick={handleCreateEvent}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-400/20 active:scale-[0.98]"
-            >
-
-              <FaPlus size={14} />
-
-              Create New Event
-
-            </button>
-
-          </div>
-
-        </section>
+</div>
 
         {/* ======================================================
             STATISTICS

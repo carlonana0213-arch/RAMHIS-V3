@@ -5,6 +5,8 @@ import {
   useState,
 } from "react";
 
+import { Users } from "lucide-react";
+
 import {
   getPatientQueue,
   getPatientQueueSummary,
@@ -304,27 +306,30 @@ useEffect(() => {
       <div className="mx-auto max-w-[1600px]">
 
         {/* HEADER */}
-        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+<div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary-600" />
+  <div className="flex items-start gap-4">
 
-              <span className="text-xs font-bold uppercase tracking-[0.16em] text-primary-600">
-                RAMHIS Patient Services
-              </span>
-            </div>
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+      <Users size={22} />
+    </div>
 
-            <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
-              Patient Queue
-            </h1>
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+        RAMHIS Patient Services
+      </p>
 
-            <p className="mt-1 max-w-2xl text-sm text-text-muted">
-              Manage patient registration,
-              department queues, and current
-              medical mission activity.
-            </p>
-          </div>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+        Patient Queue
+      </h1>
+
+      <p className="mt-1 max-w-2xl text-sm text-text-muted">
+        Manage patient registration, department queues, and current
+        medical mission activity.
+      </p>
+    </div>
+
+  </div>
 
           <button
             type="button"

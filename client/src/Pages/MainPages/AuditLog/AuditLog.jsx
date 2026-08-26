@@ -157,41 +157,37 @@ function AuditLog() {
     <div className="min-h-screen w-full bg-slate-50 p-5 sm:p-6 lg:p-8">
       <div className="mx-auto w-full max-w-[1700px]">
         {/* =====================================================
-            PAGE HEADER
-        ====================================================== */}
+    PAGE HEADER
+====================================================== */}
 
-        <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-              <FaClipboardList size={22} />
-            </div>
+<div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+  <div className="flex items-start gap-4">
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+      <FaClipboardList size={22} />
+    </div>
 
-            <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-text-subtle">
-                System Administration
-              </p>
+    <div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+        System Administration
+      </p>
 
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-text-primary">
-                Audit Log
-              </h1>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+        Audit Log
+      </h1>
 
-              <p className="mt-1 text-sm text-text-muted">
-                Monitor system activities and administrative actions.
-              </p>
-            </div>
-          </div>
+      <p className="mt-1 text-sm text-text-muted">
+        Monitor system activities and administrative actions.
+      </p>
+    </div>
+  </div>
 
-          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 shadow-sm">
-            <FaUserShield
-              size={15}
-              className="text-primary-700"
-            />
-
-            <span className="text-xs font-bold text-text-secondary">
-              Administrator Audit Trail
-            </span>
-          </div>
-        </div>
+  <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+    <div className="flex items-center gap-2">
+      <FaUserShield size={14} />
+      <span>Administrator Audit Trail</span>
+    </div>
+  </div>
+</div>
 
         {/* =====================================================
             SEARCH & FILTERS

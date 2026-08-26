@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
-
 import {
   API_BASE_URL,
   FASTAPI_BASE_URL,
@@ -11,6 +10,8 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
+  AreaChart,
+  Area,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -36,11 +37,6 @@ import {
   FiAlertCircle,
 } from "react-icons/fi";
 
-
-
-
-
-
 const Analytics = () => {
   const [analytics, setAnalytics] = useState(null);
   const [locations, setLocations] = useState([]);
@@ -48,7 +44,8 @@ const Analytics = () => {
   const [nextMissionDate, setNextMissionDate] = useState("");
   const [missionDays, setMissionDays] = useState(1);
 
-const [historicalPatients, setHistoricalPatients] = useState([]);  const [loading, setLoading] = useState(false);
+  const [historicalPatients, setHistoricalPatients] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchLocations();
@@ -63,6 +60,35 @@ const [historicalPatients, setHistoricalPatients] = useState([]);  const [loadin
       setLocations(res.data || []);
     } catch (error) {
       console.error("Failed to load locations:", error);
+    }
+  };
+
+  const fetchHistoricalPatients = async () => {
+    try {
+      if (!selectedLocation) {
+        setHistoricalPatients([]);
+        return;
+      }
+
+      const res = await axios.get(
+        `${API_BASE_URL}/api/patients/analytics`,
+        {
+          params: {
+            location: selectedLocation,
+            page: 1,
+            limit: 10000,
+          },
+        },
+      );
+
+      setHistoricalPatients(res.data?.patients || []);
+    } catch (error) {
+      console.error(
+        "Failed to load historical patients:",
+        error,
+      );
+
+      setHistoricalPatients([]);
     }
   };
 
@@ -91,9 +117,7 @@ const [historicalPatients, setHistoricalPatients] = useState([]);  const [loadin
 
       setAnalytics(res.data);
 
-await fetchHistoricalPatients();
-
-      
+      await fetchHistoricalPatients();
     } catch (error) {
       console.error("Forecast error:", error);
       alert("Failed to generate analytics");
@@ -102,45 +126,16 @@ await fetchHistoricalPatients();
     }
   };
 
-  const fetchHistoricalPatients = async () => {
-  try {
-    if (!selectedLocation) {
-      setHistoricalPatients([]);
-      return;
-    }
-
-    const res = await axios.get(
-      `${API_BASE_URL}/api/patients/analytics`,
-      {
-        params: {
-          location: selectedLocation,
-          page: 1,
-          limit: 10000,
-        },
-      },
-    );
-
-    setHistoricalPatients(res.data?.patients || []);
-  } catch (error) {
-    console.error(
-      "Failed to load historical patients:",
-      error,
-    );
-
-    setHistoricalPatients([]);
-  }
-};
-
   const smartInsights = useMemo(() => {
-    if (!Analytics) return [];
+    if (!analytics) return [];
 
     const insights = [];
 
     const predictedPatients =
-      Analytics?.predictedPatients || 0;
+      analytics?.predictedPatients || 0;
 
     const range =
-      (Analytics?.confidenceRange?.max || 0) -
+      (analytics?.confidenceRange?.max || 0) -
       (analytics?.confidenceRange?.min || 0);
 
     if (predictedPatients > 100) {
@@ -158,7 +153,7 @@ await fetchHistoricalPatients();
     }
 
     if (
-      (Analytics?.medicineForecast || []).some(
+      (analytics?.medicineForecast || []).some(
         (med) => med.risk === "HIGH",
       )
     ) {
@@ -168,7 +163,7 @@ await fetchHistoricalPatients();
       });
     }
 
-    if (Analytics?.confidence === "VERY LOW") {
+    if (analytics?.confidence === "VERY LOW") {
       insights.push({
         type: "danger",
         text:
@@ -177,7 +172,7 @@ await fetchHistoricalPatients();
     }
 
     return insights;
-  }, [Analytics]);
+  }, [analytics]);
 
   const confidenceStyles = {
     HIGH:
@@ -212,47 +207,38 @@ await fetchHistoricalPatients();
     );
   };
 
+  // Real historical monthly patient counts for the selected location,
+  // sourced from actual patient records (patient.visitDate) — not
+  // hardcoded and not dependent on the forecast method.
   const chartData = useMemo(() => {
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
 
-  const monthlyCounts = Array(12).fill(0);
+    const monthlyCounts = Array(12).fill(0);
 
-  historicalPatients.forEach((patient) => {
-    if (!patient.visitDate) {
-      return;
-    }
+    historicalPatients.forEach((patient) => {
+      if (!patient.visitDate) {
+        return;
+      }
 
-    const date = new Date(patient.visitDate);
+      const date = new Date(patient.visitDate);
 
-    if (Number.isNaN(date.getTime())) {
-      return;
-    }
+      if (Number.isNaN(date.getTime())) {
+        return;
+      }
 
-    const monthIndex = date.getMonth();
+      const monthIndex = date.getMonth();
 
-    monthlyCounts[monthIndex] += 1;
-  });
+      monthlyCounts[monthIndex] += 1;
+    });
 
-  return months.map((month, index) => ({
-    month,
-    patients: monthlyCounts[index],
-  }));
-}, [historicalPatients]);
-  
-
+    return months.map((month, index) => ({
+      month,
+      patients: monthlyCounts[index],
+    }));
+  }, [historicalPatients]);
 
   return (
 
@@ -303,9 +289,6 @@ await fetchHistoricalPatients();
             </div>
           )}
         </div>
-
-    
-
 
         {/* =====================================================
             FORECAST SETUP
@@ -631,7 +614,7 @@ await fetchHistoricalPatients();
             </section>
 
             {/* =====================================================
-                FORECAST TREND
+                FORECAST TREND (Prophet)
             ====================================================== */}
 
             {analytics?.forecastMethod === "prophet" &&
@@ -775,79 +758,78 @@ await fetchHistoricalPatients();
                 OPERATIONAL FORECASTS
             ====================================================== */}
 
-          <section>
-  <div className="mb-4">
-    <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
-      Operational Planning
-    </p>
+            <section>
+              <div className="mb-4">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
+                  Operational Planning
+                </p>
 
-    <h2 className="mt-1 text-lg font-extrabold text-text-primary">
-      Department & patient insights
-    </h2>
-  </div>
+                <h2 className="mt-1 text-lg font-extrabold text-text-primary">
+                  Department & patient insights
+                </h2>
+              </div>
 
-  <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-    <div className="border-b border-border-soft px-5 py-5 sm:px-6">
-      <h3 className="text-base font-extrabold text-text-primary">
-        Patient Trend Forecast
-      </h3>
+              <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+                <div className="border-b border-border-soft px-5 py-5 sm:px-6">
+                  <h3 className="text-base font-extrabold text-text-primary">
+                    Patient Trend Forecast
+                  </h3>
 
-      <p className="mt-1 text-xs text-text-muted">
-        Projected monthly patient visits from January to December.
-      </p>
-    </div>
+                  <p className="mt-1 text-xs text-text-muted">
+                    Monthly patient visits based on historical records for{" "}
+                    {selectedLocation || "the selected location"}.
+                  </p>
+                </div>
 
-    <div className="h-[380px] p-5 sm:p-8">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={chartData}
-          margin={{
-            top: 20,
-            right: 20,
-            left: 0,
-            bottom: 5,
-          }}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            vertical={false}
-          />
+                <div className="h-[380px] p-5 sm:p-8">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={chartData}
+                      margin={{
+                        top: 20,
+                        right: 20,
+                        left: 0,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                      />
 
-          <XAxis
-            dataKey="month"
-            axisLine={false}
-            tickLine={false}
-          />
+                      <XAxis
+                        dataKey="month"
+                        axisLine={false}
+                        tickLine={false}
+                      />
 
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            allowDecimals={false}
-          />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
 
-          <Tooltip />
+                      <Tooltip />
 
-          <Line
-            type="monotone"
-            dataKey="patients"
-            name="Predicted Patients"
-            stroke="#1f2937"
-            strokeWidth={3}
-            dot={{
-              r: 5,
-              strokeWidth: 2,
-            }}
-            activeDot={{
-              r: 7,
-            }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  </section>
-</section>
-
-            
+                      <Line
+                        type="monotone"
+                        dataKey="patients"
+                        name="Patients"
+                        stroke="#1f2937"
+                        strokeWidth={3}
+                        dot={{
+                          r: 5,
+                          strokeWidth: 2,
+                        }}
+                        activeDot={{
+                          r: 7,
+                        }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+            </section>
 
             {/* =====================================================
                 MEDICINE FORECAST
@@ -1037,81 +1019,6 @@ function MetricCard({
         </div>
       </div>
     </div>
-  );
-}
-
-/* ============================================================
-   TABLE CARD
-============================================================ */
-
-function AnalyticsTableCard({
-  title,
-  subtitle,
-  headers,
-  rows,
-}) {
-  return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-      <div className="border-b border-border-soft px-5 py-5 sm:px-6">
-        <h2 className="text-base font-extrabold text-text-primary">
-          {title}
-        </h2>
-
-        <p className="mt-1 text-xs text-text-muted">
-          {subtitle}
-        </p>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[420px] border-collapse text-left">
-          <thead>
-            <tr className="border-b border-border bg-slate-50/80">
-              {headers.map((header) => (
-                <th
-                  key={header}
-                  className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-text-muted"
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-border-soft">
-            {rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={headers.length}
-                  className="px-5 py-12 text-center text-sm text-text-muted"
-                >
-                  No data available.
-                </td>
-              </tr>
-            ) : (
-              rows.map((row, rowIndex) => (
-                <tr
-                  key={`${row[0]}-${rowIndex}`}
-                  className="transition-colors hover:bg-primary-50/30"
-                >
-                  {row.map((value, columnIndex) => (
-                    <td
-                      key={`${rowIndex}-${columnIndex}`}
-                      className={`px-5 py-4 text-sm ${
-                        columnIndex === 0
-                          ? "font-bold text-text-primary"
-                          : "font-semibold text-text-secondary"
-                      }`}
-                    >
-                      {value ?? "—"}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </section>
   );
 }
 
