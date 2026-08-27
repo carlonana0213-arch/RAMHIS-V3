@@ -42,9 +42,8 @@ const PatientsDashboard = ({ patients = [] }) => {
   useEffect(() => {
     const loadPrescriptions = async () => {
       try {
-        const data = await apiFetch(
-          "http://localhost:5000/api/prescriptions",
-        );
+        // CHANGED: Removed hardcoded localhost URL
+        const data = await apiFetch("/api/prescriptions");
 
         setPrescriptions(
           Array.isArray(data) ? data : [],
@@ -123,25 +122,35 @@ const PatientsDashboard = ({ patients = [] }) => {
     },
   };
 
-  const stats = useMemo(
-    () => ({
+  const stats = useMemo(() => {
+    // CHANGED: Only calculate average from valid ages
+    const validAges = patients
+      .map((p) =>
+        Number(p.generalInfo?.age),
+      )
+      .filter(
+        (age) =>
+          Number.isFinite(age) && age > 0,
+      );
+
+    return {
       totalPatients: patients.length,
 
-      activePrescriptions:
+      // CHANGED: This counts all prescriptions
+      totalPrescriptions:
         prescriptions.length,
 
-      averageAge: Math.round(
-        patients.reduce(
-          (acc, p) =>
-            acc +
-            Number(p.generalInfo?.age || 0),
-          0,
-        ) /
-          (patients.length || 1),
-      ),
-    }),
-    [patients, prescriptions],
-  );
+      averageAge:
+        validAges.length > 0
+          ? Math.round(
+              validAges.reduce(
+                (acc, age) => acc + age,
+                0,
+              ) / validAges.length,
+            )
+          : 0,
+    };
+  }, [patients, prescriptions]);
 
   const ageSexData = useMemo(() => {
     const groups = {
@@ -153,7 +162,9 @@ const PatientsDashboard = ({ patients = [] }) => {
     };
 
     patients.forEach((p) => {
-      const age = Number(p.generalInfo?.age);
+      const age = Number(
+        p.generalInfo?.age,
+      );
 
       const sex = (
         p.generalInfo?.gender ||
@@ -177,8 +188,13 @@ const PatientsDashboard = ({ patients = [] }) => {
                 : "60+";
 
       if (groups[group]) {
-        if (sex === "M") groups[group].M++;
-        if (sex === "F") groups[group].F++;
+        if (sex === "M") {
+          groups[group].M++;
+        }
+
+        if (sex === "F") {
+          groups[group].F++;
+        }
       }
     });
 
@@ -246,7 +262,6 @@ const PatientsDashboard = ({ patients = [] }) => {
 
   return (
     <div className="space-y-6">
-
       {/* =====================================================
           HEADER
       ====================================================== */}
@@ -270,7 +285,6 @@ const PatientsDashboard = ({ patients = [] }) => {
       ====================================================== */}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-
         <AnalyticsStatCard
           label="Total Patients"
           value={stats.totalPatients}
@@ -280,8 +294,8 @@ const PatientsDashboard = ({ patients = [] }) => {
         />
 
         <AnalyticsStatCard
-          label="Active Prescriptions"
-          value={stats.activePrescriptions}
+          label="Total Prescriptions"
+          value={stats.totalPrescriptions}
           description="Prescription records"
           icon={<FiFileText />}
           iconClass="bg-sky-50 text-sky-700"
@@ -301,7 +315,6 @@ const PatientsDashboard = ({ patients = [] }) => {
       ====================================================== */}
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-
         {/* AGE / SEX */}
 
         <section className="rounded-2xl border border-border bg-surface shadow-sm">

@@ -1,438 +1,654 @@
 import {
   FiActivity,
-  FiAlertCircle,
   FiCalendar,
+  FiChevronRight,
+  FiClipboard,
+  FiClock,
+  FiFileText,
   FiHeart,
   FiInfo,
-  FiShield,
+  FiMapPin,
   FiUser,
+  FiUsers,
   FiX,
 } from "react-icons/fi";
 
-const PatientViewFinal = ({
-  patient,
-  onClose,
-}) => {
+const EMPTY = "Not provided";
+
+const PatientViewFinal = ({ patient, onClose }) => {
   if (!patient) return null;
 
+  const generalInfo = patient.generalInfo || {};
+  const examination = patient.examination || {};
+  const medicalHistory = patient.medicalHistory || {};
+  const familyHistory = patient.familyHistory || {};
+  const doctorSheets = Array.isArray(patient.doctorSheets)
+    ? patient.doctorSheets
+    : [];
+
   const name =
-    patient.generalInfo?.name ||
+    patient.name ||
+    generalInfo.name ||
+    [
+      generalInfo.firstName,
+      generalInfo.middleName,
+      generalInfo.lastName,
+    ]
+      .filter(Boolean)
+      .join(" ") ||
     "Unnamed Patient";
 
-  const age =
-    patient.generalInfo?.age || "--";
+  const initials =
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word.charAt(0).toUpperCase())
+      .join("") || "PT";
 
-  const gender =
-    patient.generalInfo?.gender ||
-    patient.generalInfo?.sex ||
-    "--";
+  const age =
+    generalInfo.age ??
+    patient.age ??
+    EMPTY;
+
+  const sex =
+    generalInfo.gender ||
+    generalInfo.sex ||
+    patient.sex ||
+    EMPTY;
+
+  const formatValue = (value) => {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
+      return EMPTY;
+    }
+
+    if (Array.isArray(value)) {
+      return value.length
+        ? value.join(", ")
+        : EMPTY;
+    }
+
+    if (typeof value === "object") {
+      const values = Object.entries(value)
+        .filter(([, item]) => item)
+        .map(([key]) =>
+          key
+            .replace(/([A-Z])/g, " $1")
+            .replace(/^./, (letter) =>
+              letter.toUpperCase(),
+            ),
+        );
+
+      return values.length
+        ? values.join(", ")
+        : EMPTY;
+    }
+
+    return String(value);
+  };
+
+  const formatDate = (value) => {
+    if (!value) return EMPTY;
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return formatValue(value);
+    }
+
+    return date.toLocaleDateString(
+      undefined,
+      {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      },
+    );
+  };
+
+  const getSheetDate = (sheet) =>
+    sheet.date ||
+    sheet.createdAt ||
+    sheet.updatedAt ||
+    sheet.visitDate;
 
   return (
     <div
-      className="fixed inset-0 z-[5000] flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-sm sm:p-5"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/50 p-0 backdrop-blur-[2px] sm:p-4"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[94vh] w-full max-w-7xl flex-col overflow-hidden rounded-2xl border border-border bg-slate-50 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        className="flex h-full w-full max-w-[1400px] flex-col overflow-hidden bg-slate-50 shadow-2xl sm:h-[calc(100vh-32px)] sm:rounded-[28px]"
+        onClick={(event) =>
+          event.stopPropagation()
+        }
       >
-
         {/* =====================================================
             HEADER
         ====================================================== */}
 
-        <div className="flex items-center justify-between border-b border-border bg-surface px-5 py-4 sm:px-7">
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-lg font-extrabold text-primary-700">
-              {name.charAt(0).toUpperCase()}
-            </div>
+        <header className="shrink-0 border-b border-border-soft bg-surface px-5 py-5 sm:px-7">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-lg font-extrabold text-primary-700 ring-1 ring-primary-100 sm:h-16 sm:w-16">
+                {initials}
+              </div>
 
-            <div className="min-w-0">
-              <h2 className="truncate text-lg font-extrabold text-text-primary sm:text-xl">
-                {name}
-              </h2>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary-600">
+                    Patient Medical Record
+                  </span>
 
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                <span>{age} years old</span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-500">
+                    {doctorSheets.length}{" "}
+                    {doctorSheets.length === 1
+                      ? "Visit"
+                      : "Visits"}
+                  </span>
+                </div>
 
-                <span className="text-slate-300">
-                  •
-                </span>
+                <h2 className="mt-1 truncate text-xl font-extrabold tracking-tight text-text-primary sm:text-2xl">
+                  {name}
+                </h2>
 
-                <span>{gender}</span>
-
-                {patient.generalInfo?.insurance && (
-                  <>
-                    <span className="text-slate-300">
-                      •
-                    </span>
-
-                    <span>
-                      {patient.generalInfo.insurance}
-                    </span>
-                  </>
-                )}
+                <p className="mt-1 text-xs font-medium text-text-muted sm:text-sm">
+                  {age !== EMPTY
+                    ? `${age} years old`
+                    : age}
+                  {" • "}
+                  {sex}
+                </p>
               </div>
             </div>
-          </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-text-muted transition hover:bg-slate-100 hover:text-text-primary"
-          >
-            <FiX size={17} />
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border-soft bg-surface text-text-muted transition hover:bg-slate-100 hover:text-text-primary active:scale-95"
+              aria-label="Close patient record"
+            >
+              <FiX size={19} />
+            </button>
+          </div>
+        </header>
 
         {/* =====================================================
-            BODY
+            CONTENT
         ====================================================== */}
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1320px] p-4 sm:p-6 lg:p-7">
+            <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
 
-            {/* =================================================
-                LEFT
-            ================================================== */}
+              {/* =================================================
+                  LEFT PATIENT PROFILE
+              ================================================= */}
 
-            <div className="space-y-5">
+              <aside className="space-y-5">
 
-              {/* GENERAL */}
+                <Section
+                  eyebrow="Patient Profile"
+                  title="General Information"
+                  icon={<FiUser size={17} />}
+                >
+                  <div className="grid gap-3">
+                    <InfoRow
+                      label="Full Name"
+                      value={name}
+                    />
 
-              <InfoSection
-                icon={<FiUser />}
-                title="General Information"
-              >
-                <InfoGrid
-                  items={[
-                    [
-                      "Insurance",
-                      patient.generalInfo?.insurance,
-                    ],
-                    [
-                      "Birthdate",
-                      patient.generalInfo?.birthdate,
-                    ],
-                    [
-                      "Tobacco",
-                      patient.generalInfo?.tobacco,
-                    ],
-                    [
-                      "Alcohol",
-                      patient.generalInfo?.alcohol,
-                    ],
-                    [
-                      "Allergies",
-                      patient.generalInfo?.allergies,
-                    ],
-                    [
-                      "Vaccines",
-                      patient.generalInfo?.vaccine,
-                    ],
-                  ]}
-                />
-              </InfoSection>
+                    <InfoRow
+                      label="Birthdate"
+                      value={formatDate(
+                        generalInfo.birthdate ||
+                          generalInfo.dateOfBirth ||
+                          patient.birthdate,
+                      )}
+                    />
 
-              {/* VITALS */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <InfoRow
+                        label="Age"
+                        value={age}
+                      />
 
-              <InfoSection
-                icon={<FiActivity />}
-                title="Vitals"
-              >
-                <div className="grid grid-cols-2 gap-3">
-                  <Vital
-                    label="Blood Pressure"
-                    value={patient.examination?.bp}
-                  />
-
-                  <Vital
-                    label="Temperature"
-                    value={patient.examination?.temp}
-                  />
-
-                  <Vital
-                    label="Height"
-                    value={patient.examination?.height}
-                  />
-
-                  <Vital
-                    label="Weight"
-                    value={patient.examination?.weight}
-                  />
-
-                  <Vital
-                    label="BMI"
-                    value={patient.examination?.bmi}
-                  />
-                </div>
-              </InfoSection>
-
-              {/* HISTORY */}
-
-              <InfoSection
-                icon={<FiHeart />}
-                title="Medical History"
-              >
-                <ChipList
-                  items={patient.medicalHistory}
-                  empty="No medical history recorded."
-                />
-
-                <div className="my-5 border-t border-border-soft" />
-
-                <h4 className="mb-3 text-xs font-extrabold uppercase tracking-wider text-text-muted">
-                  Family History
-                </h4>
-
-                <ChipList
-                  items={patient.familyHistory}
-                  empty="No family history recorded."
-                />
-              </InfoSection>
-            </div>
-
-            {/* =================================================
-                RIGHT
-            ================================================== */}
-
-            <div>
-              <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-                <div className="border-b border-border-soft px-5 py-5 sm:px-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
-                      <FiShield />
+                      <InfoRow
+                        label="Sex"
+                        value={sex}
+                      />
                     </div>
 
-                    <div>
-                      <h3 className="text-base font-extrabold text-text-primary">
-                        Doctor Records
-                      </h3>
+                    <InfoRow
+                      label="Address"
+                      value={formatValue(
+                        generalInfo.address ||
+                          patient.address,
+                      )}
+                    />
 
-                      <p className="mt-1 text-xs text-text-muted">
-                        Medical records documented during patient visits.
-                      </p>
-                    </div>
+                    <InfoRow
+                      label="Contact Number"
+                      value={formatValue(
+                        generalInfo.contactNumber ||
+                          generalInfo.phone ||
+                          patient.contactNumber,
+                      )}
+                    />
+
+                    <InfoRow
+                      label="Insurance"
+                      value={formatValue(
+                        generalInfo.insurance ||
+                          generalInfo.philHealth ||
+                          patient.insurance,
+                      )}
+                    />
                   </div>
+                </Section>
+
+                <Section
+                  eyebrow="Clinical Snapshot"
+                  title="Vital Signs"
+                  icon={<FiActivity size={17} />}
+                >
+                  <div className="grid grid-cols-2 gap-3">
+                    <VitalCard
+                      label="Blood Pressure"
+                      value={
+                        examination.bloodPressure ||
+                        examination.bp
+                      }
+                    />
+
+                    <VitalCard
+                      label="Temperature"
+                      value={
+                        examination.temperature
+                      }
+                    />
+
+                    <VitalCard
+                      label="Heart Rate"
+                      value={
+                        examination.heartRate ||
+                        examination.pulseRate
+                      }
+                    />
+
+                    <VitalCard
+                      label="Respiratory Rate"
+                      value={
+                        examination.respiratoryRate
+                      }
+                    />
+
+                    <VitalCard
+                      label="Weight"
+                      value={
+                        examination.weight
+                      }
+                    />
+
+                    <VitalCard
+                      label="Height"
+                      value={
+                        examination.height
+                      }
+                    />
+                  </div>
+                </Section>
+
+                <Section
+                  eyebrow="Health Background"
+                  title="Medical History"
+                  icon={<FiHeart size={17} />}
+                >
+                  <HistoryContent
+                    data={medicalHistory}
+                  />
+                </Section>
+
+                <Section
+                  eyebrow="Family Background"
+                  title="Family History"
+                  icon={<FiUsers size={17} />}
+                >
+                  <HistoryContent
+                    data={familyHistory}
+                  />
+                </Section>
+              </aside>
+
+              {/* =================================================
+                  DOCTOR RECORDS
+              ================================================= */}
+
+              <section className="min-w-0 space-y-5">
+                <div className="flex flex-col gap-2 border-b border-border-soft pb-5 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary-600">
+                      Consultation History
+                    </span>
+
+                    <h3 className="mt-1 text-xl font-extrabold tracking-tight text-text-primary">
+                      Doctor Records
+                    </h3>
+
+                    <p className="mt-1 text-sm text-text-muted">
+                      Clinical assessments and treatment
+                      records for this patient.
+                    </p>
+                  </div>
+
+                  <span className="w-fit rounded-full bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-700">
+                    {doctorSheets.length} total{" "}
+                    {doctorSheets.length === 1
+                      ? "record"
+                      : "records"}
+                  </span>
                 </div>
 
-                <div className="space-y-4 p-5 sm:p-6">
-                  {patient.doctorSheets?.length > 0 ? (
-                    patient.doctorSheets
-                      .slice()
-                      .reverse()
-                      .map((record, index) => (
-                        <div
-                          key={index}
-                          className="rounded-xl border border-border bg-slate-50/60 p-4 sm:p-5"
-                        >
-                          <div className="flex flex-col gap-2 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                              <p className="text-sm font-extrabold text-text-primary">
-                                {record.doctorName ||
-                                  "Doctor"}
-                              </p>
+                {doctorSheets.length === 0 ? (
+                  <EmptyDoctorState />
+                ) : (
+                  <div className="space-y-4">
+                    {doctorSheets.map(
+                      (sheet, index) => {
+                        const isLatest =
+                          index ===
+                          doctorSheets.length - 1;
 
-                              <p className="mt-1 text-xs font-medium text-text-muted">
-                                {record.department ||
-                                  "General"}
-                              </p>
-                            </div>
+                        const diagnosis =
+                          sheet.diagnosis ||
+                          sheet.assessment ||
+                          sheet.impression;
 
-                            <span className="flex items-center gap-1.5 text-xs font-semibold text-text-muted">
-                              <FiCalendar />
-                              {record.date
-                                ? new Date(
-                                    record.date,
-                                  ).toLocaleString()
-                                : "—"}
-                            </span>
-                          </div>
+                        const treatment =
+                          sheet.treatment ||
+                          sheet.plan ||
+                          sheet.medication;
 
-                          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                            <RecordField
-                              label="Chief Complaint"
-                              value={
-                                record.initComplaint
-                              }
-                            />
+                        const doctor =
+                          sheet.doctorName ||
+                          sheet.doctor ||
+                          sheet.physician ||
+                          EMPTY;
 
-                            <RecordField
-                              label="Diagnosis"
-                              value={
-                                record.diagnosis
-                              }
-                            />
+                        const department =
+                          sheet.department ||
+                          sheet.clinic ||
+                          sheet.specialization ||
+                          EMPTY;
 
-                            <RecordField
-                              label="Treatment"
-                              value={
-                                record.treatment
-                              }
-                            />
-
-                            <RecordField
-                              label="Medication"
-                              value={
-                                record.medication
-                              }
-                            />
-                          </div>
-
-                          {record.referral?.department && (
-                            <div className="mt-4 rounded-xl border border-blue-100 bg-primary-50 p-4">
-                              <div className="flex gap-3">
-                                <FiAlertCircle className="mt-0.5 shrink-0 text-primary-600" />
-
-                                <div>
-                                  <p className="text-xs font-extrabold uppercase tracking-wider text-primary-700">
-                                    Referral
-                                  </p>
-
-                                  <p className="mt-1 text-sm font-bold text-blue-900">
-                                    {
-                                      record.referral
-                                        .department
-                                    }
-                                  </p>
-
-                                  <p className="mt-2 text-xs leading-5 text-blue-800">
-                                    <strong>
-                                      Reason:
-                                    </strong>{" "}
-                                    {record.referral.reason ||
-                                      "—"}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {Object.keys(
-                            record.examination || {},
-                          ).length > 0 && (
-                            <div className="mt-4 rounded-xl border border-border bg-surface p-4">
-                              <p className="mb-3 text-xs font-extrabold uppercase tracking-wider text-text-muted">
-                                Examination
-                              </p>
-
-                              <div className="grid gap-3 sm:grid-cols-2">
-                                {Object.entries(
-                                  record.examination || {},
-                                ).map(
-                                  ([key, value]) => (
-                                    <div
-                                      key={key}
-                                      className="rounded-lg bg-slate-50 px-3 py-2.5"
-                                    >
-                                      <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
-                                        {key
-                                          .replace(
-                                            /([A-Z])/g,
-                                            " $1",
-                                          )
-                                          .replace(
-                                            /^./,
-                                            (s) =>
-                                              s.toUpperCase(),
-                                          )}
-                                      </p>
-
-                                      <p className="mt-1 text-sm font-semibold text-slate-700">
-                                        {value || "—"}
-                                      </p>
-                                    </div>
-                                  ),
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-text-subtle">
-                        <FiInfo />
-                      </div>
-
-                      <p className="mt-4 text-sm font-bold text-slate-700">
-                        No doctor records
-                      </p>
-
-                      <p className="mt-1 text-xs text-text-muted">
-                        There are no medical records available for this patient.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                        return (
+                          <DoctorRecordCard
+                            key={
+                              sheet._id ||
+                              sheet.id ||
+                              `${getSheetDate(
+                                sheet,
+                              )}-${index}`
+                            }
+                            sheet={sheet}
+                            index={index}
+                            isLatest={isLatest}
+                            diagnosis={diagnosis}
+                            treatment={treatment}
+                            doctor={doctor}
+                            department={department}
+                            date={formatDate(
+                              getSheetDate(sheet),
+                            )}
+                            formatValue={formatValue}
+                          />
+                        );
+                      },
+                    )}
+                  </div>
+                )}
               </section>
             </div>
           </div>
         </div>
 
-        {/* FOOTER */}
+        {/* =====================================================
+            FOOTER
+        ====================================================== */}
 
-        <div className="flex justify-end border-t border-border bg-surface px-5 py-3.5 sm:px-6">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-          >
-            Close
-          </button>
-        </div>
+        <footer className="shrink-0 border-t border-border-soft bg-surface px-5 py-4 sm:px-7">
+          <div className="flex items-center justify-between gap-4">
+            <p className="hidden text-xs text-text-muted sm:block">
+              Patient information displayed from
+              available medical records.
+            </p>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="ml-auto flex h-10 items-center justify-center rounded-xl bg-primary-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 active:scale-[0.98]"
+            >
+              Close Record
+            </button>
+          </div>
+        </footer>
       </div>
     </div>
   );
 };
 
-function InfoSection({
-  icon,
+/* =========================================================
+   DOCTOR RECORD CARD
+========================================================= */
+
+function DoctorRecordCard({
+  sheet,
+  index,
+  isLatest,
+  diagnosis,
+  treatment,
+  doctor,
+  department,
+  date,
+  formatValue,
+}) {
+  return (
+    <article
+      className={`overflow-hidden rounded-2xl border bg-surface shadow-sm ${
+        isLatest
+          ? "border-primary-200 ring-1 ring-primary-100"
+          : "border-border-soft"
+      }`}
+    >
+      <div
+        className={`border-b px-5 py-4 sm:px-6 ${
+          isLatest
+            ? "border-primary-100 bg-primary-50/60"
+            : "border-border-soft bg-slate-50/70"
+        }`}
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${
+                isLatest
+                  ? "bg-primary-700 text-white"
+                  : "bg-slate-200 text-slate-600"
+              }`}
+            >
+              {isLatest
+                ? <FiActivity size={17} />
+                : doctorSheetsNumber(index)}
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                {isLatest && (
+                  <span className="rounded-full bg-primary-700 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                    Latest Record
+                  </span>
+                )}
+
+                <span className="text-xs font-bold text-text-muted">
+                  Visit #{index + 1}
+                </span>
+              </div>
+
+              <h4 className="mt-1 truncate text-sm font-extrabold text-text-primary">
+                {doctor}
+              </h4>
+
+              <p className="mt-0.5 truncate text-xs text-text-muted">
+                {department}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-medium text-text-muted">
+            <FiCalendar size={14} />
+            {date}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-5 p-5 sm:p-6">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ClinicalBlock
+            label="Diagnosis / Assessment"
+            icon={<FiClipboard size={15} />}
+            value={diagnosis}
+          />
+
+          <ClinicalBlock
+            label="Treatment / Plan"
+            icon={<FiHeart size={15} />}
+            value={treatment}
+          />
+        </div>
+
+        {(sheet.notes ||
+          sheet.remarks ||
+          sheet.findings) && (
+          <ClinicalBlock
+            label="Clinical Notes"
+            icon={<FiFileText size={15} />}
+            value={
+              sheet.notes ||
+              sheet.remarks ||
+              sheet.findings
+            }
+          />
+        )}
+
+        {(sheet.referral ||
+          sheet.referralTo ||
+          sheet.referredTo) && (
+          <div className="rounded-xl border border-sky-100 bg-sky-50/70 p-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 text-sky-700">
+                <FiChevronRight size={17} />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700">
+                  Referral
+                </p>
+
+                <p className="mt-1 text-sm font-medium leading-6 text-slate-700">
+                  {formatValue(
+                    sheet.referral ||
+                      sheet.referralTo ||
+                      sheet.referredTo,
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2 border-t border-border-soft pt-4 text-xs text-text-muted">
+          {sheet.visitPlace && (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5">
+              <FiMapPin size={13} />
+              {sheet.visitPlace}
+            </span>
+          )}
+
+          {sheet.time && (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5">
+              <FiClock size={13} />
+              {sheet.time}
+            </span>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/* =========================================================
+   REUSABLE COMPONENTS
+========================================================= */
+
+function Section({
+  eyebrow,
   title,
+  icon,
   children,
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+    <section className="overflow-hidden rounded-2xl border border-border-soft bg-surface shadow-sm">
+      <div className="flex items-center gap-3 border-b border-border-soft px-5 py-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
           {icon}
         </div>
 
-        <h3 className="text-sm font-extrabold text-text-primary">
-          {title}
-        </h3>
+        <div>
+          <span className="text-[9px] font-extrabold uppercase tracking-[0.13em] text-primary-600">
+            {eyebrow}
+          </span>
+
+          <h3 className="mt-0.5 text-sm font-extrabold text-text-primary">
+            {title}
+          </h3>
+        </div>
       </div>
 
-      {children}
+      <div className="p-4">
+        {children}
+      </div>
     </section>
   );
 }
 
-function InfoGrid({ items }) {
+function InfoRow({
+  label,
+  value,
+}) {
   return (
-    <div className="grid gap-3">
-      {items.map(([label, value]) => (
-        <div
-          key={label}
-          className="flex items-start justify-between gap-4 border-b border-border-soft pb-2.5 last:border-0 last:pb-0"
-        >
-          <span className="text-xs font-medium text-text-subtle">
-            {label}
-          </span>
+    <div className="rounded-xl bg-slate-50 px-3.5 py-3">
+      <p className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-text-subtle">
+        {label}
+      </p>
 
-          <span className="text-right text-xs font-bold text-slate-700">
-            {value || "—"}
-          </span>
-        </div>
-      ))}
+      <p className="mt-1 break-words text-sm font-bold text-text-secondary">
+        {value || EMPTY}
+      </p>
     </div>
   );
 }
 
-function Vital({ label, value }) {
+function VitalCard({
+  label,
+  value,
+}) {
   return (
-    <div className="rounded-xl bg-slate-50 p-3">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
+    <div className="rounded-xl border border-border-soft bg-slate-50 px-3 py-3">
+      <p className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-text-subtle">
         {label}
       </p>
 
@@ -443,37 +659,107 @@ function Vital({ label, value }) {
   );
 }
 
-function ChipList({ items, empty }) {
-  return items?.length ? (
+function HistoryContent({ data }) {
+  const entries = Object.entries(
+    data || {},
+  ).filter(
+    ([, value]) =>
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      value !== false,
+  );
+
+  if (!entries.length) {
+    return (
+      <EmptyText>
+        No recorded history available.
+      </EmptyText>
+    );
+  }
+
+  return (
     <div className="flex flex-wrap gap-2">
-      {items.map((item, index) => (
-        <span
-          key={index}
-          className="rounded-full bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-700"
-        >
-          {item}
-        </span>
-      ))}
+      {entries.map(([key, value]) => {
+        const label =
+          typeof value === "string" &&
+          value.trim()
+            ? `${key}: ${value}`
+            : key;
+
+        return (
+          <span
+            key={key}
+            className="rounded-full border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-700"
+          >
+            {label
+              .replace(
+                /([A-Z])/g,
+                " $1",
+              )
+              .replace(
+                /^./,
+                (letter) =>
+                  letter.toUpperCase(),
+              )}
+          </span>
+        );
+      })}
     </div>
-  ) : (
-    <p className="text-xs text-text-subtle">
-      {empty}
-    </p>
   );
 }
 
-function RecordField({ label, value }) {
+function ClinicalBlock({
+  label,
+  icon,
+  value,
+}) {
   return (
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-text-subtle">
-        {label}
-      </p>
+    <div className="rounded-xl border border-border-soft bg-slate-50/70 p-4">
+      <div className="flex items-center gap-2 text-primary-700">
+        {icon}
 
-      <p className="mt-1 text-sm font-medium leading-6 text-slate-700">
-        {value || "—"}
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.12em]">
+          {label}
+        </p>
+      </div>
+
+      <p className="mt-3 whitespace-pre-wrap text-sm font-medium leading-6 text-text-secondary">
+        {value || "No information recorded."}
       </p>
     </div>
   );
+}
+
+function EmptyText({ children }) {
+  return (
+    <div className="rounded-xl border border-dashed border-border bg-slate-50 px-4 py-5 text-center text-xs font-medium text-text-muted">
+      {children}
+    </div>
+  );
+}
+
+function EmptyDoctorState() {
+  return (
+    <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface px-6 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-text-subtle">
+        <FiFileText size={24} />
+      </div>
+
+      <h4 className="mt-4 text-sm font-extrabold text-text-primary">
+        No doctor records available
+      </h4>
+
+      <p className="mt-1 max-w-sm text-xs leading-5 text-text-muted">
+        This patient currently has no recorded
+        consultation or clinical assessment history.
+      </p>
+    </div>
+  );
+}
+
+function doctorSheetsNumber(index) {
+  return index + 1;
 }
 
 export default PatientViewFinal;
