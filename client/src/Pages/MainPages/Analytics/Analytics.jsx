@@ -240,55 +240,41 @@ const Analytics = () => {
     }));
   }, [historicalPatients]);
 
-  return (
+return (
+  <div className="min-h-full w-full px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+    <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-5">
 
-    <div className="min-h-full bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1500px]">
+      {/* =====================================================
+          HEADER
+      ====================================================== */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex items-start gap-3">
 
-        {/* =====================================================
-            PAGE HEADER
-        ====================================================== */}
+            <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+            <FiActivity size={21} />
+          </div>
 
-        <div className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <div className="mb-3 flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-700">
-                <FiActivity size={15} />
-              </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+              RAMHIS Analytics
+            </p>
 
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-primary-700">
-                Analytics & Forecasting
-              </p>
-            </div>
-
-            <h1 className="text-2xl font-extrabold tracking-tight text-text-primary sm:text-3xl">
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
               Predictive Analytics
             </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-text-muted">
-              Generate data-driven forecasts to support mission planning,
-              patient demand preparation, and medicine inventory decisions.
+            <p className="mt-1 text-sm text-text-muted">
+              Forecast upcoming mission needs using historical patient and mission records.
             </p>
           </div>
-
-          {analytics && (
-            <div className="flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-surface px-4 py-3.5 shadow-sm xl:w-auto">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-status-stable-bg text-status-stable-text">
-                <FiCheckCircle size={18} />
-              </div>
-
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-text-subtle">
-                  Forecast Status
-                </p>
-
-                <p className="mt-0.5 text-sm font-extrabold text-text-primary">
-                  Forecast generated successfully
-                </p>
-              </div>
-            </div>
-          )}
         </div>
+
+        {analytics && (
+          <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+            Forecast generated
+          </div>
+        )}
+      </div>
 
         {/* =====================================================
             FORECAST SETUP
