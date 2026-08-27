@@ -255,17 +255,17 @@ function UserManagement() {
   ).length;
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 p-5 sm:p-6 lg:p-8">
-      <div className="mx-auto w-full max-w-[1700px] space-y-6">
+<div className="min-h-full w-full px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+  <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-5">
 
 {/* =========================
     PAGE HEADER
 ========================= */}
 
-<header className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-  <div className="flex items-start gap-4">
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-      <Users size={22} />
+    <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+  <div className="flex items-start gap-3">
+    <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+      <Users size={21} />
     </div>
 
     <div>

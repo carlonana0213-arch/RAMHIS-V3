@@ -145,41 +145,41 @@ const Analytics = () => {
     LOW: "bg-status-stable-bg text-status-stable-text ring-emerald-200",
   };
 
-  return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1500px]">
+return (
+  <div className="min-h-full w-full px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+    <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-5">
 
-        {/* =====================================================
-    HEADER
-====================================================== */}
+      {/* =====================================================
+          HEADER
+      ====================================================== */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex items-start gap-3">
 
-<div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-  <div className="flex items-start gap-4">
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-      <FiActivity size={22} />
-    </div>
+            <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+            <FiActivity size={21} />
+          </div>
 
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-        RAMHIS Analytics
-      </p>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+              RAMHIS Analytics
+            </p>
 
-      <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
-        Predictive Analytics
-      </h1>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+              Predictive Analytics
+            </h1>
 
-      <p className="mt-1 text-sm text-text-muted">
-        Forecast upcoming mission needs using historical patient and mission records.
-      </p>
-    </div>
-  </div>
+            <p className="mt-1 text-sm text-text-muted">
+              Forecast upcoming mission needs using historical patient and mission records.
+            </p>
+          </div>
+        </div>
 
-  {analytics && (
-    <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
-      Forecast generated
-    </div>
-  )}
-</div>
+        {analytics && (
+          <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+            Forecast generated
+          </div>
+        )}
+      </div>
         {/* =====================================================
             FORECAST CONFIGURATION
         ====================================================== */}

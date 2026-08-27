@@ -237,56 +237,48 @@ function PharmacyInventory() {
       0,
     );
 
-  return (
-    <section className="space-y-5">
+return (
+  <div className="min-h-full w-full px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+    <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-5">
 
-{/* =========================
-    SECTION HEADER
-========================= */}
+      {/* HEADER */}
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3">
+    <div className="mt-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+            <Package size={21} />
+          </div>
 
-<div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+              Pharmacy Management
+            </p>
 
-  <div className="flex items-start gap-4">
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+              Medicine Inventory
+            </h1>
 
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-      <Package size={22} />
-    </div>
+            <p className="mt-1 text-sm text-text-muted">
+              Manage medicine stocks and monitor inventory availability.
+            </p>
+          </div>
+        </div>
 
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-        Pharmacy Management
-      </p>
+        <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+          <span
+            className={`${dashboardBadgeVariants.base} ${dashboardBadgeVariants.overview}`}
+          >
+            {totalMedicines.toLocaleString()} Medicines
+          </span>
 
-      <h2 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
-        Medicine Inventory
-      </h2>
-
-      <p className="mt-1 text-sm text-text-muted">
-        Manage medicine stocks and monitor inventory availability.
-      </p>
-    </div>
-
-  </div>
-
-  <div className="flex flex-wrap gap-2">
-
-    <span
-      className={`${dashboardBadgeVariants.base} ${dashboardBadgeVariants.overview}`}
-    >
-      {totalMedicines.toLocaleString()} Medicines
-    </span>
-
-    {lowStockCount > 0 && (
-      <span
-        className={`${statusPillVariants.base} ${statusPillVariants.watch}`}
-      >
-        {lowStockCount} Low Stock
-      </span>
-    )}
-
-  </div>
-
-</div>
+          {lowStockCount > 0 && (
+            <span
+              className={`${statusPillVariants.base} ${statusPillVariants.watch}`}
+            >
+              {lowStockCount} Low Stock
+            </span>
+          )}
+        </div>
+      </header>
 
       {/* =========================
           INVENTORY METRICS
@@ -793,8 +785,8 @@ function PharmacyInventory() {
           }
         />
       )}
-
-    </section>
+    </div>
+    </div>
   );
 }
 

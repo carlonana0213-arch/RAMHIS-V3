@@ -364,39 +364,36 @@ function PharmacyQueue() {
     );
   };
 
-  return (
-    <section className="space-y-5">
+return (
+  <div className="min-h-full w-full px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+    <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-5">
 
-{/* HEADER */}
-<div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      {/* HEADER */}
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3">
+          <div className="mt-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+            <Package size={21} />
+          </div>
 
-  <div className="flex items-start gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+              Medicine Distribution
+            </p>
 
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-      <Package size={22} />
-    </div>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+              Pharmacy Queue
+            </h1>
 
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-        Medicine Distribution
-      </p>
+            <p className="mt-1 text-sm text-text-muted">
+              Manage prescription fulfillment and medicine distribution.
+            </p>
+          </div>
+        </div>
 
-      <h2 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
-        Pharmacy Queue
-      </h2>
-
-      <p className="mt-1 text-sm text-text-muted">
-        Manage prescription fulfillment and medicine distribution.
-      </p>
-    </div>
-
-  </div>
-
-  <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
-    {pendingCount.toLocaleString()} Pending
-  </div>
-
-</div>
+        <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+          {pendingCount.toLocaleString()} Pending
+        </div>
+      </header>
 
       {/* STAT CARDS */}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -920,7 +917,8 @@ function PharmacyQueue() {
         />
       )}
 
-    </section>
+    </div>
+  </div>
   );
 }
 

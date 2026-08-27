@@ -334,25 +334,19 @@ const EventManagement = () => {
     }
   };
 
-  return (
-    <main className="min-h-full bg-slate-50 px-4 py-5 sm:px-6 lg:px-8">
+return (
+<main className="min-h-full w-full bg-slate-50 px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
 
-      <div className="mx-auto max-w-[1600px] space-y-5">
+<div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
 
-        {/* ======================================================
-    PAGE HEADER
-====================================================== */}
-
-<div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-
-  <div className="flex items-start gap-4">
-
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-      <FaCalendarAlt size={22} />
+{/* PAGE HEADER */}
+<div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+  <div className="flex items-center gap-3">
+    <div className="mt-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+      <FaCalendarAlt size={21} />
     </div>
 
     <div>
-
       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
         Mission Management
       </p>
@@ -364,9 +358,7 @@ const EventManagement = () => {
       <p className="mt-1 text-sm text-text-muted">
         Create, manage, and monitor community health missions.
       </p>
-
     </div>
-
   </div>
 
   <button
@@ -377,7 +369,6 @@ const EventManagement = () => {
     <FaPlus size={14} />
     Create New Event
   </button>
-
 </div>
 
         {/* ======================================================

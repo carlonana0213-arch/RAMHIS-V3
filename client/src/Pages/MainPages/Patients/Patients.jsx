@@ -302,16 +302,16 @@ useEffect(() => {
   */
 
   return (
-    <main className="min-h-full bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1600px]">
+<main className="min-h-full w-full bg-slate-50 px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+<div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
 
-        {/* HEADER */}
-<div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    {/* HEADER */}
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 
-  <div className="flex items-start gap-4">
+  <div className="flex items-start gap-3">
 
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-      <Users size={22} />
+    <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+      <Users size={21} />
     </div>
 
     <div>

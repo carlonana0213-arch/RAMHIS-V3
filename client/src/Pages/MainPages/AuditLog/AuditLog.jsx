@@ -156,14 +156,15 @@ function AuditLog() {
   return (
     <div className="min-h-screen w-full bg-slate-50 p-5 sm:p-6 lg:p-8">
       <div className="mx-auto w-full max-w-[1700px]">
-        {/* =====================================================
+
+{/* =====================================================
     PAGE HEADER
 ====================================================== */}
 
-<div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-  <div className="flex items-start gap-4">
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-      <FaClipboardList size={22} />
+<div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+  <div className="flex items-start gap-3">
+    <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+      <FaClipboardList size={21} />
     </div>
 
     <div>
@@ -188,7 +189,6 @@ function AuditLog() {
     </div>
   </div>
 </div>
-
         {/* =====================================================
             SEARCH & FILTERS
         ====================================================== */}
