@@ -1,10 +1,5 @@
-import {
-  BrowserRouter,
-  Navigate,
-  Route,
-  Routes,
-} from "react-router-dom";
-
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import OnlineOnly from "../Components/common/OnlineOnly";
 import ProtectedRoute from "./ProtectedRoute";
 
 import MainLayout from "../Components/layout/MainLayout";
@@ -29,38 +24,23 @@ export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* ==========================================================
             PUBLIC ROUTES
         =========================================================== */}
 
-        <Route
-          path="/"
-          element={<Home />}
-        />
+        <Route path="/" element={<Home />} />
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+        <Route path="/login" element={<Login />} />
 
-        <Route
-          path="/organization"
-          element={<Organization />}
-        />
+        <Route path="/organization" element={<Organization />} />
 
-        <Route
-          path="/ramhis"
-          element={<AboutSystem />}
-        />
-
+        <Route path="/ramhis" element={<AboutSystem />} />
 
         {/* ==========================================================
             PROTECTED APPLICATION
         =========================================================== */}
 
         <Route element={<ProtectedRoute />}>
-
           {/* ========================================================
               MAIN LAYOUT
 
@@ -71,16 +51,18 @@ export default function AppRoutes() {
           ========================================================= */}
 
           <Route element={<MainLayout />}>
-
             {/* ======================================================
                 DASHBOARD
             ====================================================== */}
 
             <Route
               path="/dashboard"
-              element={<Dashboard />}
+              element={
+                <OnlineOnly>
+                  <Dashboard />
+                </OnlineOnly>
+              }
             />
-
 
             {/* ======================================================
                 ANALYTICS
@@ -88,29 +70,24 @@ export default function AppRoutes() {
 
             <Route
               path="/analytics"
-              element={<Analytics />}
+              element={
+                <OnlineOnly>
+                  <Analytics />
+                </OnlineOnly>
+              }
             />
-
 
             {/* ======================================================
                 PATIENTS
             ====================================================== */}
 
-            <Route
-              path="/patient"
-              element={<Patients />}
-            />
-
+            <Route path="/patient" element={<Patients />} />
 
             {/* ======================================================
                 DOCTOR
             ====================================================== */}
 
-            <Route
-              path="/doctor"
-              element={<Doctor />}
-            />
-
+            <Route path="/doctor" element={<Doctor />} />
 
             {/* ======================================================
                 EVENTS
@@ -118,9 +95,12 @@ export default function AppRoutes() {
 
             <Route
               path="/event"
-              element={<Events />}
+              element={
+                <OnlineOnly>
+                  <Events />
+                </OnlineOnly>
+              }
             />
-
 
             {/* ======================================================
                 PHARMACY
@@ -133,14 +113,21 @@ export default function AppRoutes() {
 
             <Route
               path="/pharmacy/queue"
-              element={<PharmacyQueue />}
+              element={
+                <OnlineOnly>
+                  <PharmacyQueue />
+                </OnlineOnly>
+              }
             />
 
             <Route
               path="/pharmacy/inventory"
-              element={<PharmacyInventory />}
+              element={
+                <OnlineOnly>
+                  <PharmacyInventory />
+                </OnlineOnly>
+              }
             />
-
 
             {/* ======================================================
                 ACCOUNT
@@ -148,39 +135,40 @@ export default function AppRoutes() {
 
             <Route
               path="/account"
-              element={<Account />}
+              element={
+                <OnlineOnly>
+                  <Account />
+                </OnlineOnly>
+              }
             />
-
           </Route>
-
         </Route>
-
 
         {/* ==========================================================
             ADMIN ONLY
         =========================================================== */}
 
-        <Route
-          element={
-            <ProtectedRoute allowedRoles={["Admin"]} />
-          }
-        >
-
+        <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
           <Route element={<MainLayout />}>
-
             <Route
               path="/users"
-              element={<UserManagement />}
+              element={
+                <OnlineOnly>
+                  <UserManagement />
+                </OnlineOnly>
+              }
             />
 
             <Route
               path="/audit-log"
-              element={<AuditLog />}
+              element={
+                <OnlineOnly>
+                  <AuditLog />
+                </OnlineOnly>
+              }
             />
-
           </Route>
         </Route>
-
 
         {/* ==========================================================
             UNAUTHORIZED
@@ -195,7 +183,6 @@ export default function AppRoutes() {
           }
         />
 
-
         {/* ==========================================================
             FALLBACK
         =========================================================== */}
@@ -208,7 +195,6 @@ export default function AppRoutes() {
             </div>
           }
         />
-
       </Routes>
     </BrowserRouter>
   );

@@ -1,6 +1,6 @@
 import { apiFetch } from "./api";
 import { API_BASE_URL } from "./apiConfig";
-
+import { cachePatients, getCachedPatients } from "./offlineRepository";
 const API = `${API_BASE_URL}/api/patients`;
 
 /*
@@ -12,9 +12,7 @@ const API = `${API_BASE_URL}/api/patients`;
 export const getPatients = async () => {
   const data = await apiFetch(API);
 
-  return Array.isArray(data)
-    ? data
-    : data?.patients || data?.data || [];
+  return Array.isArray(data) ? data : data?.patients || data?.data || [];
 };
 
 export const addPatient = (data) =>
@@ -34,8 +32,7 @@ export const deletePatient = (id) =>
     method: "DELETE",
   });
 
-export const getPatientById = (id) =>
-  apiFetch(`${API}/${id}`);
+export const getPatientById = (id) => apiFetch(`${API}/${id}`);
 
 /*
 |--------------------------------------------------------------------------
@@ -43,10 +40,7 @@ export const getPatientById = (id) =>
 |--------------------------------------------------------------------------
 */
 
-export const searchPatients = async (
-  name = "",
-  birthdate = ""
-) => {
+export const searchPatients = async (name = "", birthdate = "") => {
   const params = new URLSearchParams();
 
   if (name?.trim()) {
@@ -59,13 +53,9 @@ export const searchPatients = async (
 
   const query = params.toString();
 
-  const data = await apiFetch(
-    `${API}/search${query ? `?${query}` : ""}`
-  );
+  const data = await apiFetch(`${API}/search${query ? `?${query}` : ""}`);
 
-  return Array.isArray(data)
-    ? data
-    : data?.patients || data?.data || [];
+  return Array.isArray(data) ? data : data?.patients || data?.data || [];
 };
 
 /*
@@ -91,103 +81,95 @@ export const getPatientQueue = async ({
   department = "All",
   all = false,
 } = {}) => {
-  const params = new URLSearchParams();
+  try {
+    const params = new URLSearchParams();
 
-  params.append("page", page);
-  params.append("limit", limit);
+    params.append("page", page);
+    params.append("limit", limit);
 
-  if (search?.trim()) {
-    params.append("search", search.trim());
-  }
+    if (search?.trim()) {
+      params.append("search", search.trim());
+    }
 
-  if (
-    department &&
-    department !== "All"
-  ) {
-    params.append(
-      "department",
-      department
-    );
-  }
+    if (department && department !== "All") {
+      params.append("department", department);
+    }
 
-  if (all) {
-    params.append("all", "true");
-  }
+    if (all) {
+      params.append("all", "true");
+    }
 
-  const data = await apiFetch(
-    `${API}/queue?${params.toString()}`
-  );
+    const data = await apiFetch(`${API}/queue?${params.toString()}`);
 
-  /*
-   * Backend normally returns:
-   *
-   * {
-   *   patients: [],
-   *   total,
-   *   totalPages,
-   *   currentPage
-   * }
-   *
-   * But this fallback keeps compatibility
-   * with the older array response.
-   */
+    const patients = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.patients)
+        ? data.patients
+        : [];
 
-  if (Array.isArray(data)) {
+    await cachePatients(patients);
+
     return {
-      patients: data,
-      total: data.length,
-      totalPages: 1,
-      currentPage: 1,
+      patients,
+      total: Number(data?.total) || patients.length,
+      totalPages: Number(data?.totalPages) || 1,
+      currentPage: Number(data?.currentPage) || page,
+    };
+  } catch (error) {
+    console.warn("Using cached patient queue:", error.message);
+
+    let patients = await getCachedPatients();
+
+    if (search?.trim()) {
+      const query = search.trim().toLowerCase();
+
+      patients = patients.filter((patient) =>
+        `${patient.firstName || ""} ${patient.lastName || ""}`
+          .toLowerCase()
+          .includes(query),
+      );
+    }
+
+    if (department && department !== "All") {
+      patients = patients.filter(
+        (patient) => patient.department === department,
+      );
+    }
+
+    const start = (page - 1) * limit;
+    const pagePatients = patients.slice(start, start + limit);
+
+    return {
+      patients: pagePatients,
+      total: patients.length,
+      totalPages: Math.max(1, Math.ceil(patients.length / limit)),
+      currentPage: page,
     };
   }
-
-  return {
-    patients: Array.isArray(data?.patients)
-      ? data.patients
-      : [],
-
-    total: Number(data?.total) || 0,
-
-    totalPages:
-      Number(data?.totalPages) || 1,
-
-    currentPage:
-      Number(data?.currentPage) || page,
-  };
 };
-
 /*
 |--------------------------------------------------------------------------
 | QUEUE SUMMARY
 |--------------------------------------------------------------------------
 */
 
-export const getPatientQueueSummary =
-  async () => {
-    const data = await apiFetch(
-      `${API}/queue-summary`
-    );
+export const getPatientQueueSummary = async () => {
+  const data = await apiFetch(`${API}/queue-summary`);
 
-    return {
-      Pediatrics:
-        Number(data?.Pediatrics) || 0,
+  return {
+    Pediatrics: Number(data?.Pediatrics) || 0,
 
-      Ortho:
-        Number(data?.Ortho) || 0,
+    Ortho: Number(data?.Ortho) || 0,
 
-      Opta:
-        Number(data?.Opta) || 0,
+    Opta: Number(data?.Opta) || 0,
 
-      Dental:
-        Number(data?.Dental) || 0,
+    Dental: Number(data?.Dental) || 0,
 
-      Cardio:
-        Number(data?.Cardio) || 0,
+    Cardio: Number(data?.Cardio) || 0,
 
-      General:
-        Number(data?.General) || 0,
-    };
+    General: Number(data?.General) || 0,
   };
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -195,13 +177,8 @@ export const getPatientQueueSummary =
 |--------------------------------------------------------------------------
 */
 
-export const syncOfflineQueue =
-  async () => {
-    const data = await apiFetch(
-      `${API}/queue-sync`
-    );
+export const syncOfflineQueue = async () => {
+  const data = await apiFetch(`${API}/queue-sync`);
 
-    return Array.isArray(data)
-      ? data
-      : data?.patients || [];
-  };
+  return Array.isArray(data) ? data : data?.patients || [];
+};
