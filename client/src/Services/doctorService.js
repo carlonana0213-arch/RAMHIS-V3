@@ -1,6 +1,6 @@
 import { apiFetch } from "./api";
 import { API_BASE_URL } from "./apiConfig";
-import { cachePatients, getCachedPatients } from "./offlineRepository";
+import { cacheDoctorQueue, getCachedDoctorQueue } from "./offlineRepository";
 const API = `${API_BASE_URL}/api`;
 
 /**
@@ -39,7 +39,7 @@ export const getDoctorQueue = async ({
       ? response
       : response?.patients || [];
 
-    await cachePatients(patients);
+    await cacheDoctorQueue(patients);
 
     return {
       ...response,
@@ -48,8 +48,7 @@ export const getDoctorQueue = async ({
   } catch (error) {
     console.warn("Using cached doctor queue:", error.message);
 
-    let patients = await getCachedPatients();
-
+    let patients = await getCachedDoctorQueue();
     if (department && department !== "all") {
       patients = patients.filter(
         (patient) => patient.department === department,

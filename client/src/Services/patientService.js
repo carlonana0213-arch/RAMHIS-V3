@@ -1,6 +1,6 @@
 import { apiFetch } from "./api";
 import { API_BASE_URL } from "./apiConfig";
-import { cachePatients, getCachedPatients } from "./offlineRepository";
+import { cachePatientQueue, getCachedPatientQueue } from "./offlineRepository";
 const API = `${API_BASE_URL}/api/patients`;
 import { cachePatientQueue, getCachedPatientQueue } from "./offlineRepository";
 /*
