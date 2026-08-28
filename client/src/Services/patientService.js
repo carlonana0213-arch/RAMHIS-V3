@@ -5,6 +5,9 @@ import {
   getCachedPatientQueue,
   matchesPatientSearch,
   summarizePatients,
+  saveOfflinePatient,
+  queueOfflineOperation,
+  searchCachedPatients,
 } from "./offlineRepository";
 
 const API = `${API_BASE_URL}/api/patients`;
@@ -28,11 +31,63 @@ export const getPatients = async () => {
   return Array.isArray(data) ? data : data?.patients || data?.data || [];
 };
 
-export const addPatient = (data) =>
-  apiFetch(API, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+export const addPatient = async (data) => {
+  try {
+    return await apiFetch(API, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    const isNetworkError =
+      error instanceof TypeError ||
+      error?.message === "Failed to fetch" ||
+      error?.message?.toLowerCase().includes("networkerror");
+
+    if (!isNetworkError) {
+      throw error;
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * OFFLINE CREATE
+     * ---------------------------------------------------------
+     */
+
+    const offlineId = `offline-${crypto.randomUUID()}`;
+
+    const offlinePatient = {
+      ...data,
+
+      _id: offlineId,
+
+      // Keep track of the fact that this record has not
+      // reached MongoDB yet.
+      _offline: true,
+
+      _syncStatus: "pending",
+
+      createdAt: new Date().toISOString(),
+
+      updatedAt: new Date().toISOString(),
+    };
+
+    await saveOfflinePatient(offlinePatient);
+
+    await queueOfflineOperation({
+      entityType: "patient",
+      entityKey: offlineId,
+      method: "POST",
+      url: API,
+      payload: data,
+    });
+
+    console.info(
+      "[Offline] Patient saved locally and queued for synchronization.",
+    );
+
+    return offlinePatient;
+  }
+};
 
 export const updatePatient = (id, data) =>
   apiFetch(`${API}/${id}`, {
@@ -54,21 +109,36 @@ export const getPatientById = (id) => apiFetch(`${API}/${id}`);
 */
 
 export const searchPatients = async (name = "", birthdate = "") => {
-  const params = new URLSearchParams();
+  try {
+    const params = new URLSearchParams();
 
-  if (name?.trim()) {
-    params.append("name", name.trim());
+    if (name?.trim()) {
+      params.append("name", name.trim());
+    }
+
+    if (birthdate) {
+      params.append("birthdate", birthdate);
+    }
+
+    const query = params.toString();
+
+    const data = await apiFetch(`${API}/search${query ? `?${query}` : ""}`);
+
+    return Array.isArray(data) ? data : data?.patients || data?.data || [];
+  } catch (error) {
+    const isNetworkError =
+      error instanceof TypeError ||
+      error?.message === "Failed to fetch" ||
+      error?.message?.toLowerCase().includes("networkerror");
+
+    if (!isNetworkError) {
+      throw error;
+    }
+
+    console.info("[Offline] Searching cached patients for duplicate check.");
+
+    return searchCachedPatients(name, birthdate);
   }
-
-  if (birthdate) {
-    params.append("birthdate", birthdate);
-  }
-
-  const query = params.toString();
-
-  const data = await apiFetch(`${API}/search${query ? `?${query}` : ""}`);
-
-  return Array.isArray(data) ? data : data?.patients || data?.data || [];
 };
 
 /*

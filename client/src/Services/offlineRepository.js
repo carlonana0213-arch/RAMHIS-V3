@@ -119,3 +119,148 @@ export async function getOfflineMeta(name) {
 
   return db.offlineMeta.get(`${ownerKey}:meta:${name}`);
 }
+
+export async function saveOfflinePatient(patient) {
+  const ownerKey = getOwnerKey();
+
+  if (!patient?._id) {
+    throw new Error("Offline patient requires an ID.");
+  }
+
+  await db.offlinePatients.put({
+    ...patient,
+    key: patientKey(ownerKey, patient._id),
+    ownerKey,
+    serverId: patient._id,
+    updatedAt: new Date().toISOString(),
+  });
+
+  return patient;
+}
+
+export async function queueOfflineOperation({
+  entityType,
+  entityKey,
+  method,
+  url,
+  payload,
+}) {
+  const ownerKey = getOwnerKey();
+
+  const operationId = crypto.randomUUID();
+
+  await db.offlineOutbox.put({
+    operationId,
+    ownerKey,
+    entityType,
+    entityKey,
+    method,
+    url,
+    payload,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    attempts: 0,
+  });
+
+  return operationId;
+}
+
+export async function getPendingOfflineOperations() {
+  const ownerKey = getOwnerKey();
+
+  return db.offlineOutbox
+    .where("ownerKey")
+    .equals(ownerKey)
+    .and((operation) => operation.status === "pending")
+    .sortBy("createdAt");
+}
+
+export async function updateOfflineOperation(operationId, changes) {
+  await db.offlineOutbox.update(operationId, {
+    ...changes,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function removeOfflineOperation(operationId) {
+  await db.offlineOutbox.delete(operationId);
+}
+
+export const addPatient = async (data) => {
+  try {
+    return await apiFetch(API, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    const isNetworkError =
+      error instanceof TypeError ||
+      error?.message === "Failed to fetch" ||
+      error?.message?.toLowerCase().includes("networkerror");
+
+    if (!isNetworkError) {
+      throw error;
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * OFFLINE CREATE
+     * ---------------------------------------------------------
+     */
+
+    const offlineId = `offline-${crypto.randomUUID()}`;
+
+    const offlinePatient = {
+      ...data,
+
+      _id: offlineId,
+
+      // Keep track of the fact that this record has not
+      // reached MongoDB yet.
+      _offline: true,
+
+      _syncStatus: "pending",
+
+      createdAt: new Date().toISOString(),
+
+      updatedAt: new Date().toISOString(),
+    };
+
+    await saveOfflinePatient(offlinePatient);
+
+    await queueOfflineOperation({
+      entityType: "patient",
+      entityKey: offlineId,
+      method: "POST",
+      url: API,
+      payload: data,
+    });
+
+    console.info(
+      "[Offline] Patient saved locally and queued for synchronization.",
+    );
+
+    return offlinePatient;
+  }
+};
+
+export async function searchCachedPatients(name = "", birthdate = "") {
+  const patients = await getCachedPatientQueue();
+
+  const normalizedName = name.trim().toLowerCase();
+
+  return patients.filter((patient) => {
+    const patientName = getPatientName(patient);
+
+    const patientBirthdate = patient?.generalInfo?.birthdate || "";
+
+    const nameMatches = !normalizedName || patientName.includes(normalizedName);
+
+    const birthdateMatches =
+      !birthdate ||
+      String(patientBirthdate).slice(0, 10) === String(birthdate).slice(0, 10);
+
+    return nameMatches && birthdateMatches;
+  });
+}
