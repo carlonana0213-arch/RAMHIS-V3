@@ -40,6 +40,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff2}"],
         globIgnores: ["**/mockup-*.png", "**/rambn-*.png"],
+
+        clientsClaim: true,
+
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
       },

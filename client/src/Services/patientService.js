@@ -8,6 +8,14 @@ import {
 } from "./offlineRepository";
 
 const API = `${API_BASE_URL}/api/patients`;
+
+const isNetworkError = (error) => {
+  return (
+    error instanceof TypeError ||
+    error?.message === "Failed to fetch" ||
+    error?.message?.toLowerCase().includes("networkerror")
+  );
+};
 /*
 |--------------------------------------------------------------------------
 | PATIENT REGISTRY
@@ -121,8 +129,12 @@ export const getPatientQueue = async ({
       currentPage: Number(data?.currentPage) || page,
     };
   } catch (error) {
-    // Do not expose cached data after an authentication/authorization failure.
-    if (navigator.onLine) {
+    // If the request failed because the network is unavailable,
+    // fall back to IndexedDB even if navigator.onLine is still true.
+    //
+    // navigator.onLine is only a hint and can remain true when
+    // an actual fetch() request fails.
+    if (!isNetworkError(error) && navigator.onLine) {
       throw error;
     }
 
@@ -196,7 +208,7 @@ export const getPatientQueueSummary = async () => {
       General: Number(data?.General) || 0,
     };
   } catch (error) {
-    if (navigator.onLine) {
+    if (!isNetworkError(error) && navigator.onLine) {
       throw error;
     }
 
