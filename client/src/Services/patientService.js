@@ -149,6 +149,34 @@ export const getPatientQueue = async ({
     };
   }
 };
+
+/*
+|--------------------------------------------------------------------------
+| QUEUE SUMMARY OFFLINE
+|--------------------------------------------------------------------------
+*/
+export const cachePatientQueueForOffline = async () => {
+  if (!navigator.onLine) {
+    return 0;
+  }
+
+  const data = await apiFetch(`${API}/queue?all=true`);
+
+  const patients = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.patients)
+      ? data.patients
+      : [];
+
+  await cachePatientQueue(patients);
+
+  console.info(
+    `[Offline] Cached ${patients.length} patient record(s) for offline use.`,
+  );
+
+  return patients.length;
+};
+
 /*
 |--------------------------------------------------------------------------
 | QUEUE SUMMARY

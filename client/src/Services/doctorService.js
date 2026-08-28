@@ -42,9 +42,19 @@ export const getDoctorQueue = async ({
 
     const patients = Array.isArray(response)
       ? response
-      : response?.patients || [];
+      : Array.isArray(response?.patients)
+        ? response.patients
+        : Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.data?.patients)
+            ? response.data.patients
+            : [];
 
     await cacheDoctorQueue(patients);
+
+    console.info(
+      `[Offline] Cached ${patients.length} doctor queue record(s) for offline use.`,
+    );
 
     return {
       ...(Array.isArray(response) ? {} : response),

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Users } from "lucide-react";
 
 import {
+  cachePatientQueueForOffline,
   getPatientQueue,
   getPatientQueueSummary,
 } from "../../../Services/patientService";
@@ -72,6 +73,14 @@ export default function Patients() {
 */
 
   const fetchCurrentMission = useCallback(async () => {
+    if (!navigator.onLine) {
+      const cachedMission = await getOfflineMeta("currentMission");
+
+      setOngoingEvent(cachedMission?.value || null);
+
+      return;
+    }
+
     try {
       const result = await getCurrentMission();
 
@@ -136,6 +145,13 @@ export default function Patients() {
     [currentPage, search, departmentFilter],
   );
 
+  useEffect(() => {
+    if (!navigator.onLine) return;
+
+    cachePatientQueueForOffline().catch((error) => {
+      console.error("Failed to prepare Patient data for offline use:", error);
+    });
+  }, []);
   /*
   |--------------------------------------------------------------------------
   | LOAD DEPARTMENT SUMMARY
