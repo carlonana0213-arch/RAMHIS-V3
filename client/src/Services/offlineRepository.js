@@ -1,8 +1,7 @@
 import db from "./localDB";
 
-function getOwnerKey() {
+export function getOwnerKey() {
   const user = JSON.parse(localStorage.getItem("user") || "null");
-
   const userId = user?._id || user?.id;
 
   if (!userId) {
@@ -14,6 +13,45 @@ function getOwnerKey() {
 
 function patientKey(ownerKey, serverId) {
   return `${ownerKey}:patient:${serverId}`;
+}
+
+export function getPatientName(patient) {
+  const generalInfo = patient?.generalInfo || {};
+
+  return String(
+    generalInfo.name ||
+      [generalInfo.firstName, generalInfo.middleName, generalInfo.lastName]
+        .filter(Boolean)
+        .join(" ") ||
+      [patient?.firstName, patient?.lastName].filter(Boolean).join(" "),
+  )
+    .trim()
+    .toLowerCase();
+}
+
+export function matchesPatientSearch(patient, search) {
+  if (!search?.trim()) return true;
+
+  return getPatientName(patient).includes(search.trim().toLowerCase());
+}
+
+export function summarizePatients(patients) {
+  const summary = {
+    Pediatrics: 0,
+    Ortho: 0,
+    Opta: 0,
+    Dental: 0,
+    Cardio: 0,
+    General: 0,
+  };
+
+  for (const patient of patients) {
+    if (summary[patient.department] !== undefined) {
+      summary[patient.department] += 1;
+    }
+  }
+
+  return summary;
 }
 
 export async function cachePatientQueue(patients) {
@@ -62,4 +100,22 @@ export async function getCachedDoctorQueue() {
   const ownerKey = getOwnerKey();
 
   return db.offlineDoctorQueue.where("ownerKey").equals(ownerKey).toArray();
+}
+
+export async function setOfflineMeta(name, value) {
+  const ownerKey = getOwnerKey();
+
+  await db.offlineMeta.put({
+    key: `${ownerKey}:meta:${name}`,
+    ownerKey,
+    name,
+    value,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function getOfflineMeta(name) {
+  const ownerKey = getOwnerKey();
+
+  return db.offlineMeta.get(`${ownerKey}:meta:${name}`);
 }

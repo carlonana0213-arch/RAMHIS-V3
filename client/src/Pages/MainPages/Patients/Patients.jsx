@@ -14,7 +14,10 @@ import PatientDashboard from "./components/PatientDashboard";
 import AddPatientModal from "./components/AddPatientModal";
 import PatientViewModal from "./components/PatientViewModal";
 
-import db from "../../../Services/localDB";
+import {
+  getOfflineMeta,
+  setOfflineMeta,
+} from "../../../Services/offlineRepository";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -82,15 +85,12 @@ export default function Patients() {
       setOngoingEvent(mission);
 
       if (mission) {
-        await db.appMeta.put({
-          key: "currentMission",
-          value: mission,
-        });
+        await setOfflineMeta("currentMission", mission);
       }
     } catch (error) {
       console.error("Failed to load current mission:", error);
 
-      const cachedMission = await db.appMeta.get("currentMission");
+      const cachedMission = await getOfflineMeta("currentMission");
 
       setOngoingEvent(cachedMission?.value || null);
     }
@@ -193,6 +193,7 @@ export default function Patients() {
    */
   useEffect(() => {
     const interval = setInterval(() => {
+      if (!navigator.onLine) return;
       fetchCurrentMission();
       fetchQueue(true);
       fetchQueueSummary(true);

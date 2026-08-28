@@ -1,8 +1,13 @@
 import { apiFetch } from "./api";
 import { API_BASE_URL } from "./apiConfig";
-import { cachePatientQueue, getCachedPatientQueue } from "./offlineRepository";
+import {
+  cachePatientQueue,
+  getCachedPatientQueue,
+  matchesPatientSearch,
+  summarizePatients,
+} from "./offlineRepository";
+
 const API = `${API_BASE_URL}/api/patients`;
-import { cachePatientQueue, getCachedPatientQueue } from "./offlineRepository";
 /*
 |--------------------------------------------------------------------------
 | PATIENT REGISTRY
@@ -82,21 +87,21 @@ export const getPatientQueue = async ({
   all = false,
 } = {}) => {
   try {
-    const params = new URLSearchParams();
-
-    params.append("page", page);
-    params.append("limit", limit);
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
 
     if (search?.trim()) {
-      params.append("search", search.trim());
+      params.set("search", search.trim());
     }
 
     if (department && department !== "All") {
-      params.append("department", department);
+      params.set("department", department);
     }
 
     if (all) {
-      params.append("all", "true");
+      params.set("all", "true");
     }
 
     const data = await apiFetch(`${API}/queue?${params.toString()}`);
@@ -116,19 +121,16 @@ export const getPatientQueue = async ({
       currentPage: Number(data?.currentPage) || page,
     };
   } catch (error) {
-    console.warn("Using cached patient queue:", error.message);
+    // Do not expose cached data after an authentication/authorization failure.
+    if (navigator.onLine) {
+      throw error;
+    }
 
     let patients = await getCachedPatientQueue();
 
-    if (search?.trim()) {
-      const query = search.trim().toLowerCase();
-
-      patients = patients.filter((patient) =>
-        `${patient.firstName || ""} ${patient.lastName || ""}`
-          .toLowerCase()
-          .includes(query),
-      );
-    }
+    patients = patients.filter((patient) =>
+      matchesPatientSearch(patient, search),
+    );
 
     if (department && department !== "All") {
       patients = patients.filter(
@@ -154,21 +156,26 @@ export const getPatientQueue = async ({
 */
 
 export const getPatientQueueSummary = async () => {
-  const data = await apiFetch(`${API}/queue-summary`);
+  try {
+    const data = await apiFetch(`${API}/queue-summary`);
 
-  return {
-    Pediatrics: Number(data?.Pediatrics) || 0,
+    return {
+      Pediatrics: Number(data?.Pediatrics) || 0,
+      Ortho: Number(data?.Ortho) || 0,
+      Opta: Number(data?.Opta) || 0,
+      Dental: Number(data?.Dental) || 0,
+      Cardio: Number(data?.Cardio) || 0,
+      General: Number(data?.General) || 0,
+    };
+  } catch (error) {
+    if (navigator.onLine) {
+      throw error;
+    }
 
-    Ortho: Number(data?.Ortho) || 0,
+    const patients = await getCachedPatientQueue();
 
-    Opta: Number(data?.Opta) || 0,
-
-    Dental: Number(data?.Dental) || 0,
-
-    Cardio: Number(data?.Cardio) || 0,
-
-    General: Number(data?.General) || 0,
-  };
+    return summarizePatients(patients);
+  }
 };
 
 /*

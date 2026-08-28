@@ -1,6 +1,11 @@
 import { apiFetch } from "./api";
 import { API_BASE_URL } from "./apiConfig";
-import { cacheDoctorQueue, getCachedDoctorQueue } from "./offlineRepository";
+import {
+  cacheDoctorQueue,
+  getCachedDoctorQueue,
+  matchesPatientSearch,
+} from "./offlineRepository";
+
 const API = `${API_BASE_URL}/api`;
 
 /**
@@ -42,27 +47,29 @@ export const getDoctorQueue = async ({
     await cacheDoctorQueue(patients);
 
     return {
-      ...response,
+      ...(Array.isArray(response) ? {} : response),
       patients,
     };
   } catch (error) {
-    console.warn("Using cached doctor queue:", error.message);
+    if (navigator.onLine) {
+      throw error;
+    }
 
     let patients = await getCachedDoctorQueue();
+
     if (department && department !== "all") {
       patients = patients.filter(
         (patient) => patient.department === department,
       );
     }
 
-    if (search?.trim()) {
-      const query = search.trim().toLowerCase();
+    patients = patients.filter((patient) =>
+      matchesPatientSearch(patient, search),
+    );
 
-      patients = patients.filter((patient) =>
-        `${patient.firstName || ""} ${patient.lastName || ""}`
-          .toLowerCase()
-          .includes(query),
-      );
+    // DoctorQueue currently exposes only “All” and “Priority”.
+    if (queueFilter === "priority") {
+      patients = patients.filter((patient) => patient.isPriority);
     }
 
     return {
