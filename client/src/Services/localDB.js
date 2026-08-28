@@ -28,4 +28,22 @@ db.version(3).stores({
   appMeta: "key",
 });
 
+db.version(4).stores({
+  patients: "_id, status, department",
+  doctorRecords: "++id, patientId",
+  prescriptions: "++id, patient",
+  syncQueue: "++id, type",
+  pharmacyQueue: "_id, patientId",
+  medicines: "_id",
+  appMeta: "key",
+
+  offlinePatients: "key, ownerKey, serverId, department, status, updatedAt",
+  offlineDoctorQueue: "key, ownerKey, serverId, department, status, updatedAt",
+  offlineDoctorRecords: "key, ownerKey, patientId, serverId, updatedAt",
+  offlinePrescriptions: "key, ownerKey, patientId, serverId, updatedAt",
+  offlineOutbox:
+    "operationId, ownerKey, entityType, entityKey, status, createdAt",
+  offlineMeta: "key, ownerKey, updatedAt",
+});
+
 export default db;

@@ -2,7 +2,7 @@ import { apiFetch } from "./api";
 import { API_BASE_URL } from "./apiConfig";
 import { cachePatients, getCachedPatients } from "./offlineRepository";
 const API = `${API_BASE_URL}/api/patients`;
-
+import { cachePatientQueue, getCachedPatientQueue } from "./offlineRepository";
 /*
 |--------------------------------------------------------------------------
 | PATIENT REGISTRY
@@ -107,7 +107,7 @@ export const getPatientQueue = async ({
         ? data.patients
         : [];
 
-    await cachePatients(patients);
+    await cachePatientQueue(patients);
 
     return {
       patients,
@@ -118,7 +118,7 @@ export const getPatientQueue = async ({
   } catch (error) {
     console.warn("Using cached patient queue:", error.message);
 
-    let patients = await getCachedPatients();
+    let patients = await getCachedPatientQueue();
 
     if (search?.trim()) {
       const query = search.trim().toLowerCase();
