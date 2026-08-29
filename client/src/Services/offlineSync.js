@@ -97,6 +97,10 @@ async function handleSuccessfulOperation(operation, response) {
     await handlePatientOperation(operation, response);
   }
 
+  if (operation.entityType === "prescription") {
+    await handlePrescriptionOperation(operation, response);
+  }
+
   await db.offlineOutbox.delete(operation.operationId);
 
   console.info(
@@ -197,4 +201,56 @@ async function handlePatientOperation(operation, response) {
       updatedAt: new Date().toISOString(),
     });
   }
+}
+
+async function handlePrescriptionOperation(operation, response) {
+  const ownerKey = getOwnerKey();
+
+  if (operation.method !== "POST") {
+    return;
+  }
+
+  const serverPrescription = response;
+
+  if (!serverPrescription?._id) {
+    throw new Error(
+      "Prescription sync succeeded but the server returned no prescription ID.",
+    );
+  }
+
+  const oldKey = `${ownerKey}:prescription:${operation.entityKey}`;
+
+  const newKey = `${ownerKey}:prescription:${serverPrescription._id}`;
+
+  const patientId =
+    serverPrescription.patientId ||
+    serverPrescription.patient?._id ||
+    operation.payload?.patientId ||
+    operation.payload?.patient;
+
+  await db.transaction("rw", db.offlinePrescriptions, async () => {
+    // Find the temporary offline prescription.
+    const existing = await db.offlinePrescriptions.get(oldKey);
+
+    // Remove the temporary offline record.
+    await db.offlinePrescriptions.delete(oldKey);
+
+    // Save the server version using the real MongoDB ID.
+    await db.offlinePrescriptions.put({
+      ...(existing || {}),
+      ...serverPrescription,
+
+      key: newKey,
+      ownerKey,
+
+      patientId,
+
+      serverId: serverPrescription._id,
+
+      _offline: false,
+      _syncStatus: "synced",
+
+      updatedAt: new Date().toISOString(),
+    });
+  });
 }
