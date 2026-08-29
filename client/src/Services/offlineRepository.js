@@ -206,3 +206,51 @@ export async function searchCachedPatients(name = "", birthdate = "") {
     return nameMatches && birthdateMatches;
   });
 }
+
+export async function cacheOfflinePrescriptions(patientId, prescriptions) {
+  const ownerKey = getOwnerKey();
+
+  if (!patientId) {
+    throw new Error("Patient ID is required.");
+  }
+
+  if (!Array.isArray(prescriptions)) {
+    return;
+  }
+
+  await db.transaction("rw", db.offlinePrescriptions, async () => {
+    // Remove the previous cached version for this patient.
+    await db.offlinePrescriptions
+      .where("[ownerKey+patientId]")
+      .equals([ownerKey, patientId])
+      .delete();
+
+    for (const prescription of prescriptions) {
+      if (!prescription?._id) continue;
+
+      await db.offlinePrescriptions.put({
+        ...prescription,
+
+        key: `${ownerKey}:prescription:${prescription._id}`,
+        ownerKey,
+        patientId,
+        serverId: prescription._id,
+
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  });
+}
+
+export async function getCachedPrescriptions(patientId) {
+  const ownerKey = getOwnerKey();
+
+  if (!patientId) {
+    return [];
+  }
+
+  return db.offlinePrescriptions
+    .where("[ownerKey+patientId]")
+    .equals([ownerKey, patientId])
+    .toArray();
+}

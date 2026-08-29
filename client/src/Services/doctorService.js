@@ -5,6 +5,9 @@ import {
   getCachedDoctorQueue,
   getCachedPatientQueue,
   matchesPatientSearch,
+  saveOfflinePatient,
+  cacheOfflinePrescriptions,
+  getCachedPrescriptions,
 } from "./offlineRepository";
 
 const API = `${API_BASE_URL}/api`;
@@ -120,9 +123,34 @@ export const loadPatientPrescriptions = async (patientId) => {
     throw new Error("Patient ID is required.");
   }
 
-  const response = await apiFetch(`${API}/prescriptions/patient/${patientId}`);
+  try {
+    const response = await apiFetch(
+      `${API}/prescriptions/patient/${patientId}`,
+    );
 
-  return Array.isArray(response) ? response : response?.prescriptions || [];
+    const prescriptions = Array.isArray(response)
+      ? response
+      : response?.prescriptions || [];
+
+    // Cache the latest server version for offline use.
+    await cacheOfflinePrescriptions(patientId, prescriptions);
+
+    console.info(
+      `[Offline] Cached ${prescriptions.length} prescription(s) for patient ${patientId}.`,
+    );
+
+    return prescriptions;
+  } catch (error) {
+    if (!isNetworkError(error) && navigator.onLine) {
+      throw error;
+    }
+
+    console.info(
+      `[Offline] Loading cached prescriptions for patient ${patientId}.`,
+    );
+
+    return getCachedPrescriptions(patientId);
+  }
 };
 
 /**
@@ -137,10 +165,21 @@ export const saveDoctorRecord = async (patientId, data) => {
     throw new Error("Patient ID is required.");
   }
 
-  return apiFetch(`${API}/patients/${patientId}/doctor-record`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  const response = await apiFetch(
+    `${API}/patients/${patientId}/doctor-record`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+  );
+
+  // Keep the latest server version available offline.
+  if (response?._id) {
+    await saveOfflinePatient(response);
+    await cacheDoctorQueue([response]);
+  }
+
+  return response;
 };
 
 /**
