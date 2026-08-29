@@ -8,6 +8,13 @@ import {
 
 const API = `${API_BASE_URL}/api`;
 
+const isNetworkError = (error) => {
+  return (
+    error instanceof TypeError ||
+    error?.message === "Failed to fetch" ||
+    error?.message?.toLowerCase().includes("networkerror")
+  );
+};
 /**
  * ============================================================
  * GET DOCTOR QUEUE
@@ -61,7 +68,7 @@ export const getDoctorQueue = async ({
       patients,
     };
   } catch (error) {
-    if (navigator.onLine) {
+    if (!isNetworkError(error) && navigator.onLine) {
       throw error;
     }
 

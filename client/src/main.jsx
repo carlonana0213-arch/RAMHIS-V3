@@ -9,7 +9,7 @@ import "./index.css";
 
 import { AuthProvider } from "./Context/AuthContext";
 import { registerSW } from "virtual:pwa-register";
-
+import { syncOfflineOutbox } from "./Services/offlineSync";
 let updateSW;
 
 updateSW = registerSW({
@@ -27,6 +27,18 @@ updateSW = registerSW({
     console.info("RAMHIS is ready for offline use.");
   },
 });
+
+window.addEventListener("online", () => {
+  syncOfflineOutbox().catch((error) => {
+    console.error("[Offline Sync] Sync failed:", error);
+  });
+});
+
+if (navigator.onLine) {
+  syncOfflineOutbox().catch((error) => {
+    console.error("[Offline Sync] Initial sync failed:", error);
+  });
+}
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

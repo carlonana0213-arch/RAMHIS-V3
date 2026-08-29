@@ -187,64 +187,6 @@ export async function removeOfflineOperation(operationId) {
   await db.offlineOutbox.delete(operationId);
 }
 
-export const addPatient = async (data) => {
-  try {
-    return await apiFetch(API, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  } catch (error) {
-    const isNetworkError =
-      error instanceof TypeError ||
-      error?.message === "Failed to fetch" ||
-      error?.message?.toLowerCase().includes("networkerror");
-
-    if (!isNetworkError) {
-      throw error;
-    }
-
-    /*
-     * ---------------------------------------------------------
-     * OFFLINE CREATE
-     * ---------------------------------------------------------
-     */
-
-    const offlineId = `offline-${crypto.randomUUID()}`;
-
-    const offlinePatient = {
-      ...data,
-
-      _id: offlineId,
-
-      // Keep track of the fact that this record has not
-      // reached MongoDB yet.
-      _offline: true,
-
-      _syncStatus: "pending",
-
-      createdAt: new Date().toISOString(),
-
-      updatedAt: new Date().toISOString(),
-    };
-
-    await saveOfflinePatient(offlinePatient);
-
-    await queueOfflineOperation({
-      entityType: "patient",
-      entityKey: offlineId,
-      method: "POST",
-      url: API,
-      payload: data,
-    });
-
-    console.info(
-      "[Offline] Patient saved locally and queued for synchronization.",
-    );
-
-    return offlinePatient;
-  }
-};
-
 export async function searchCachedPatients(name = "", birthdate = "") {
   const patients = await getCachedPatientQueue();
 
