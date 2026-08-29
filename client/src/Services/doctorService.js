@@ -169,21 +169,115 @@ export const saveDoctorRecord = async (patientId, data) => {
     throw new Error("Patient ID is required.");
   }
 
-  const response = await apiFetch(
-    `${API}/patients/${patientId}/doctor-record`,
-    {
+  try {
+    const response = await apiFetch(
+      `${API}/patients/${patientId}/doctor-record`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    );
+
+    // Cache the latest server version for offline use.
+    if (response?._id) {
+      await saveOfflinePatient(response);
+      await cacheDoctorQueue([response]);
+    }
+
+    return response;
+  } catch (error) {
+    if (!isNetworkError(error) && navigator.onLine) {
+      throw error;
+    }
+
+    console.info(
+      `[Offline] Saving doctor consultation for patient ${patientId}.`,
+    );
+
+    const existingPatients = await getCachedPatientQueue();
+
+    const existingPatient = existingPatients.find(
+      (patient) => String(patient._id) === String(patientId),
+    );
+
+    if (!existingPatient) {
+      throw new Error("Patient is not available in offline storage.");
+    }
+
+    /*
+     * Create a temporary ID for the new
+     * consultation record.
+     */
+    const offlineRecordId = `offline-${crypto.randomUUID()}`;
+
+    const offlineRecord = {
+      ...data,
+
+      _id: offlineRecordId,
+
+      _offline: true,
+
+      _syncStatus: "pending",
+
+      createdAt: new Date().toISOString(),
+
+      updatedAt: new Date().toISOString(),
+    };
+
+    /*
+     * Add the consultation to the
+     * patient's cached doctorSheets.
+     */
+    const updatedPatient = {
+      ...existingPatient,
+
+      doctorSheets: [
+        ...(Array.isArray(existingPatient.doctorSheets)
+          ? existingPatient.doctorSheets
+          : []),
+
+        offlineRecord,
+      ],
+
+      updatedAt: new Date().toISOString(),
+    };
+
+    /*
+     * Save the updated patient locally.
+     */
+    await saveOfflinePatient(updatedPatient);
+
+    /*
+     * Keep the Doctor queue synchronized
+     * with the locally updated patient.
+     */
+    await cacheDoctorQueue([updatedPatient]);
+
+    /*
+     * Queue the actual server operation.
+     */
+    await queueOfflineOperation({
+      entityType: "doctorRecord",
+      entityKey: patientId,
       method: "POST",
-      body: JSON.stringify(data),
-    },
-  );
+      url: `${API}/patients/${patientId}/doctor-record`,
+      payload: {
+        ...data,
+        _offlineRecordId: offlineRecordId,
+      },
+    });
 
-  // Keep the latest server version available offline.
-  if (response?._id) {
-    await saveOfflinePatient(response);
-    await cacheDoctorQueue([response]);
+    console.info(
+      `[Offline] Doctor consultation saved locally for patient ${patientId}.`,
+    );
+
+    /*
+     * Return the locally updated patient
+     * so PatientDoctorView can continue
+     * normally.
+     */
+    return updatedPatient;
   }
-
-  return response;
 };
 
 /**

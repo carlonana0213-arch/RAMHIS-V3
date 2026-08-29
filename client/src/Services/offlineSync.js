@@ -1,7 +1,12 @@
 import db from "./localDB";
-import { getOwnerKey } from "./offlineRepository";
-import { apiFetch } from "./api";
 
+import {
+  getOwnerKey,
+  saveOfflinePatient,
+  cacheDoctorQueue,
+} from "./offlineRepository";
+
+import { apiFetch } from "./api";
 let syncInProgress = false;
 
 const isNetworkError = (error) => {
@@ -61,11 +66,21 @@ async function processOperation(operation) {
       `[Offline Sync] Sending ${operation.method} ${operation.entityType}:${operation.entityKey}`,
     );
 
+    let requestPayload = operation.payload;
+
+    if (operation.entityType === "doctorRecord" && requestPayload) {
+      requestPayload = {
+        ...requestPayload,
+      };
+
+      delete requestPayload._offlineRecordId;
+    }
+
     const response = await apiFetch(operation.url, {
       method: operation.method,
       body:
-        operation.payload !== undefined
-          ? JSON.stringify(operation.payload)
+        requestPayload !== undefined
+          ? JSON.stringify(requestPayload)
           : undefined,
     });
 
@@ -99,6 +114,10 @@ async function handleSuccessfulOperation(operation, response) {
 
   if (operation.entityType === "prescription") {
     await handlePrescriptionOperation(operation, response);
+  }
+
+  if (operation.entityType === "doctorRecord") {
+    await handleDoctorRecordOperation(operation, response);
   }
 
   await db.offlineOutbox.delete(operation.operationId);
@@ -253,4 +272,103 @@ async function handlePrescriptionOperation(operation, response) {
       updatedAt: new Date().toISOString(),
     });
   });
+}
+
+async function handleDoctorRecordOperation(operation, response) {
+  const ownerKey = getOwnerKey();
+
+  if (operation.method !== "POST") {
+    return;
+  }
+
+  const serverRecord = response;
+
+  if (!serverRecord?._id) {
+    throw new Error(
+      "Doctor record sync succeeded but the server returned no record ID.",
+    );
+  }
+
+  const patientId = operation.entityKey;
+
+  const offlineRecordId = operation.payload?._offlineRecordId;
+
+  if (!offlineRecordId) {
+    throw new Error("Doctor record sync is missing the offline record ID.");
+  }
+
+  const patientKey = `${ownerKey}:patient:${patientId}`;
+
+  const doctorQueueKey = `${ownerKey}:doctor-queue:${patientId}`;
+
+  await db.transaction(
+    "rw",
+    db.offlinePatients,
+    db.offlineDoctorQueue,
+    async () => {
+      const cachedPatient = await db.offlinePatients.get(patientKey);
+
+      if (!cachedPatient) {
+        console.warn(
+          `[Offline Sync] Patient ${patientId} was not found in offlinePatients.`,
+        );
+
+        return;
+      }
+
+      const doctorSheets = Array.isArray(cachedPatient.doctorSheets)
+        ? cachedPatient.doctorSheets
+        : [];
+
+      const updatedDoctorSheets = doctorSheets.map((record) => {
+        if (String(record?._id) === String(offlineRecordId)) {
+          return {
+            ...serverRecord,
+            _offline: false,
+            _syncStatus: "synced",
+          };
+        }
+
+        return record;
+      });
+
+      const recordWasFound = doctorSheets.some(
+        (record) => String(record?._id) === String(offlineRecordId),
+      );
+
+      if (!recordWasFound) {
+        updatedDoctorSheets.push({
+          ...serverRecord,
+          _offline: false,
+          _syncStatus: "synced",
+        });
+      }
+
+      const updatedPatient = {
+        ...cachedPatient,
+
+        doctorSheets: updatedDoctorSheets,
+
+        updatedAt: new Date().toISOString(),
+      };
+
+      await saveOfflinePatient(updatedPatient);
+
+      await db.offlineDoctorQueue.put({
+        ...updatedPatient,
+
+        key: doctorQueueKey,
+
+        ownerKey,
+
+        serverId: updatedPatient._id,
+
+        updatedAt: new Date().toISOString(),
+      });
+    },
+  );
+
+  console.info(
+    `[Offline Sync] Doctor consultation ${offlineRecordId} was replaced with server record ${serverRecord._id}.`,
+  );
 }
