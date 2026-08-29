@@ -3,6 +3,7 @@ import { API_BASE_URL } from "./apiConfig";
 import {
   cacheDoctorQueue,
   getCachedDoctorQueue,
+  getCachedPatientQueue,
   matchesPatientSearch,
 } from "./offlineRepository";
 
@@ -72,7 +73,16 @@ export const getDoctorQueue = async ({
       throw error;
     }
 
-    let patients = await getCachedDoctorQueue();
+    let patients;
+
+    // When searching offline, use the shared patient cache.
+    // This allows Doctor to search patients cached by the Patients module.
+    if (search?.trim()) {
+      patients = await getCachedPatientQueue();
+    } else {
+      // No search: preserve the existing doctor-specific queue.
+      patients = await getCachedDoctorQueue();
+    }
 
     if (department && department !== "all") {
       patients = patients.filter(
