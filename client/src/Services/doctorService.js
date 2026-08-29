@@ -1,6 +1,9 @@
 import { apiFetch } from "./api";
+
 import { API_BASE_URL } from "./apiConfig";
+import db from "./localDB";
 import {
+  getOwnerKey,
   cacheDoctorQueue,
   getCachedDoctorQueue,
   getCachedPatientQueue,
@@ -8,6 +11,7 @@ import {
   saveOfflinePatient,
   cacheOfflinePrescriptions,
   getCachedPrescriptions,
+  queueOfflineOperation,
 } from "./offlineRepository";
 
 const API = `${API_BASE_URL}/api`;
@@ -215,20 +219,104 @@ export const savePrescription = async (patientId, data) => {
     throw new Error("Patient ID is required.");
   }
 
-  return apiFetch(`${API}/prescriptions`, {
-    method: "POST",
-    body: JSON.stringify({
+  const payload = {
+    patient: patientId,
+    doctor: data.doctorId,
+    items: [
+      {
+        medicine: data.medicine,
+        quantity: data.quantity,
+        directions: data.directions,
+      },
+    ],
+  };
+
+  try {
+    const response = await apiFetch(`${API}/prescriptions`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    // Cache the server version immediately.
+    if (response?._id) {
+      const existing = await getCachedPrescriptions(patientId);
+
+      await cacheOfflinePrescriptions(patientId, [
+        ...existing.filter(
+          (prescription) => String(prescription._id) !== String(response._id),
+        ),
+        response,
+      ]);
+    }
+
+    return response;
+  } catch (error) {
+    if (!isNetworkError(error) && navigator.onLine) {
+      throw error;
+    }
+
+    // ---------------------------------------------
+    // OFFLINE PRESCRIPTION
+    // ---------------------------------------------
+
+    const offlineId = `offline-${crypto.randomUUID()}`;
+
+    const offlinePrescription = {
+      _id: offlineId,
+
       patient: patientId,
+
       doctor: data.doctorId,
+
       items: [
         {
+          // Keep the medicine ID exactly as the
+          // server expects it.
           medicine: data.medicine,
+
           quantity: data.quantity,
+
           directions: data.directions,
+
+          status: "pending",
         },
       ],
-    }),
-  });
+
+      ownerKey: getOwnerKey(),
+
+      patientId,
+
+      serverId: null,
+
+      _offline: true,
+
+      _syncStatus: "pending",
+
+      createdAt: new Date().toISOString(),
+
+      updatedAt: new Date().toISOString(),
+    };
+
+    const ownerKey = getOwnerKey();
+
+    offlinePrescription.key = `${ownerKey}:prescription:${offlineId}`;
+
+    await db.offlinePrescriptions.put(offlinePrescription);
+
+    await queueOfflineOperation({
+      entityType: "prescription",
+      entityKey: offlineId,
+      method: "POST",
+      url: `${API}/prescriptions`,
+      payload,
+    });
+
+    console.info(
+      `[Offline] Saved prescription ${offlineId} locally and queued it for synchronization.`,
+    );
+
+    return offlinePrescription;
+  }
 };
 
 /**
