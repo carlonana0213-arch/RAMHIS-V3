@@ -8,6 +8,7 @@ import {
   saveOfflinePatient,
   queueOfflineOperation,
   searchCachedPatients,
+  getOwnerKey,
 } from "./offlineRepository";
 
 const API = `${API_BASE_URL}/api/patients`;
@@ -89,11 +90,51 @@ export const addPatient = async (data) => {
   }
 };
 
-export const updatePatient = (id, data) =>
-  apiFetch(`${API}/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+export const updatePatient = async (id, data) => {
+  try {
+    return await apiFetch(`${API}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    if (!isNetworkError(error)) {
+      throw error;
+    }
+
+    console.info(
+      "[Offline] Updating patient locally and queueing for synchronization.",
+    );
+
+    const existingPatients = await getCachedPatientQueue();
+
+    const existingPatient = existingPatients.find((p) => p._id === id);
+
+    if (!existingPatient) {
+      throw new Error("Patient is not available in offline storage.");
+    }
+
+    const updatedPatient = {
+      ...existingPatient,
+      ...data,
+      _id: id,
+      _offline: false,
+      _syncStatus: "pending",
+      updatedAt: new Date().toISOString(),
+    };
+
+    await saveOfflinePatient(updatedPatient);
+
+    await queueOfflineOperation({
+      entityType: "patient",
+      entityKey: id,
+      method: "PUT",
+      url: `${API}/${id}`,
+      payload: data,
+    });
+
+    return updatedPatient;
+  }
+};
 
 export const deletePatient = (id) =>
   apiFetch(`${API}/${id}`, {

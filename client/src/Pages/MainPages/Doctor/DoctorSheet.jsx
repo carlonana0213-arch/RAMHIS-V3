@@ -9,11 +9,9 @@ import {
 import { getMedicines } from "../../../Services/pharmacyService";
 import { apiFetch } from "../../../Services/api";
 
-
 function DoctorSheet() {
   const storedUser = JSON.parse(localStorage.getItem("user"));
-  const doctorDepartment =
-    storedUser?.doctorInfo?.specialization || "General";
+  const doctorDepartment = storedUser?.doctorInfo?.specialization || "General";
 
   const [patients, setPatients] = useState([]);
   const [patient, setPatient] = useState(null);
@@ -42,7 +40,7 @@ function DoctorSheet() {
     if (!patient) return;
 
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this record? This cannot be undone."
+      "Are you sure you want to delete this record? This cannot be undone.",
     );
 
     if (!confirmDelete) return;
@@ -56,7 +54,7 @@ function DoctorSheet() {
             deletedBy: storedUser?.name || "Unknown User",
             deletedAt: new Date(),
           }),
-        }
+        },
       );
 
       setPatient(updated);
@@ -75,9 +73,7 @@ function DoctorSheet() {
       const queue = await getPatientQueue();
 
       const filtered = queue.filter(
-        (p) =>
-          p.department === doctorDepartment &&
-          p.status !== "released"
+        (p) => p.department === doctorDepartment && p.status !== "released",
       );
 
       setPatients(filtered);
@@ -89,30 +85,27 @@ function DoctorSheet() {
         setPatient(null);
       }
     } catch (err) {
-      console.error(
-        "Failed loading department queue",
-        err
-      );
+      console.error("Failed loading department queue", err);
     }
   };
 
-const EMPTY_DOCTOR_SHEET = {
-  examination: {
-    generalAppearance: "",
-    heent: "",
-    pulmonary: "",
-    cardiovascular: "",
-    gastrointestinal: "",
-    musculoskeletal: "",
-    genitourinary: "",
-    neuroPsych: "",
-    checkupPanel: "",
-  },
-  initComplaint: "",
-  diagnosis: "",
-  treatment: "",
-  medication: "",
-};
+  const EMPTY_DOCTOR_SHEET = {
+    examination: {
+      generalAppearance: "",
+      heent: "",
+      pulmonary: "",
+      cardiovascular: "",
+      gastrointestinal: "",
+      musculoskeletal: "",
+      genitourinary: "",
+      neuroPsych: "",
+      checkupPanel: "",
+    },
+    initComplaint: "",
+    diagnosis: "",
+    treatment: "",
+    medication: "",
+  };
 
   const [doctorSheet, setDoctorSheet] = useState({
     examination: {
@@ -132,14 +125,12 @@ const EMPTY_DOCTOR_SHEET = {
     medication: "",
   });
 
-  const hasValidPrescriptions =
-    existingPrescriptions?.some((p) =>
-      p.items?.some((i) => i?.medicine)
-    );
+  const hasValidPrescriptions = existingPrescriptions?.some((p) =>
+    p.items?.some((i) => i?.medicine),
+  );
 
   const hasHistory =
-    (patient?.doctorSheets &&
-      patient.doctorSheets.length > 0) ||
+    (patient?.doctorSheets && patient.doctorSheets.length > 0) ||
     hasValidPrescriptions;
 
   useEffect(() => {
@@ -153,10 +144,7 @@ const EMPTY_DOCTOR_SHEET = {
       e.preventDefault();
 
       const form = e.target.form;
-      const index = Array.prototype.indexOf.call(
-        form,
-        e.target
-      );
+      const index = Array.prototype.indexOf.call(form, e.target);
 
       if (form.elements[index + 1]) {
         form.elements[index + 1].focus();
@@ -180,15 +168,12 @@ const EMPTY_DOCTOR_SHEET = {
   const loadPatientPrescriptions = async (patientId) => {
     try {
       const data = await apiFetch(
-        `http://localhost:5000/api/prescriptions/patient/${patientId}`
+        `http://localhost:5000/api/prescriptions/patient/${patientId}`,
       );
 
       setExistingPrescriptions(data);
     } catch (err) {
-      console.error(
-        "Failed to load prescriptions",
-        err
-      );
+      console.error("Failed to load prescriptions", err);
     }
   };
 
@@ -200,22 +185,13 @@ const EMPTY_DOCTOR_SHEET = {
   const selectPatient = (p) => {
     setPatient(p);
 
-    if (
-      p.doctorSheets &&
-      p.doctorSheets.length > 0
-    ) {
-      const latest =
-        p.doctorSheets[p.doctorSheets.length - 1];
+    if (p.doctorSheets && p.doctorSheets.length > 0) {
+      const latest = p.doctorSheets[p.doctorSheets.length - 1];
 
       setDoctorSheet({
-        examination:
-          latest.examination ||
-          emptyDoctorSheet.examination,
+        examination: latest.examination || emptyDoctorSheet.examination,
 
-        initComplaint:
-          latest.initComplaint ||
-          p.initComplaint ||
-          "",
+        initComplaint: latest.initComplaint || p.initComplaint || "",
 
         diagnosis: latest.diagnosis || "",
         treatment: latest.treatment || "",
@@ -243,11 +219,7 @@ const EMPTY_DOCTOR_SHEET = {
     loadPatientPrescriptions(p._id);
   };
 
-  const handleRegistryChange = (
-    section,
-    field,
-    value
-  ) => {
+  const handleRegistryChange = (section, field, value) => {
     setPatient({
       ...patient,
       [section]: {
@@ -256,12 +228,34 @@ const EMPTY_DOCTOR_SHEET = {
       },
     });
   };
+  const handleSavePatientInfo = async () => {
+    if (!patient) return;
 
-  const handleDoctorChange = (
-    section,
-    field,
-    value
-  ) => {
+    try {
+      const updated = await updatePatient(patient._id, {
+        generalInfo: patient.generalInfo,
+        examination: patient.examination,
+      });
+
+      setPatient(updated);
+
+      // Keep the patient list updated too
+      setPatients((currentPatients) =>
+        currentPatients.map((p) => (p._id === updated._id ? updated : p)),
+      );
+
+      alert(
+        navigator.onLine
+          ? "Patient information updated"
+          : "Patient information saved offline and queued for synchronization",
+      );
+    } catch (err) {
+      console.error("Failed to update patient information:", err);
+
+      alert("Failed to update patient information");
+    }
+  };
+  const handleDoctorChange = (section, field, value) => {
     setDoctorSheet({
       ...doctorSheet,
       [section]: {
@@ -271,10 +265,7 @@ const EMPTY_DOCTOR_SHEET = {
     });
   };
 
-  const handleGiveMedicine = async (
-    prescriptionId,
-    itemId
-  ) => {
+  const handleGiveMedicine = async (prescriptionId, itemId) => {
     try {
       const token = localStorage.getItem("token");
 
@@ -282,21 +273,14 @@ const EMPTY_DOCTOR_SHEET = {
         `http://localhost:5000/api/prescriptions/${prescriptionId}/${itemId}`,
         {
           method: "PATCH",
-        }
+        },
       );
 
-      await loadPatientPrescriptions(
-        patient._id
-      );
+      await loadPatientPrescriptions(patient._id);
 
-      alert(
-        "Medicine given and inventory updated"
-      );
+      alert("Medicine given and inventory updated");
     } catch (err) {
-      console.error(
-        "Error giving medicine",
-        err
-      );
+      console.error("Error giving medicine", err);
     }
   };
 
@@ -304,9 +288,7 @@ const EMPTY_DOCTOR_SHEET = {
     if (!patient) return;
 
     const validItems = prescriptionItems.filter(
-      (i) =>
-        i.medicine &&
-        Number(i.quantity) > 0
+      (i) => i.medicine && Number(i.quantity) > 0,
     );
 
     if (validItems.length === 0) {
@@ -315,22 +297,19 @@ const EMPTY_DOCTOR_SHEET = {
     }
 
     try {
-      await apiFetch(
-        "http://localhost:5000/api/prescriptions",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            patient: patient._id,
+      await apiFetch("http://localhost:5000/api/prescriptions", {
+        method: "POST",
+        body: JSON.stringify({
+          patient: patient._id,
 
-            doctor: storedUser?.id,
-                        items: validItems.map((i) => ({
-              medicine: i.medicine,
-              quantity: Number(i.quantity),
-              directions: i.directions,
-            })),
-          }),
-        },
-      );
+          doctor: storedUser?.id,
+          items: validItems.map((i) => ({
+            medicine: i.medicine,
+            quantity: Number(i.quantity),
+            directions: i.directions,
+          })),
+        }),
+      });
 
       await loadPatientPrescriptions(patient._id);
 
@@ -344,10 +323,7 @@ const EMPTY_DOCTOR_SHEET = {
 
       alert("Prescription saved");
     } catch (err) {
-      console.error(
-        "Error saving prescription",
-        err
-      );
+      console.error("Error saving prescription", err);
     }
   };
 
@@ -360,22 +336,15 @@ const EMPTY_DOCTOR_SHEET = {
         method: "POST",
         body: JSON.stringify({
           ...doctorSheet,
-          initComplaint:
-            newComplaint ||
-            doctorSheet.initComplaint,
+          initComplaint: newComplaint || doctorSheet.initComplaint,
 
-          doctorName:
-            storedUser?.name || "Doctor",
+          doctorName: storedUser?.name || "Doctor",
 
-          department:
-            patient.department || "General",
+          department: patient.department || "General",
 
-          recordType:
-            hasHistory
-              ? "follow-up"
-              : "initial",
+          recordType: hasHistory ? "follow-up" : "initial",
         }),
-      }
+      },
     );
 
     alert("New record saved");
@@ -408,28 +377,20 @@ const EMPTY_DOCTOR_SHEET = {
           body: JSON.stringify({
             ...doctorSheet,
 
-            initComplaint:
-              newComplaint ||
-              doctorSheet.initComplaint,
+            initComplaint: newComplaint || doctorSheet.initComplaint,
 
-            doctorName:
-              localStorage.getItem("userName") ||
-              "Doctor",
+            doctorName: localStorage.getItem("userName") || "Doctor",
 
-            department:
-              patient.department || "General",
+            department: patient.department || "General",
 
-            recordType:
-              hasHistory
-                ? "follow-up"
-                : "initial",
+            recordType: hasHistory ? "follow-up" : "initial",
 
             referral: {
               department: referralDept,
               reason: referralReason,
             },
           }),
-        }
+        },
       );
 
       setPatient(updated);
@@ -442,10 +403,7 @@ const EMPTY_DOCTOR_SHEET = {
 
       alert("Referral + record saved");
     } catch (err) {
-      console.error(
-        "Referral error:",
-        err
-      );
+      console.error("Referral error:", err);
     }
   };
 
@@ -473,12 +431,8 @@ const EMPTY_DOCTOR_SHEET = {
     alert("Patient sent to pharmacy");
   };
 
-  const activePrescriptions = Array.isArray(
-    existingPrescriptions
-  )
-    ? existingPrescriptions.filter(
-        (p) => p.status !== "Completed"
-      )
+  const activePrescriptions = Array.isArray(existingPrescriptions)
+    ? existingPrescriptions.filter((p) => p.status !== "Completed")
     : [];
 
   // =========================
@@ -494,9 +448,7 @@ const EMPTY_DOCTOR_SHEET = {
         <input
           placeholder="Search patient name"
           value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
+          onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -505,9 +457,7 @@ const EMPTY_DOCTOR_SHEET = {
           }}
         />
 
-        <button onClick={handleSearch}>
-          Search
-        </button>
+        <button onClick={handleSearch}>Search</button>
       </div>
 
       <div className="search-results">
@@ -535,15 +485,9 @@ const EMPTY_DOCTOR_SHEET = {
               <label>Name</label>
 
               <input
-                value={
-                  patient.generalInfo.name || ""
-                }
+                value={patient.generalInfo.name || ""}
                 onChange={(e) =>
-                  handleRegistryChange(
-                    "generalInfo",
-                    "name",
-                    e.target.value
-                  )
+                  handleRegistryChange("generalInfo", "name", e.target.value)
                 }
                 onKeyDown={handleEnterKey}
               />
@@ -553,15 +497,9 @@ const EMPTY_DOCTOR_SHEET = {
               <label>Age</label>
 
               <input
-                value={
-                  patient.generalInfo.age || ""
-                }
+                value={patient.generalInfo.age || ""}
                 onChange={(e) =>
-                  handleRegistryChange(
-                    "generalInfo",
-                    "age",
-                    e.target.value
-                  )
+                  handleRegistryChange("generalInfo", "age", e.target.value)
                 }
                 onKeyDown={handleEnterKey}
               />
@@ -571,15 +509,9 @@ const EMPTY_DOCTOR_SHEET = {
               <label>Sex</label>
 
               <input
-                value={
-                  patient.generalInfo.sex || ""
-                }
+                value={patient.generalInfo.sex || ""}
                 onChange={(e) =>
-                  handleRegistryChange(
-                    "generalInfo",
-                    "sex",
-                    e.target.value
-                  )
+                  handleRegistryChange("generalInfo", "sex", e.target.value)
                 }
                 onKeyDown={handleEnterKey}
               />
@@ -589,15 +521,12 @@ const EMPTY_DOCTOR_SHEET = {
               <label>Insurance</label>
 
               <input
-                value={
-                  patient.generalInfo.insurance ||
-                  ""
-                }
+                value={patient.generalInfo.insurance || ""}
                 onChange={(e) =>
                   handleRegistryChange(
                     "generalInfo",
                     "insurance",
-                    e.target.value
+                    e.target.value,
                   )
                 }
                 onKeyDown={handleEnterKey}
@@ -608,15 +537,9 @@ const EMPTY_DOCTOR_SHEET = {
               <label>Tobacco</label>
 
               <input
-                value={
-                  patient.generalInfo.tobacco || ""
-                }
+                value={patient.generalInfo.tobacco || ""}
                 onChange={(e) =>
-                  handleRegistryChange(
-                    "generalInfo",
-                    "tobacco",
-                    e.target.value
-                  )
+                  handleRegistryChange("generalInfo", "tobacco", e.target.value)
                 }
               />
             </div>
@@ -625,15 +548,9 @@ const EMPTY_DOCTOR_SHEET = {
               <label>Alcohol</label>
 
               <input
-                value={
-                  patient.generalInfo.alcohol || ""
-                }
+                value={patient.generalInfo.alcohol || ""}
                 onChange={(e) =>
-                  handleRegistryChange(
-                    "generalInfo",
-                    "alcohol",
-                    e.target.value
-                  )
+                  handleRegistryChange("generalInfo", "alcohol", e.target.value)
                 }
                 onKeyDown={handleEnterKey}
               />
@@ -643,15 +560,12 @@ const EMPTY_DOCTOR_SHEET = {
               <label>Allergies</label>
 
               <input
-                value={
-                  patient.generalInfo.allergies ||
-                  ""
-                }
+                value={patient.generalInfo.allergies || ""}
                 onChange={(e) =>
                   handleRegistryChange(
                     "generalInfo",
                     "allergies",
-                    e.target.value
+                    e.target.value,
                   )
                 }
                 onKeyDown={handleEnterKey}
@@ -662,899 +576,648 @@ const EMPTY_DOCTOR_SHEET = {
               <label>Vaccine</label>
 
               <input
-                value={
-                  patient.generalInfo.vaccine || ""
-                }
+                value={patient.generalInfo.vaccine || ""}
                 onChange={(e) =>
-                  handleRegistryChange(
-                    "generalInfo",
-                    "vaccine",
-                    e.target.value
-                  )
+                  handleRegistryChange("generalInfo", "vaccine", e.target.value)
                 }
                 onKeyDown={handleEnterKey}
               />
-        </div>
+            </div>
 
-        <h3>Vitals</h3>
+            <h3>Vitals</h3>
 
-        <div className="field-row">
-          <label>BP</label>
+            <div className="field-row">
+              <label>BP</label>
 
-          <input
-            value={patient.examination.bp || ""}
-            onChange={(e) =>
-              handleRegistryChange(
-                "examination",
-                "bp",
-                e.target.value
-              )
-            }
-            onKeyDown={handleEnterKey}
-          />
-        </div>
+              <input
+                value={patient.examination.bp || ""}
+                onChange={(e) =>
+                  handleRegistryChange("examination", "bp", e.target.value)
+                }
+                onKeyDown={handleEnterKey}
+              />
+            </div>
 
-        <div className="field-row">
-          <label>Temp</label>
+            <div className="field-row">
+              <label>Temp</label>
 
-          <input
-            value={patient.examination.temp || ""}
-            onChange={(e) =>
-              handleRegistryChange(
-                "examination",
-                "temp",
-                e.target.value
-              )
-            }
-            onKeyDown={handleEnterKey}
-          />
-        </div>
+              <input
+                value={patient.examination.temp || ""}
+                onChange={(e) =>
+                  handleRegistryChange("examination", "temp", e.target.value)
+                }
+                onKeyDown={handleEnterKey}
+              />
+            </div>
 
-        <div className="field-row">
-          <label>Height</label>
+            <div className="field-row">
+              <label>Height</label>
 
-          <input
-            value={patient.examination.height || ""}
-            onChange={(e) =>
-              handleRegistryChange(
-                "examination",
-                "height",
-                e.target.value
-              )
-            }
-            onKeyDown={handleEnterKey}
-          />
-        </div>
+              <input
+                value={patient.examination.height || ""}
+                onChange={(e) =>
+                  handleRegistryChange("examination", "height", e.target.value)
+                }
+                onKeyDown={handleEnterKey}
+              />
+            </div>
 
-        <div className="field-row">
-          <label>Weight</label>
+            <div className="field-row">
+              <label>Weight</label>
 
-          <input
-            value={patient.examination.weight || ""}
-            onChange={(e) =>
-              handleRegistryChange(
-                "examination",
-                "weight",
-                e.target.value
-              )
-            }
-            onKeyDown={handleEnterKey}
-          />
-        </div>
+              <input
+                value={patient.examination.weight || ""}
+                onChange={(e) =>
+                  handleRegistryChange("examination", "weight", e.target.value)
+                }
+                onKeyDown={handleEnterKey}
+              />
+            </div>
 
-        <div className="field-row">
-          <label>BMI</label>
+            <div className="field-row">
+              <label>BMI</label>
 
-          <input
-            value={patient.examination.bmi || ""}
-            onChange={(e) =>
-              handleRegistryChange(
-                "examination",
-                "bmi",
-                e.target.value
-              )
-            }
-            onKeyDown={handleEnterKey}
-          />
-        </div>
+              <input
+                value={patient.examination.bmi || ""}
+                onChange={(e) =>
+                  handleRegistryChange("examination", "bmi", e.target.value)
+                }
+                onKeyDown={handleEnterKey}
+              />
+            </div>
 
-        <h3>Obstetric History</h3>
+            <h3>Obstetric History</h3>
 
-        <div className="field-row">
-          <label>Contraception</label>
+            <div className="field-row">
+              <label>Contraception</label>
 
-          <input
-            value={
-              patient.obstetricHistory?.contraception
-                ? "Yes"
-                : "No"
-            }
-            readOnly
-          />
-        </div>
+              <input
+                value={patient.obstetricHistory?.contraception ? "Yes" : "No"}
+                readOnly
+              />
+            </div>
 
-        <div className="field-row">
-          <label>Type</label>
+            <div className="field-row">
+              <label>Type</label>
 
-          <input
-            value={
-              patient.obstetricHistory?.type || ""
-            }
-            readOnly
-          />
-        </div>
+              <input value={patient.obstetricHistory?.type || ""} readOnly />
+            </div>
 
-        <div className="field-row">
-          <label>GPFPAL</label>
+            <div className="field-row">
+              <label>GPFPAL</label>
 
-          <input
-            value={
-              patient.obstetricHistory?.gpfpal || ""
-            }
-            readOnly
-          />
-        </div>
+              <input value={patient.obstetricHistory?.gpfpal || ""} readOnly />
+            </div>
 
-        <div className="field-row">
-          <label>BF</label>
+            <div className="field-row">
+              <label>BF</label>
 
-          <input
-            value={
-              patient.obstetricHistory?.bf || ""
-            }
-            readOnly
-          />
-        </div>
+              <input value={patient.obstetricHistory?.bf || ""} readOnly />
+            </div>
 
-        <div className="field-row">
-          <label>Birth History</label>
+            <div className="field-row">
+              <label>Birth History</label>
 
-          <input
-            value={
-              patient.obstetricHistory
-                ?.birthHistory || ""
-            }
-            readOnly
-          />
-        </div>
+              <input
+                value={patient.obstetricHistory?.birthHistory || ""}
+                readOnly
+              />
+            </div>
 
-        <div className="field-row">
-          <label>Delivery Site</label>
+            <div className="field-row">
+              <label>Delivery Site</label>
 
-          <input
-            value={
-              patient.obstetricHistory
-                ?.deliverySite || ""
-            }
-            readOnly
-          />
-        </div>
+              <input
+                value={patient.obstetricHistory?.deliverySite || ""}
+                readOnly
+              />
+            </div>
 
-        <div className="field-row">
-          <label>LMP</label>
+            <div className="field-row">
+              <label>LMP</label>
 
-          <input
-            value={
-              patient.obstetricHistory?.lmp || ""
-            }
-            readOnly
-          />
-        </div>
+              <input value={patient.obstetricHistory?.lmp || ""} readOnly />
+            </div>
 
-        <h3>Perinatal History</h3>
+            <h3>Perinatal History</h3>
 
-        <div className="field-row">
-          <label>Birth Weight</label>
+            <div className="field-row">
+              <label>Birth Weight</label>
 
-          <input
-            value={
-              patient.perinatalHistory?.bw || ""
-            }
-            readOnly
-          />
-        </div>
+              <input value={patient.perinatalHistory?.bw || ""} readOnly />
+            </div>
 
-        <div className="field-row">
-          <label>BF</label>
+            <div className="field-row">
+              <label>BF</label>
 
-          <input
-            value={
-              patient.perinatalHistory?.bf || ""
-            }
-            readOnly
-          />
-        </div>
+              <input value={patient.perinatalHistory?.bf || ""} readOnly />
+            </div>
 
-        <div className="field-row">
-          <label>Birth History</label>
+            <div className="field-row">
+              <label>Birth History</label>
 
-          <input
-            value={
-              patient.perinatalHistory
-                ?.birthHistory || ""
-            }
-            readOnly
-          />
-        </div>
+              <input
+                value={patient.perinatalHistory?.birthHistory || ""}
+                readOnly
+              />
+            </div>
 
-        <div className="field-row">
-          <label>Delivery Site</label>
+            <div className="field-row">
+              <label>Delivery Site</label>
 
-          <input
-            value={
-              patient.perinatalHistory
-                ?.deliverySite || ""
-            }
-            readOnly
-          />
-        </div>
+              <input
+                value={patient.perinatalHistory?.deliverySite || ""}
+                readOnly
+              />
+            </div>
 
-        <div className="field-row">
-          <label>Medical History</label>
+            <div className="field-row">
+              <label>Medical History</label>
 
-          <input
-            value={
-              patient.medicalHistory.join(", ") || ""
-            }
-            readOnly
-          />
-        </div>
+              <input value={patient.medicalHistory.join(", ") || ""} readOnly />
+            </div>
 
-        <div className="field-row">
-          <label>Family History</label>
+            <div className="field-row">
+              <label>Family History</label>
 
-          <input
-            value={
-              patient.familyHistory.join(", ") || ""
-            }
-            readOnly
-          />
-        </div>
-      </div>
+              <input value={patient.familyHistory.join(", ") || ""} readOnly />
+            </div>
+          </div>
 
-      {/* =========================
+          {/* =========================
           DOCTOR DATA
       ========================= */}
 
-      <div className="doctor-data">
+          <div className="doctor-data">
+            {/* TABS */}
+            <div className="sheet-tabs">
+              <button
+                className={activeTab === "current" ? "active" : ""}
+                onClick={() => setActiveTab("current")}
+              >
+                Current Record
+              </button>
 
-        {/* TABS */}
-        <div className="sheet-tabs">
-          <button
-            className={
-              activeTab === "current"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setActiveTab("current")
-            }
-          >
-            Current Record
-          </button>
+              <button
+                className={`${activeTab === "history" ? "active" : ""} ${
+                  !hasHistory ? "disabled" : ""
+                }`}
+                onClick={() => {
+                  if (!hasHistory) return;
 
-          <button
-            className={`${
-              activeTab === "history"
-                ? "active"
-                : ""
-            } ${
-              !hasHistory
-                ? "disabled"
-                : ""
-            }`}
-            onClick={() => {
-              if (!hasHistory) return;
+                  setActiveTab("history");
+                }}
+                disabled={!hasHistory}
+              >
+                Previous Records
+              </button>
 
-              setActiveTab("history");
-            }}
-            disabled={!hasHistory}
-          >
-            Previous Records
-          </button>
+              <button
+                onClick={() => {
+                  setDoctorSheet(emptyDoctorSheet);
 
-          <button
-            onClick={() => {
-              setDoctorSheet(
-                emptyDoctorSheet
-              );
-
-              setRecordMode("new");
-              setActiveTab("current");
-            }}
-          >
-            + New Record
-          </button>
-        </div>
-
-        {activeTab === "current" && (
-          <>
-            {/* Examination */}
-
-            <div className="exam-section">
-              <h3>Examination</h3>
-
-              <div className="examination">
-                {Object.entries(
-                  doctorSheet.examination
-                ).map(([key, val]) => (
-                  <div key={key}>
-                    <label>
-                      {key
-                        .replace(
-                          /([A-Z])/g,
-                          " $1"
-                        )
-                        .replace(
-                          /^./,
-                          (str) =>
-                            str.toUpperCase()
-                        )}
-                    </label>
-
-                    <textarea
-                      value={val}
-                      onChange={(e) =>
-                        handleDoctorChange(
-                          "examination",
-                          key,
-                          e.target.value
-                        )
-                      }
-                      onKeyDown={handleEnterKey}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Complaint */}
-
-            <div className="complaint">
-              <h3>Complaint</h3>
-
-              <textarea
-                value={
-                  doctorSheet.initComplaint
-                }
-                onChange={(e) =>
-                  setDoctorSheet({
-                    ...doctorSheet,
-                    initComplaint:
-                      e.target.value,
-                  })
-                }
-                onKeyDown={handleEnterKey}
-              />
-            </div>
-
-            {/* Diagnosis */}
-
-            <h3>Diagnosis</h3>
-
-            <textarea
-              value={doctorSheet.diagnosis}
-              onChange={(e) =>
-                setDoctorSheet({
-                  ...doctorSheet,
-                  diagnosis:
-                    e.target.value,
-                })
-              }
-                        />
-            
-            {/* Treatment */}
-
-            <h3>Treatment</h3>
-
-            <textarea
-              value={doctorSheet.treatment}
-              onChange={(e) =>
-                setDoctorSheet({
-                  ...doctorSheet,
-                  treatment: e.target.value,
-                })
-              }
-              onKeyDown={handleEnterKey}
-            />
-
-            {/* Saved Prescriptions */}
-
-            <h4>Saved Prescriptions</h4>
-
-            {activePrescriptions.length === 0 && (
-              <p>No existing prescriptions</p>
-            )}
-
-            {activePrescriptions.map((prescription) => (
-              <div
-                key={prescription._id}
-                style={{
-                  border: "1px solid #ddd",
-                  padding: "8px",
-                  marginBottom: "10px",
+                  setRecordMode("new");
+                  setActiveTab("current");
                 }}
               >
-                {prescription.items.map((item) => (
-                  <div
-                    key={item._id}
-                    style={{ marginBottom: "6px" }}
-                  >
-                    <strong>
-                      {item.medicine?.names?.join(", ") ||
-                        "Unknown Medicine"}{" "}
-                      {item.medicine?.dosage
-                        ? `(${item.medicine.dosage})`
-                        : ""}
-                    </strong>
-
-                    <div>
-                      Quantity: {item.quantity}
-                    </div>
-
-                    <div>
-                      Directions: {item.directions}
-                    </div>
-
-                    {!item.isGiven ? (
-                      <button
-                        onClick={() =>
-                          handleGiveMedicine(
-                            prescription._id,
-                            item._id
-                          )
-                        }
-                      >
-                        Give Now
-                      </button>
-                    ) : (
-                      <span>✅ Given</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))}
-
-            {/* New Prescription */}
-
-            <h3>Prescription</h3>
-
-            {prescriptionItems.map((item, index) => (
-              <div
-                key={index}
-                style={{ marginBottom: "10px" }}
-              >
-                <div className="medicine-autocomplete">
-                  <input
-                    placeholder="Type medicine name..."
-                    value={
-                      medicineSearch[index] || ""
-                    }
-                    onChange={(e) => {
-                      const value =
-                        e.target.value;
-
-                      setMedicineSearch({
-                        ...medicineSearch,
-                        [index]: value,
-                      });
-
-                      setActiveDropdown(index);
-
-                      const updated = [
-                        ...prescriptionItems,
-                      ];
-
-                      updated[index].medicine = "";
-
-                      setPrescriptionItems(
-                        updated
-                      );
-                    }}
-                    onFocus={() =>
-                      setActiveDropdown(index)
-                    }
-                  />
-
-                  {/* DROPDOWN RESULTS */}
-
-                  {activeDropdown === index &&
-                    medicineSearch[index] && (
-                      <div className="medicine-dropdown">
-                        {medicines
-                          .filter((m) =>
-                            m.names?.some(
-                              (name) =>
-                                name
-                                  .toLowerCase()
-                                  .includes(
-                                    medicineSearch[
-                                      index
-                                    ].toLowerCase()
-                                  )
-                            )
-                          )
-                          .slice(0, 5)
-                          .map((m) => (
-                            <div
-                              key={m._id}
-                              className="medicine-option"
-                              onClick={() => {
-                                const updated = [
-                                  ...prescriptionItems,
-                                ];
-
-                                updated[
-                                  index
-                                ].medicine = m._id;
-
-                                setPrescriptionItems(
-                                  updated
-                                );
-
-                                setMedicineSearch({
-                                  ...medicineSearch,
-                                  [index]: `${m.names?.join(
-                                    ", "
-                                  )}${
-                                    m.dosage
-                                      ? ` (${m.dosage})`
-                                      : ""
-                                  } (Stock: ${
-                                    m.quantity
-                                  })`,
-                                });
-
-                                setActiveDropdown(
-                                  null
-                                );
-                              }}
-                            >
-                              {m.names?.join(", ")}
-                              {m.dosage
-                                ? ` (${m.dosage})`
-                                : ""}{" "}
-                              (Stock: {m.quantity})
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                </div>
-
-                <input
-                  type="number"
-                  placeholder="Quantity"
-                  value={item.quantity}
-                  onChange={(e) => {
-                    const updated = [
-                      ...prescriptionItems,
-                    ];
-
-                    updated[index].quantity =
-                      e.target.value;
-
-                    setPrescriptionItems(
-                      updated
-                    );
-                  }}
-                />
-
-                <input
-                  placeholder="Directions"
-                  value={item.directions}
-                  onChange={(e) => {
-                    const updated = [
-                      ...prescriptionItems,
-                    ];
-
-                    updated[index].directions =
-                      e.target.value;
-
-                    setPrescriptionItems(
-                      updated
-                    );
-                                    }}
-                />
-
-                <button
-                  onClick={handleSavePrescription}
-                  style={{ marginLeft: "10px" }}
-                >
-                  Save Prescription
-                </button>
-              </div>
-            ))}
-
-            <button
-              onClick={() =>
-                setPrescriptionItems([
-                  ...prescriptionItems,
-                  {
-                    medicine: "",
-                    quantity: "",
-                    directions: "",
-                  },
-                ])
-              }
-            >
-              Add Medicine
-            </button>
-
-            {/* Buttons */}
-
-            <div className="sheet-buttons">
-              <button
-                onClick={handleSave}
-                disabled={recordMode !== "new"}
-              >
-                Save Edits
-              </button>
-
-              <button onClick={handleReleased}>
-                Cleared
-              </button>
-
-              <button onClick={handleForPharmacy}>
-                For Pharmacy
-              </button>
-
-              <button
-                onClick={() =>
-                  setShowReferral(true)
-                }
-              >
-                Further Treatment
+                + New Record
               </button>
             </div>
 
-            <div className="referral">
-              {showReferral && (
-                <div className="referral-box">
-                  <h3>Referral</h3>
+            {activeTab === "current" && (
+              <>
+                {/* Examination */}
 
-                  <select
-                    value={referralDept}
-                    onChange={(e) =>
-                      setReferralDept(
-                        e.target.value
-                      )
-                    }
-                  >
-                    <option value="">
-                      Select Department
-                    </option>
+                <div className="exam-section">
+                  <h3>Examination</h3>
 
-                    <option value="Pediatrics">
-                      Pediatrics
-                    </option>
+                  <div className="examination">
+                    {Object.entries(doctorSheet.examination).map(
+                      ([key, val]) => (
+                        <div key={key}>
+                          <label>
+                            {key
+                              .replace(/([A-Z])/g, " $1")
+                              .replace(/^./, (str) => str.toUpperCase())}
+                          </label>
 
-                    <option value="Ortho">
-                      Ortho
-                    </option>
+                          <textarea
+                            value={val}
+                            onChange={(e) =>
+                              handleDoctorChange(
+                                "examination",
+                                key,
+                                e.target.value,
+                              )
+                            }
+                            onKeyDown={handleEnterKey}
+                          />
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </div>
 
-                    <option value="Opta">
-                      Opta
-                    </option>
+                {/* Complaint */}
 
-                    <option value="Dental">
-                      Dental
-                    </option>
-
-                    <option value="Cardio">
-                      Cardio
-                    </option>
-
-                    <option value="General">
-                      General
-                    </option>
-                  </select>
+                <div className="complaint">
+                  <h3>Complaint</h3>
 
                   <textarea
-                    placeholder="Referral reason"
-                    value={referralReason}
+                    value={doctorSheet.initComplaint}
                     onChange={(e) =>
-                      setReferralReason(
-                        e.target.value
-                      )
-                    }
-                  />
-
-                  {hasHistory &&
-                    recordMode === "new" && (
-                      <div className="new-complaint-box">
-                        <h4>
-                          New Complaint (Follow-up)
-                        </h4>
-
-                        <textarea
-                          placeholder="Enter new complaint..."
-                          value={newComplaint}
-                          onChange={(e) =>
-                            setNewComplaint(
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
-                    )}
-
-                  <button
-                    onClick={submitReferral}
-                  >
-                    Send to Department
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {activeTab === "history" && (
-          <div className="history-view">
-            <h3>Previous Records</h3>
-
-            {patient?.doctorSheets?.length > 0 ? (
-              patient.doctorSheets.map(
-                (record, index) => (
-                  <div
-                    key={index}
-                    className="history-card clickable"
-                    onClick={() => {
                       setDoctorSheet({
-                        examination:
-                          record.examination ||
-                          emptyDoctorSheet.examination,
+                        ...doctorSheet,
+                        initComplaint: e.target.value,
+                      })
+                    }
+                    onKeyDown={handleEnterKey}
+                  />
+                </div>
 
-                        initComplaint:
-                          record.initComplaint ||
-                          "",
+                {/* Diagnosis */}
 
-                        diagnosis:
-                          record.diagnosis || "",
+                <h3>Diagnosis</h3>
 
-                        treatment:
-                          record.treatment || "",
+                <textarea
+                  value={doctorSheet.diagnosis}
+                  onChange={(e) =>
+                    setDoctorSheet({
+                      ...doctorSheet,
+                      diagnosis: e.target.value,
+                    })
+                  }
+                />
 
-                        medication:
-                          record.medication || "",
-                      });
+                {/* Treatment */}
 
-                      setRecordMode("view");
-                      setActiveTab("current");
+                <h3>Treatment</h3>
+
+                <textarea
+                  value={doctorSheet.treatment}
+                  onChange={(e) =>
+                    setDoctorSheet({
+                      ...doctorSheet,
+                      treatment: e.target.value,
+                    })
+                  }
+                  onKeyDown={handleEnterKey}
+                />
+
+                {/* Saved Prescriptions */}
+
+                <h4>Saved Prescriptions</h4>
+
+                {activePrescriptions.length === 0 && (
+                  <p>No existing prescriptions</p>
+                )}
+
+                {activePrescriptions.map((prescription) => (
+                  <div
+                    key={prescription._id}
+                    style={{
+                      border: "1px solid #ddd",
+                      padding: "8px",
+                      marginBottom: "10px",
                     }}
                   >
-                    <div className="history-header">
-                      <h4>
-                        {new Date(
-                          record.date
-                        ).toLocaleString()}
-                      </h4>
-
-                      <div className="history-meta">
-                        <span>
-                          {record.doctorName ||
-                            "Unknown Doctor"}
-                        </span>
-
-                        <span>
-                          {record.department ||
-                            "General"}
-                        </span>
-                      </div>
-
-                      <button
-                        className="delete-record-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteRecord(
-                            record._id
-                          );
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-
-                    <p>
-                      <strong>
-                        Diagnosis:
-                      </strong>{" "}
-                      {record.diagnosis || "-"}
-                    </p>
-
-                    <p>
-                      <strong>
-                        Treatment:
-                      </strong>{" "}
-                      {record.treatment || "-"}
-                    </p>
-
-                    <h4>Examination</h4>
-
-                    {Object.entries(
-                      record.examination || {}
-                    ).map(([key, val]) => (
-                      <div key={key}>
+                    {prescription.items.map((item) => (
+                      <div key={item._id} style={{ marginBottom: "6px" }}>
                         <strong>
-                          {key}:
-                        </strong>{" "}
-                        {val || "-"}
-                      </div>
-                    ))}
-
-                    {record.referral
-                      ?.department && (
-                      <div className="referral-block">
-                        <strong>
-                          Referred to:
-                        </strong>{" "}
-                        {record.referral.department ||
-                          "-"}
-
-                        <br />
-
-                        <strong>
-                          Reason:
-                        </strong>{" "}
-                        {record.referral.reason ||
-                          "-"}
-                      </div>
-                    )}
-                  </div>
-                )
-              )
-            ) : (
-              <p>
-                No previous records available.
-              </p>
-            )}
-
-            {/* PRESCRIPTIONS HISTORY */}
-
-            <h3>Prescription History</h3>
-
-            {existingPrescriptions.length === 0 && (
-              <p>No previous prescriptions</p>
-            )}
-
-            {existingPrescriptions.map(
-              (prescription) => (
-                <div
-                  key={prescription._id}
-                  className="history-card"
-                >
-                  {prescription.items.map(
-                    (item) => (
-                      <div key={item._id}>
-                        <strong>
-                          {item.medicine?.names?.join(
-                            ", "
-                          ) ||
+                          {item.medicine?.names?.join(", ") ||
                             "Unknown Medicine"}{" "}
                           {item.medicine?.dosage
                             ? `(${item.medicine.dosage})`
                             : ""}
                         </strong>
 
-                        <div>
-                          Qty: {item.quantity}
-                        </div>
+                        <div>Quantity: {item.quantity}</div>
 
-                        <div>
-                          {item.directions}
-                        </div>
+                        <div>Directions: {item.directions}</div>
+
+                        {!item.isGiven ? (
+                          <button
+                            onClick={() =>
+                              handleGiveMedicine(prescription._id, item._id)
+                            }
+                          >
+                            Give Now
+                          </button>
+                        ) : (
+                          <span>✅ Given</span>
+                        )}
                       </div>
-                    )
+                    ))}
+                  </div>
+                ))}
+
+                {/* New Prescription */}
+
+                <h3>Prescription</h3>
+
+                {prescriptionItems.map((item, index) => (
+                  <div key={index} style={{ marginBottom: "10px" }}>
+                    <div className="medicine-autocomplete">
+                      <input
+                        placeholder="Type medicine name..."
+                        value={medicineSearch[index] || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+
+                          setMedicineSearch({
+                            ...medicineSearch,
+                            [index]: value,
+                          });
+
+                          setActiveDropdown(index);
+
+                          const updated = [...prescriptionItems];
+
+                          updated[index].medicine = "";
+
+                          setPrescriptionItems(updated);
+                        }}
+                        onFocus={() => setActiveDropdown(index)}
+                      />
+
+                      {/* DROPDOWN RESULTS */}
+
+                      {activeDropdown === index && medicineSearch[index] && (
+                        <div className="medicine-dropdown">
+                          {medicines
+                            .filter((m) =>
+                              m.names?.some((name) =>
+                                name
+                                  .toLowerCase()
+                                  .includes(
+                                    medicineSearch[index].toLowerCase(),
+                                  ),
+                              ),
+                            )
+                            .slice(0, 5)
+                            .map((m) => (
+                              <div
+                                key={m._id}
+                                className="medicine-option"
+                                onClick={() => {
+                                  const updated = [...prescriptionItems];
+
+                                  updated[index].medicine = m._id;
+
+                                  setPrescriptionItems(updated);
+
+                                  setMedicineSearch({
+                                    ...medicineSearch,
+                                    [index]: `${m.names?.join(", ")}${
+                                      m.dosage ? ` (${m.dosage})` : ""
+                                    } (Stock: ${m.quantity})`,
+                                  });
+
+                                  setActiveDropdown(null);
+                                }}
+                              >
+                                {m.names?.join(", ")}
+                                {m.dosage ? ` (${m.dosage})` : ""} (Stock:{" "}
+                                {m.quantity})
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <input
+                      type="number"
+                      placeholder="Quantity"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const updated = [...prescriptionItems];
+
+                        updated[index].quantity = e.target.value;
+
+                        setPrescriptionItems(updated);
+                      }}
+                    />
+
+                    <input
+                      placeholder="Directions"
+                      value={item.directions}
+                      onChange={(e) => {
+                        const updated = [...prescriptionItems];
+
+                        updated[index].directions = e.target.value;
+
+                        setPrescriptionItems(updated);
+                      }}
+                    />
+
+                    <button
+                      onClick={handleSavePrescription}
+                      style={{ marginLeft: "10px" }}
+                    >
+                      Save Prescription
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  onClick={() =>
+                    setPrescriptionItems([
+                      ...prescriptionItems,
+                      {
+                        medicine: "",
+                        quantity: "",
+                        directions: "",
+                      },
+                    ])
+                  }
+                >
+                  Add Medicine
+                </button>
+
+                {/* Buttons */}
+
+                <div className="sheet-buttons">
+                  <button onClick={handleSavePatientInfo}>
+                    Save Patient Info
+                  </button>
+
+                  <button onClick={handleSave} disabled={recordMode !== "new"}>
+                    Save Edits
+                  </button>
+
+                  <button onClick={handleReleased}>Cleared</button>
+
+                  <button onClick={handleForPharmacy}>For Pharmacy</button>
+
+                  <button onClick={() => setShowReferral(true)}>
+                    Further Treatment
+                  </button>
+                </div>
+
+                <div className="referral">
+                  {showReferral && (
+                    <div className="referral-box">
+                      <h3>Referral</h3>
+
+                      <select
+                        value={referralDept}
+                        onChange={(e) => setReferralDept(e.target.value)}
+                      >
+                        <option value="">Select Department</option>
+
+                        <option value="Pediatrics">Pediatrics</option>
+
+                        <option value="Ortho">Ortho</option>
+
+                        <option value="Opta">Opta</option>
+
+                        <option value="Dental">Dental</option>
+
+                        <option value="Cardio">Cardio</option>
+
+                        <option value="General">General</option>
+                      </select>
+
+                      <textarea
+                        placeholder="Referral reason"
+                        value={referralReason}
+                        onChange={(e) => setReferralReason(e.target.value)}
+                      />
+
+                      {hasHistory && recordMode === "new" && (
+                        <div className="new-complaint-box">
+                          <h4>New Complaint (Follow-up)</h4>
+
+                          <textarea
+                            placeholder="Enter new complaint..."
+                            value={newComplaint}
+                            onChange={(e) => setNewComplaint(e.target.value)}
+                          />
+                        </div>
+                      )}
+
+                      <button onClick={submitReferral}>
+                        Send to Department
+                      </button>
+                    </div>
                   )}
                 </div>
-              )
+              </>
+            )}
+
+            {activeTab === "history" && (
+              <div className="history-view">
+                <h3>Previous Records</h3>
+
+                {patient?.doctorSheets?.length > 0 ? (
+                  patient.doctorSheets.map((record, index) => (
+                    <div
+                      key={index}
+                      className="history-card clickable"
+                      onClick={() => {
+                        setDoctorSheet({
+                          examination:
+                            record.examination || emptyDoctorSheet.examination,
+
+                          initComplaint: record.initComplaint || "",
+
+                          diagnosis: record.diagnosis || "",
+
+                          treatment: record.treatment || "",
+
+                          medication: record.medication || "",
+                        });
+
+                        setRecordMode("view");
+                        setActiveTab("current");
+                      }}
+                    >
+                      <div className="history-header">
+                        <h4>{new Date(record.date).toLocaleString()}</h4>
+
+                        <div className="history-meta">
+                          <span>{record.doctorName || "Unknown Doctor"}</span>
+
+                          <span>{record.department || "General"}</span>
+                        </div>
+
+                        <button
+                          className="delete-record-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteRecord(record._id);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+
+                      <p>
+                        <strong>Diagnosis:</strong> {record.diagnosis || "-"}
+                      </p>
+
+                      <p>
+                        <strong>Treatment:</strong> {record.treatment || "-"}
+                      </p>
+
+                      <h4>Examination</h4>
+
+                      {Object.entries(record.examination || {}).map(
+                        ([key, val]) => (
+                          <div key={key}>
+                            <strong>{key}:</strong> {val || "-"}
+                          </div>
+                        ),
+                      )}
+
+                      {record.referral?.department && (
+                        <div className="referral-block">
+                          <strong>Referred to:</strong>{" "}
+                          {record.referral.department || "-"}
+                          <br />
+                          <strong>Reason:</strong>{" "}
+                          {record.referral.reason || "-"}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p>No previous records available.</p>
+                )}
+
+                {/* PRESCRIPTIONS HISTORY */}
+
+                <h3>Prescription History</h3>
+
+                {existingPrescriptions.length === 0 && (
+                  <p>No previous prescriptions</p>
+                )}
+
+                {existingPrescriptions.map((prescription) => (
+                  <div key={prescription._id} className="history-card">
+                    {prescription.items.map((item) => (
+                      <div key={item._id}>
+                        <strong>
+                          {item.medicine?.names?.join(", ") ||
+                            "Unknown Medicine"}{" "}
+                          {item.medicine?.dosage
+                            ? `(${item.medicine.dosage})`
+                            : ""}
+                        </strong>
+
+                        <div>Qty: {item.quantity}</div>
+
+                        <div>{item.directions}</div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-        )}
-      </div>
-    </div>
-  )}
-</form>
+        </div>
+      )}
+    </form>
   );
 }
 
