@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import {
-  FaChevronDown,
-  FaUserCog,
-} from "react-icons/fa";
-
+import { FaChevronDown, FaUserCog } from "react-icons/fa";
+import useOnlineStatus from "../../hooks/useOnlineStatus";
 import { useAuth } from "../../Context/AuthContext";
 
 export default function Topbar() {
+  const isOnline = useOnlineStatus();
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -24,9 +22,7 @@ export default function Topbar() {
 
   const role = user?.role || "User";
 
-  const firstLetter = displayName
-    .charAt(0)
-    .toUpperCase();
+  const firstLetter = displayName.charAt(0).toUpperCase();
 
   return (
     <header
@@ -91,7 +87,21 @@ export default function Topbar() {
             >
               {displayName}
             </span>
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                isOnline
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-rose-50 text-rose-700"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  isOnline ? "bg-emerald-500" : "bg-rose-500"
+                }`}
+              />
 
+              {isOnline ? "Online" : "Offline"}
+            </span>
             <span
               className="
                 mt-0.5
@@ -112,11 +122,7 @@ export default function Topbar() {
               text-text-muted
               transition-transform duration-200
               sm:block
-              ${
-                open
-                  ? "rotate-180"
-                  : "rotate-0"
-              }
+              ${open ? "rotate-180" : "rotate-0"}
             `}
           />
         </button>
@@ -206,9 +212,7 @@ export default function Topbar() {
                 "
               />
 
-              <span>
-                Account Settings
-              </span>
+              <span>Account Settings</span>
             </button>
           </div>
         )}

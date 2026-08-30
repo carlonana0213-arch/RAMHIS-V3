@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
-import {
-  API_BASE_URL,
-  FASTAPI_BASE_URL,
-} from "../../../Services/apiConfig";
+import { API_BASE_URL, FASTAPI_BASE_URL } from "../../../Services/apiConfig";
 
 import {
   ResponsiveContainer,
@@ -53,9 +50,7 @@ const Analytics = () => {
 
   const fetchLocations = async () => {
     try {
-      const res = await axios.get(
-        `${API_BASE_URL}/api/patients/locations`,
-      );
+      const res = await axios.get(`${API_BASE_URL}/api/patients/locations`);
 
       setLocations(res.data || []);
     } catch (error) {
@@ -70,23 +65,17 @@ const Analytics = () => {
         return;
       }
 
-      const res = await axios.get(
-        `${API_BASE_URL}/api/patients/analytics`,
-        {
-          params: {
-            location: selectedLocation,
-            page: 1,
-            limit: 10000,
-          },
+      const res = await axios.get(`${API_BASE_URL}/api/patients/analytics`, {
+        params: {
+          location: selectedLocation,
+          page: 1,
+          limit: 10000,
         },
-      );
+      });
 
       setHistoricalPatients(res.data?.patients || []);
     } catch (error) {
-      console.error(
-        "Failed to load historical patients:",
-        error,
-      );
+      console.error("Failed to load historical patients:", error);
 
       setHistoricalPatients([]);
     }
@@ -106,14 +95,11 @@ const Analytics = () => {
 
       setLoading(true);
 
-      const res = await axios.post(
-        `${FASTAPI_BASE_URL}/generate-forecast`,
-        {
-          location: selectedLocation,
-          nextMissionDate,
-          missionDays: Number(missionDays),
-        },
-      );
+      const res = await axios.post(`${FASTAPI_BASE_URL}/generate-forecast`, {
+        location: selectedLocation,
+        nextMissionDate,
+        missionDays: Number(missionDays),
+      });
 
       setAnalytics(res.data);
 
@@ -131,8 +117,7 @@ const Analytics = () => {
 
     const insights = [];
 
-    const predictedPatients =
-      analytics?.predictedPatients || 0;
+    const predictedPatients = analytics?.predictedPatients || 0;
 
     const range =
       (analytics?.confidenceRange?.max || 0) -
@@ -153,9 +138,7 @@ const Analytics = () => {
     }
 
     if (
-      (analytics?.medicineForecast || []).some(
-        (med) => med.risk === "HIGH",
-      )
+      (analytics?.medicineForecast || []).some((med) => med.risk === "HIGH")
     ) {
       insights.push({
         type: "danger",
@@ -166,8 +149,7 @@ const Analytics = () => {
     if (analytics?.confidence === "VERY LOW") {
       insights.push({
         type: "danger",
-        text:
-          "Historical mission data is limited and forecast reliability is low.",
+        text: "Historical mission data is limited and forecast reliability is low.",
       });
     }
 
@@ -175,106 +157,84 @@ const Analytics = () => {
   }, [analytics]);
 
   const confidenceStyles = {
-    HIGH:
-      "border-emerald-200 bg-status-stable-bg text-status-stable-text",
-    MEDIUM:
-      "border-blue-200 bg-primary-50 text-primary-700",
-    LOW:
-      "border-amber-200 bg-status-watch-bg text-status-watch-text",
+    HIGH: "border-emerald-200 bg-status-stable-bg text-status-stable-text",
+    MEDIUM: "border-blue-200 bg-primary-50 text-primary-700",
+    LOW: "border-amber-200 bg-status-watch-bg text-status-watch-text",
     "VERY LOW":
       "border-red-200 bg-status-critical-bg text-status-critical-text",
   };
 
   const riskStyles = {
-    HIGH:
-      "border-red-200 bg-status-critical-bg text-status-critical-text",
-    MEDIUM:
-      "border-amber-200 bg-status-watch-bg text-status-watch-text",
-    LOW:
-      "border-emerald-200 bg-status-stable-bg text-status-stable-text",
+    HIGH: "border-red-200 bg-status-critical-bg text-status-critical-text",
+    MEDIUM: "border-amber-200 bg-status-watch-bg text-status-watch-text",
+    LOW: "border-emerald-200 bg-status-stable-bg text-status-stable-text",
   };
 
   const formatDate = (date) => {
     if (!date) return "Not selected";
 
-    return new Date(date).toLocaleDateString(
-      "en-US",
-      {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      },
-    );
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   // Real historical monthly patient counts for the selected location,
   // sourced from actual patient records (patient.visitDate) — not
   // hardcoded and not dependent on the forecast method.
   const chartData = useMemo(() => {
-    const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ];
+    return analytics?.chartData || [];
+  }, [analytics]);
 
-    const monthlyCounts = Array(12).fill(0);
+  const departments = useMemo(() => {
+    if (!analytics?.departmentForecasts) {
+      return [];
+    }
 
-    historicalPatients.forEach((patient) => {
-      if (!patient.visitDate) {
-        return;
-      }
+    return Object.keys(analytics.departmentForecasts);
+  }, [analytics]);
 
-      const date = new Date(patient.visitDate);
+  const forecastPoint = useMemo(() => {
+    return (
+      analytics?.chartData?.find((point) => point.type === "forecast") || null
+    );
+  }, [analytics]);
 
-      if (Number.isNaN(date.getTime())) {
-        return;
-      }
-
-      const monthIndex = date.getMonth();
-
-      monthlyCounts[monthIndex] += 1;
-    });
-
-    return months.map((month, index) => ({
-      month,
-      patients: monthlyCounts[index],
-    }));
-  }, [historicalPatients]);
-
-return (
-  <div className="min-h-full w-full px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
-    <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-5">
-
-      {/* =====================================================
+  return (
+    <div className="min-h-full w-full px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+      <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-5">
+        {/* =====================================================
           HEADER
       ====================================================== */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="flex items-start gap-3">
-
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3">
             <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-            <FiActivity size={21} />
+              <FiActivity size={21} />
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                RAMHIS Analytics
+              </p>
+
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+                Predictive Analytics
+              </h1>
+
+              <p className="mt-1 text-sm text-text-muted">
+                Forecast upcoming mission needs using historical patient and
+                mission records.
+              </p>
+            </div>
           </div>
 
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-              RAMHIS Analytics
-            </p>
-
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
-              Predictive Analytics
-            </h1>
-
-            <p className="mt-1 text-sm text-text-muted">
-              Forecast upcoming mission needs using historical patient and mission records.
-            </p>
-          </div>
+          {analytics && (
+            <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+              Forecast generated
+            </div>
+          )}
         </div>
-
-        {analytics && (
-          <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
-            Forecast generated
-          </div>
-        )}
-      </div>
 
         {/* =====================================================
             FORECAST SETUP
@@ -309,7 +269,6 @@ return (
           </div>
 
           <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
-
             {/* LOCATION */}
 
             <div>
@@ -320,20 +279,13 @@ return (
 
               <select
                 value={selectedLocation}
-                onChange={(e) =>
-                  setSelectedLocation(e.target.value)
-                }
+                onChange={(e) => setSelectedLocation(e.target.value)}
                 className="h-12 w-full rounded-xl border border-border bg-surface px-3 text-sm font-medium text-slate-700 outline-none transition hover:border-border-strong focus:border-primary-500 focus:ring-4 focus:ring-blue-50"
               >
-                <option value="">
-                  Select location
-                </option>
+                <option value="">Select location</option>
 
                 {locations.map((location) => (
-                  <option
-                    key={location}
-                    value={location}
-                  >
+                  <option key={location} value={location}>
                     {location}
                   </option>
                 ))}
@@ -351,9 +303,7 @@ return (
               <input
                 type="date"
                 value={nextMissionDate}
-                onChange={(e) =>
-                  setNextMissionDate(e.target.value)
-                }
+                onChange={(e) => setNextMissionDate(e.target.value)}
                 className="h-12 w-full rounded-xl border border-border bg-surface px-3 text-sm font-medium text-slate-700 outline-none transition hover:border-border-strong focus:border-primary-500 focus:ring-4 focus:ring-blue-50"
               />
             </div>
@@ -371,9 +321,7 @@ return (
                   type="number"
                   min="1"
                   value={missionDays}
-                  onChange={(e) =>
-                    setMissionDays(e.target.value)
-                  }
+                  onChange={(e) => setMissionDays(e.target.value)}
                   className="h-12 w-full rounded-xl border border-border bg-surface px-3 pr-14 text-sm font-medium text-slate-700 outline-none transition hover:border-border-strong focus:border-primary-500 focus:ring-4 focus:ring-blue-50"
                 />
 
@@ -504,7 +452,6 @@ return (
 
         {analytics && !loading && (
           <div className="space-y-7">
-
             {/* SUMMARY CARDS */}
 
             <section>
@@ -519,7 +466,6 @@ return (
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
                 {/* PRIMARY CARD */}
 
                 <div className="relative overflow-hidden rounded-2xl bg-primary-800 p-5 shadow-sm">
@@ -546,8 +492,7 @@ return (
                     </p>
 
                     <div className="mt-4 inline-flex rounded-lg bg-white/10 px-3 py-2 text-xs font-bold text-white">
-                      Range:{" "}
-                      {analytics?.confidenceRange?.min || 0}
+                      Range: {analytics?.confidenceRange?.min || 0}
                       {" – "}
                       {analytics?.confidenceRange?.max || 0}
                     </div>
@@ -567,9 +512,7 @@ return (
                 >
                   <span
                     className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${
-                      confidenceStyles[
-                        analytics?.confidence
-                      ] ||
+                      confidenceStyles[analytics?.confidence] ||
                       "border-slate-200 bg-slate-100 text-text-secondary"
                     }`}
                   >
@@ -579,9 +522,7 @@ return (
 
                 <MetricCard
                   label="Historical Missions"
-                  value={
-                    analytics?.historicalMissionCount || 0
-                  }
+                  value={analytics?.historicalMissionCount || 0}
                   description="Records used for prediction"
                   icon={<FiCalendar />}
                   iconClass="bg-slate-100 text-slate-700"
@@ -621,8 +562,8 @@ return (
                       </h2>
 
                       <p className="mt-1 text-xs text-text-muted">
-                        Projected patient demand based on historical
-                        mission patterns.
+                        Projected patient demand based on historical mission
+                        patterns.
                       </p>
                     </div>
 
@@ -632,10 +573,7 @@ return (
                   </div>
 
                   <div className="h-[320px] w-full p-4 sm:h-[390px] sm:p-6">
-                    <ResponsiveContainer
-                      width="100%"
-                      height="100%"
-                    >
+                    <ResponsiveContainer width="100%" height="100%">
                       <AreaChart
                         data={analytics.forecastTrend}
                         margin={{
@@ -682,15 +620,10 @@ return (
                             fontSize: 11,
                           }}
                           tickFormatter={(value) =>
-                            new Date(
-                              value,
-                            ).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )
+                            new Date(value).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })
                           }
                         />
 
@@ -705,24 +638,17 @@ return (
 
                         <Tooltip
                           contentStyle={{
-                            border:
-                              "1px solid #e2e8f0",
+                            border: "1px solid #e2e8f0",
                             borderRadius: "14px",
-                            boxShadow:
-                              "0 12px 30px rgba(15, 23, 42, 0.12)",
+                            boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
                             fontSize: "12px",
                           }}
                           labelFormatter={(value) =>
-                            new Date(
-                              value,
-                            ).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "long",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )
+                            new Date(value).toLocaleDateString("en-US", {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })
                           }
                         />
 
@@ -758,61 +684,132 @@ return (
               <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
                 <div className="border-b border-border-soft px-5 py-5 sm:px-6">
                   <h3 className="text-base font-extrabold text-text-primary">
-                    Patient Trend Forecast
+                    Department Patient Trajectories
                   </h3>
 
                   <p className="mt-1 text-xs text-text-muted">
-                    Monthly patient visits based on historical records for{" "}
-                    {selectedLocation || "the selected location"}.
+                    Historical mission workload and forecasted patient demand by
+                    department for {selectedLocation || "the selected location"}
+                    .
                   </p>
                 </div>
 
-                <div className="h-[380px] p-5 sm:p-8">
+                <div className="h-[360px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={chartData}
                       margin={{
-                        top: 20,
+                        top: 10,
                         right: 20,
                         left: 0,
-                        bottom: 5,
+                        bottom: 10,
                       }}
                     >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                      />
+                      <CartesianGrid strokeDasharray="3 3" />
 
                       <XAxis
-                        dataKey="month"
-                        axisLine={false}
-                        tickLine={false}
-                      />
+                        dataKey="date"
+                        tickFormatter={(value) => {
+                          const date = new Date(value);
 
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        allowDecimals={false}
-                      />
-
-                      <Tooltip />
-
-                      <Line
-                        type="monotone"
-                        dataKey="patients"
-                        name="Patients"
-                        stroke="#1f2937"
-                        strokeWidth={3}
-                        dot={{
-                          r: 5,
-                          strokeWidth: 2,
-                        }}
-                        activeDot={{
-                          r: 7,
+                          return date.toLocaleDateString("en-US", {
+                            month: "short",
+                            year: "numeric",
+                          });
                         }}
                       />
+
+                      <YAxis />
+
+                      <Tooltip
+                        labelFormatter={(value) => {
+                          const date = new Date(value);
+
+                          return date.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          });
+                        }}
+                      />
+
+                      {departments.map((department) => (
+                        <Line
+                          key={department}
+                          type="monotone"
+                          dataKey={department}
+                          name={department}
+                          strokeWidth={2}
+                          dot={{
+                            r: 3,
+                          }}
+                          activeDot={{
+                            r: 5,
+                          }}
+                          connectNulls
+                        />
+                      ))}
                     </LineChart>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      {departments.map((department) => (
+                        <div
+                          key={department}
+                          className="flex items-center gap-2 rounded-full border border-border bg-slate-50 px-3 py-1.5 text-xs font-semibold text-text-secondary"
+                        >
+                          <span className="h-2.5 w-2.5 rounded-full bg-primary-600" />
+                          {department}
+                        </div>
+                      ))}
+                    </div>
                   </ResponsiveContainer>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {departments.map((department) => (
+                      <div
+                        key={department}
+                        className="flex items-center gap-2 rounded-full border border-border bg-slate-50 px-3 py-1.5 text-xs font-semibold text-text-secondary"
+                      >
+                        <span className="h-2.5 w-2.5 rounded-full bg-primary-600" />
+                        {department}
+                      </div>
+                    ))}
+                  </div>
+                  {forecastPoint && (
+                    <div className="mt-3 text-xs text-text-muted">
+                      Forecast for{" "}
+                      <strong className="text-text-primary">
+                        {new Date(forecastPoint.date).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        )}
+                      </strong>
+                    </div>
+                  )}
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {Object.entries(analytics.departmentPredictions || {}).map(
+                      ([department, prediction]) => (
+                        <div
+                          key={department}
+                          className="rounded-xl border border-border bg-slate-50 p-4"
+                        >
+                          <p className="text-xs font-semibold text-text-muted">
+                            {department}
+                          </p>
+
+                          <p className="mt-1 text-xl font-extrabold text-text-primary">
+                            {prediction}
+                          </p>
+
+                          <p className="mt-1 text-[11px] text-text-muted">
+                            forecast patients
+                          </p>
+                        </div>
+                      ),
+                    )}
+                  </div>
                 </div>
               </section>
             </section>
@@ -868,8 +865,7 @@ return (
                   </thead>
 
                   <tbody className="divide-y divide-border-soft">
-                    {(analytics?.medicineForecast || [])
-                      .length === 0 ? (
+                    {(analytics?.medicineForecast || []).length === 0 ? (
                       <tr>
                         <td
                           colSpan={3}
@@ -879,35 +875,31 @@ return (
                         </td>
                       </tr>
                     ) : (
-                      analytics.medicineForecast.map(
-                        (item, index) => (
-                          <tr
-                            key={`${item.medicine}-${index}`}
-                            className="transition-colors hover:bg-primary-50/30"
-                          >
-                            <td className="px-5 py-4 text-sm font-bold text-text-primary">
-                              {item.medicine}
-                            </td>
+                      analytics.medicineForecast.map((item, index) => (
+                        <tr
+                          key={`${item.medicine}-${index}`}
+                          className="transition-colors hover:bg-primary-50/30"
+                        >
+                          <td className="px-5 py-4 text-sm font-bold text-text-primary">
+                            {item.medicine}
+                          </td>
 
-                            <td className="px-5 py-4 text-sm font-semibold text-text-secondary">
-                              {item.estimatedNeed}
-                            </td>
+                          <td className="px-5 py-4 text-sm font-semibold text-text-secondary">
+                            {item.estimatedNeed}
+                          </td>
 
-                            <td className="px-5 py-4">
-                              <span
-                                className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-extrabold ${
-                                  riskStyles[
-                                    item.risk
-                                  ] ||
-                                  "border-slate-200 bg-slate-100 text-text-secondary"
-                                }`}
-                              >
-                                {item.risk || "UNKNOWN"}
-                              </span>
-                            </td>
-                          </tr>
-                        ),
-                      )
+                          <td className="px-5 py-4">
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-extrabold ${
+                                riskStyles[item.risk] ||
+                                "border-slate-200 bg-slate-100 text-text-secondary"
+                              }`}
+                            >
+                              {item.risk || "UNKNOWN"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
                     )}
                   </tbody>
                 </table>
@@ -928,9 +920,7 @@ return (
                 iconClass="bg-status-stable-bg text-status-stable-text"
               />
 
-              <SmartInsightsCard
-                insights={smartInsights}
-              />
+              <SmartInsightsCard insights={smartInsights} />
             </section>
 
             {/* =====================================================
@@ -948,11 +938,11 @@ return (
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-blue-800">
-                  Predictive analytics are based on historical records
-                  and are intended to support mission planning,
-                  reporting, and administrative decisions. Forecast
-                  results should not be treated as medical diagnosis or
-                  clinical treatment recommendations.
+                  Predictive analytics are based on historical records and are
+                  intended to support mission planning, reporting, and
+                  administrative decisions. Forecast results should not be
+                  treated as medical diagnosis or clinical treatment
+                  recommendations.
                 </p>
               </div>
             </div>
@@ -967,21 +957,12 @@ return (
    METRIC CARD
 ============================================================ */
 
-function MetricCard({
-  label,
-  value,
-  description,
-  icon,
-  iconClass,
-  children,
-}) {
+function MetricCard({ label, value, description, icon, iconClass, children }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-text-muted">
-            {label}
-          </p>
+          <p className="text-xs font-bold text-text-muted">{label}</p>
 
           <div className="mt-2">
             <p className="truncate text-2xl font-extrabold tracking-tight text-text-primary">
@@ -992,9 +973,7 @@ function MetricCard({
           {children ? (
             <div className="mt-3">{children}</div>
           ) : (
-            <p className="mt-3 text-xs text-text-muted">
-              {description}
-            </p>
+            <p className="mt-3 text-xs text-text-muted">{description}</p>
           )}
         </div>
 
@@ -1012,14 +991,7 @@ function MetricCard({
    SUMMARY INSIGHT CARD
 ============================================================ */
 
-function InsightCard({
-  title,
-  subtitle,
-  items,
-  icon,
-  emptyText,
-  iconClass,
-}) {
+function InsightCard({ title, subtitle, items, icon, emptyText, iconClass }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
       <div className="border-b border-border-soft px-5 py-5 sm:px-6">
@@ -1035,9 +1007,7 @@ function InsightCard({
               {title}
             </h2>
 
-            <p className="mt-1 text-xs text-text-muted">
-              {subtitle}
-            </p>
+            <p className="mt-1 text-xs text-text-muted">{subtitle}</p>
           </div>
         </div>
       </div>
@@ -1045,9 +1015,7 @@ function InsightCard({
       <div className="space-y-3 p-5 sm:p-6">
         {items.length === 0 ? (
           <div className="rounded-xl bg-slate-50 p-4">
-            <p className="text-sm text-text-muted">
-              {emptyText}
-            </p>
+            <p className="text-sm text-text-muted">{emptyText}</p>
           </div>
         ) : (
           items.map((item, index) => (
@@ -1074,16 +1042,11 @@ function InsightCard({
    SMART INSIGHTS
 ============================================================ */
 
-function SmartInsightsCard({
-  insights,
-}) {
+function SmartInsightsCard({ insights }) {
   const insightStyles = {
-    warning:
-      "border-amber-100 bg-status-watch-bg text-status-watch-text",
-    danger:
-      "border-red-100 bg-status-critical-bg text-status-critical-text",
-    info:
-      "border-blue-100 bg-primary-50 text-primary-700",
+    warning: "border-amber-100 bg-status-watch-bg text-status-watch-text",
+    danger: "border-red-100 bg-status-critical-bg text-status-critical-text",
+    info: "border-blue-100 bg-primary-50 text-primary-700",
   };
 
   return (
@@ -1125,9 +1088,7 @@ function SmartInsightsCard({
             >
               <FiAlertCircle className="mt-0.5 shrink-0" />
 
-              <p className="text-sm font-medium leading-6">
-                {insight.text}
-              </p>
+              <p className="text-sm font-medium leading-6">{insight.text}</p>
             </div>
           ))
         )}

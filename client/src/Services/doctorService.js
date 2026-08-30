@@ -449,20 +449,64 @@ export const updatePatientStatus = async (patientId, data = {}) => {
 
   const payload = { ...data };
 
-  console.log("========================================");
-  console.log("UPDATING PATIENT STATUS");
-  console.log("Patient ID:", patientId);
-  console.log("Payload:", payload);
-  console.log("========================================");
+  try {
+    console.log("========================================");
+    console.log("UPDATING PATIENT STATUS");
+    console.log("Patient ID:", patientId);
+    console.log("Payload:", payload);
+    console.log("========================================");
 
-  const response = await apiFetch(`${API}/patients/${patientId}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  });
+    const response = await apiFetch(`${API}/patients/${patientId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
 
-  console.log("PATIENT STATUS UPDATE RESPONSE:", response);
+    console.log("PATIENT STATUS UPDATE RESPONSE:", response);
 
-  return response;
+    return response;
+  } catch (error) {
+    if (!isNetworkError(error)) {
+      throw error;
+    }
+
+    console.info(`[Offline] Queuing patient status update for ${patientId}.`);
+
+    const existingPatients = await getCachedPatientQueue();
+
+    const existingPatient = existingPatients.find(
+      (patient) => String(patient._id) === String(patientId),
+    );
+
+    if (!existingPatient) {
+      throw new Error("Patient is not available in offline storage.");
+    }
+
+    const updatedPatient = {
+      ...existingPatient,
+      ...payload,
+
+      _offline: true,
+      _syncStatus: "pending",
+
+      updatedAt: new Date().toISOString(),
+    };
+
+    await saveOfflinePatient(updatedPatient);
+
+    await cacheDoctorQueue([updatedPatient]);
+
+    await queueOfflineOperation({
+      entityType: "patient",
+      entityKey: patientId,
+      method: "PUT",
+      url: `${API}/patients/${patientId}`,
+      payload,
+    });
+
+    console.info(`[Offline] Patient status update queued for ${patientId}.`);
+
+    return updatedPatient;
+  }
 };
 
 /**
