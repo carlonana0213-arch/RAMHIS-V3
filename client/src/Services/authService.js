@@ -1,0 +1,48 @@
+import { API_BASE_URL } from "./apiConfig";
+
+const API_URL = `${API_BASE_URL}/api/auth`;
+
+export const registerUser = async (data) => {
+  const res = await fetch(`${API_URL}/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result = await res.json();
+
+  if (!res.ok) {
+    throw new Error(result.message || result.msg || "Registration failed");
+  }
+
+  return result;
+};
+
+export const loginUser = async (data) => {
+  const url = `${API_URL}/login`;
+
+  console.log("LOGIN URL:", url);
+  console.log("LOGIN METHOD: POST");
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      result.message ||
+      result.msg ||
+      "Login failed"
+    );
+  }
+
+  return result;
+};
