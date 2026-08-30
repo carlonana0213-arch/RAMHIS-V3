@@ -350,75 +350,20 @@ const AddPatientModal = ({
   |--------------------------------------------------------------------------
   */
 
-const handleSubmit = async () => {
-
-  const missingFields = [];
-
-  const name = form.generalInfo?.name?.trim();
-  const sex = form.generalInfo?.sex?.trim();
-  const birthdate = form.generalInfo?.birthdate?.trim();
-  const department = form.department?.trim();
-
-  if (!name) {
-    missingFields.push("Step 1 — Name is required.");
-  }
-
-  if (!sex) {
-    missingFields.push("Step 1 — Gender is required.");
-  }
-
-  if (!birthdate) {
-    missingFields.push("Step 1 — Birthday is required.");
-  }
-
-  if (!department) {
-    missingFields.push("Step 4 — Department is required.");
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | STOP SUBMISSION IF REQUIRED FIELDS ARE MISSING
-  |--------------------------------------------------------------------------
-  */
-
-  if (missingFields.length > 0) {
-    setAlertMessage(
-      `Required Fields Missing:\n\n${missingFields.join("\n")}\n\nPlease complete the required fields before submitting the patient.`
-    );
-
-    return;
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | DUPLICATE PATIENT CHECK
-  |--------------------------------------------------------------------------
-  */
-
+  const handleSubmit = async () => {
+  // First submission: check for duplicate
   if (!editingExistingPatient && !duplicateChecked) {
-    const duplicateFound =
-      await checkDuplicatePatient();
+    const duplicateFound = await checkDuplicatePatient();
 
-    /*
-     * STOP if duplicate patient was found.
-     * The duplicate modal will handle the next action.
-     */
+    // STOP here if duplicate was found.
+    // Do NOT continue to addPatient().
     if (duplicateFound) {
       return;
     }
 
-    /*
-     * No duplicate found.
-     * Allow the actual submission.
-     */
+    // No duplicate, now allow actual submission
     setDuplicateChecked(true);
   }
-
-  /*
-  |--------------------------------------------------------------------------
-  | SAVE PATIENT
-  |--------------------------------------------------------------------------
-  */
 
   try {
     const payload = buildPayload();
@@ -436,21 +381,20 @@ const handleSubmit = async () => {
         "Patient record updated and queued successfully."
       );
     } else {
-      console.log(
-        "🚨 addPatient is being called",
-        payload
-      );
+  console.log(
+    "🚨 addPatient is being called",
+    payload
+  );
 
-      await addPatient(payload);
+  await addPatient(payload);
+      
+      
 
       setAlertMessage(
         "Patient added to the queue successfully."
       );
     }
 
-    /*
-     * Reset duplicate-flow state after successful save.
-     */
     setDuplicateChecked(false);
     setEditingExistingPatient(false);
 
@@ -990,7 +934,7 @@ const handleSubmit = async () => {
         />
       )}
 
-      {currentStep === "Perinatal & OB" && (
+      {currentStep === "Perinatal" && (
         <PerinatalStep
           form={form}
           setForm={setForm}

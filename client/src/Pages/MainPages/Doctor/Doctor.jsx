@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   Stethoscope,
@@ -22,9 +17,6 @@ import { getDoctorQueue } from "../../../Services/doctorService";
 
 export default function Doctor() {
   const [patients, setPatients] = useState([]);
-
-  // Only used for the initial loading state.
-  // Search/filter refreshes will NOT make the UI flicker.
   const [loading, setLoading] = useState(true);
 
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -32,96 +24,41 @@ export default function Doctor() {
   const [search, setSearch] = useState("");
   const [queueFilter, setQueueFilter] = useState("all");
 
-  // ---------------------------------------------------------
-  // DEBOUNCED SEARCH
-  // ---------------------------------------------------------
-  // Prevents an API request from being made on every
-  // individual keystroke.
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const loadQueue = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const response = await getDoctorQueue({
+        page: 1,
+        limit: 1000,
+        search,
+        queueFilter,
+        department: "General",
+        role: "doctor",
+      });
+
+      const queueData =
+        response?.patients ||
+        response?.data ||
+        (Array.isArray(response) ? response : []);
+
+      setPatients(queueData);
+    } catch (error) {
+      console.error("Failed to load doctor queue:", error);
+      setPatients([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, queueFilter]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 300);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [search]);
-
-  // ---------------------------------------------------------
-  // LOAD DOCTOR QUEUE
-  // ---------------------------------------------------------
-  const loadQueue = useCallback(
-    async (showLoading = false) => {
-      try {
-        // Only show the loading state when explicitly requested.
-        //
-        // This is important because searching/filtering should
-        // NOT replace the existing queue with a loading screen.
-        if (showLoading) {
-          setLoading(true);
-        }
-
-        const response = await getDoctorQueue({
-          page: 1,
-          limit: 1000,
-          search: debouncedSearch,
-          queueFilter,
-          department: "General",
-          role: "doctor",
-        });
-
-        const queueData =
-          response?.patients ||
-          response?.data ||
-          (Array.isArray(response)
-            ? response
-            : []);
-
-        // Update the queue only after the API request succeeds.
-        //
-        // We intentionally DO NOT clear patients before the
-        // request. This prevents the visible flicker.
-        setPatients(queueData);
-      } catch (error) {
-        console.error(
-          "Failed to load doctor queue:",
-          error
-        );
-
-        // Only clear the queue if this was the initial load.
-        //
-        // During search/filter requests, keeping the existing
-        // data is preferable to making the UI flash empty.
-        if (showLoading) {
-          setPatients([]);
-        }
-      } finally {
-        if (showLoading) {
-          setLoading(false);
-        }
-      }
-    },
-    [debouncedSearch, queueFilter]
-  );
-
-  // ---------------------------------------------------------
-  // INITIAL LOAD + SEARCH/FILTER REFRESH
-  // ---------------------------------------------------------
-  useEffect(() => {
-    loadQueue(true);
+    loadQueue();
   }, [loadQueue]);
 
-  // ---------------------------------------------------------
-  // STATISTICS
-  // ---------------------------------------------------------
   const stats = useMemo(() => {
     const normalized = patients.map((patient) => ({
       ...patient,
-      status: String(
-        patient?.status || ""
-      ).toLowerCase(),
+      status: String(patient?.status || "").toLowerCase(),
     }));
 
     return {
@@ -130,34 +67,26 @@ export default function Doctor() {
       waiting: normalized.filter(
         (patient) =>
           patient.status === "waiting" ||
-          patient.status === "unconsulted"
+          patient.status === "unconsulted",
       ).length,
 
       beingSeen: normalized.filter(
-        (patient) =>
-          patient.status === "beingseen"
+        (patient) => patient.status === "beingseen",
       ).length,
 
       forPharmacy: normalized.filter(
-        (patient) =>
-          patient.status === "forpharmacy"
+        (patient) => patient.status === "forpharmacy",
       ).length,
 
       priority: normalized.filter(
-        (patient) =>
-          patient.isPriority
+        (patient) => patient.isPriority,
       ).length,
     };
   }, [patients]);
 
-  // ---------------------------------------------------------
-  // CURRENT PATIENT
-  // ---------------------------------------------------------
   const currentPatient = useMemo(() => {
     return patients.find((patient) => {
-      const status = String(
-        patient?.status || ""
-      ).toLowerCase();
+      const status = String(patient?.status || "").toLowerCase();
 
       return (
         status === "waiting" ||
@@ -167,41 +96,27 @@ export default function Doctor() {
     });
   }, [patients]);
 
-  // ---------------------------------------------------------
-  // OPEN CONSULTATION
-  // ---------------------------------------------------------
   const openDoctorView = (patient) => {
     if (!patient) return;
 
     setSelectedPatient(patient);
   };
 
-  // ---------------------------------------------------------
-  // CLOSE CONSULTATION
-  // ---------------------------------------------------------
   const handleCloseConsultation = () => {
     setSelectedPatient(null);
   };
 
-  // ---------------------------------------------------------
-  // AFTER CONSULTATION RECORD IS SAVED
-  // ---------------------------------------------------------
   const handleRecordSaved = async () => {
     setSelectedPatient(null);
 
-    // Refresh the queue without showing the loading state.
-    await loadQueue(false);
+    await loadQueue();
   };
 
-  // ---------------------------------------------------------
-  // NEXT PATIENT
-  // ---------------------------------------------------------
   const handleNextPatient = () => {
     if (!currentPatient) return;
 
     const currentIndex = patients.findIndex(
-      (patient) =>
-        patient._id === currentPatient._id
+      (patient) => patient._id === currentPatient._id,
     );
 
     if (currentIndex === -1) return;
@@ -214,7 +129,7 @@ export default function Doctor() {
       const patient = patients[index];
 
       const status = String(
-        patient?.status || ""
+        patient?.status || "",
       ).toLowerCase();
 
       if (
@@ -228,16 +143,16 @@ export default function Doctor() {
     }
   };
 
-  return (
-    <div className="min-h-full w-full bg-transparent px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
-      <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
+return (
+  <div className="min-h-full w-full bg-transparent px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+    <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
 
-        {/* PAGE HEADER */}
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      {/* PAGE HEADER */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 
           <div className="flex items-start gap-3">
 
-            <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+    <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
               <Stethoscope size={21} />
             </div>
 

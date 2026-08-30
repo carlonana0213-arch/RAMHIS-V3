@@ -43,6 +43,7 @@ const Analytics = () => {
 
   const [historicalPatients, setHistoricalPatients] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [chartMode, setChartMode] = useState("overall");
 
   useEffect(() => {
     fetchLocations();
@@ -200,6 +201,26 @@ const Analytics = () => {
       analytics?.chartData?.find((point) => point.type === "forecast") || null
     );
   }, [analytics]);
+
+  const historicalMissionCount = useMemo(() => {
+    return chartData.filter((point) => point.type === "historical").length;
+  }, [chartData]);
+
+  const overallChartData = useMemo(() => {
+    return chartData.map((point) => {
+      const total = departments.reduce((sum, department) => {
+        return sum + Number(point?.[department] || 0);
+      }, 0);
+
+      return {
+        ...point,
+        patients: total,
+      };
+    });
+  }, [chartData, departments]);
+
+  const activeChartData =
+    chartMode === "overall" ? overallChartData : chartData;
 
   return (
     <div className="min-h-full w-full px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
@@ -501,11 +522,7 @@ const Analytics = () => {
 
                 <MetricCard
                   label="Forecast Method"
-                  value={
-                    analytics?.forecastMethod === "prophet"
-                      ? "Prophet"
-                      : "Weighted Statistical"
-                  }
+                  value={analytics?.modelsUsed?.[0] || "Unknown"}
                   description="Prediction model used"
                   icon={<FiActivity />}
                   iconClass="bg-indigo-50 text-indigo-700"
@@ -522,7 +539,7 @@ const Analytics = () => {
 
                 <MetricCard
                   label="Historical Missions"
-                  value={analytics?.historicalMissionCount || 0}
+                  value={historicalMissionCount}
                   description="Records used for prediction"
                   icon={<FiCalendar />}
                   iconClass="bg-slate-100 text-slate-700"
@@ -544,128 +561,6 @@ const Analytics = () => {
                 FORECAST TREND (Prophet)
             ====================================================== */}
 
-            {analytics?.forecastMethod === "prophet" &&
-              analytics?.forecastTrend?.length > 0 && (
-                <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-                  <div className="flex flex-col gap-4 border-b border-border-soft px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <FiBarChart2 className="text-primary-600" />
-
-                        <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
-                          Patient Demand
-                        </p>
-                      </div>
-
-                      <h2 className="mt-2 text-base font-extrabold text-text-primary">
-                        Forecast Trend
-                      </h2>
-
-                      <p className="mt-1 text-xs text-text-muted">
-                        Projected patient demand based on historical mission
-                        patterns.
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-border bg-slate-50 px-3 py-2 text-xs text-text-muted">
-                      Forecasted patient volume over time
-                    </div>
-                  </div>
-
-                  <div className="h-[320px] w-full p-4 sm:h-[390px] sm:p-6">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={analytics.forecastTrend}
-                        margin={{
-                          top: 10,
-                          right: 10,
-                          left: -20,
-                          bottom: 5,
-                        }}
-                      >
-                        <defs>
-                          <linearGradient
-                            id="forecastFill"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="0%"
-                              stopColor="#2563eb"
-                              stopOpacity={0.24}
-                            />
-
-                            <stop
-                              offset="100%"
-                              stopColor="#2563eb"
-                              stopOpacity={0.01}
-                            />
-                          </linearGradient>
-                        </defs>
-
-                        <CartesianGrid
-                          stroke="#e2e8f0"
-                          strokeDasharray="3 3"
-                          vertical={false}
-                        />
-
-                        <XAxis
-                          dataKey="ds"
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{
-                            fill: "#64748b",
-                            fontSize: 11,
-                          }}
-                          tickFormatter={(value) =>
-                            new Date(value).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })
-                          }
-                        />
-
-                        <YAxis
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{
-                            fill: "#64748b",
-                            fontSize: 11,
-                          }}
-                        />
-
-                        <Tooltip
-                          contentStyle={{
-                            border: "1px solid #e2e8f0",
-                            borderRadius: "14px",
-                            boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
-                            fontSize: "12px",
-                          }}
-                          labelFormatter={(value) =>
-                            new Date(value).toLocaleDateString("en-US", {
-                              month: "long",
-                              day: "numeric",
-                              year: "numeric",
-                            })
-                          }
-                        />
-
-                        <Area
-                          type="monotone"
-                          dataKey="yhat"
-                          name="Predicted Patients"
-                          stroke="#2563eb"
-                          strokeWidth={3}
-                          fill="url(#forecastFill)"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </section>
-              )}
-
             {/* =====================================================
                 OPERATIONAL FORECASTS
             ====================================================== */}
@@ -682,74 +577,150 @@ const Analytics = () => {
               </div>
 
               <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-                <div className="border-b border-border-soft px-5 py-5 sm:px-6">
-                  <h3 className="text-base font-extrabold text-text-primary">
-                    Department Patient Trajectories
-                  </h3>
+                {/* =====================================================
+        CHART HEADER
+    ====================================================== */}
+                <div className="flex flex-col gap-4 border-b border-border-soft px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <div>
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
+                      {chartMode === "overall"
+                        ? "Patient Trend Forecast"
+                        : "Department Patient Trajectories"}
+                    </p>
 
-                  <p className="mt-1 text-xs text-text-muted">
-                    Historical mission workload and forecasted patient demand by
-                    department for {selectedLocation || "the selected location"}
-                    .
-                  </p>
+                    <h3 className="mt-1 text-base font-extrabold text-text-primary">
+                      {chartMode === "overall"
+                        ? "Overall Patient Trend"
+                        : "Department Patient Trajectories"}
+                    </h3>
+
+                    <p className="mt-1 text-xs text-text-muted">
+                      {chartMode === "overall"
+                        ? `Historical and forecasted patient demand for ${
+                            selectedLocation || "the selected location"
+                          }.`
+                        : `Historical and forecasted patient demand by department for ${
+                            selectedLocation || "the selected location"
+                          }.`}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="hidden text-xs font-semibold text-text-muted md:block">
+                      View:
+                    </span>
+
+                    <div className="flex rounded-xl border border-border bg-slate-100 p-1 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={() => setChartMode("overall")}
+                        className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
+                          chartMode === "overall"
+                            ? "bg-white text-primary-700 shadow-sm"
+                            : "text-text-muted hover:bg-white/70 hover:text-text-primary"
+                        }`}
+                      >
+                        Overall
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setChartMode("departments")}
+                        className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
+                          chartMode === "departments"
+                            ? "bg-white text-primary-700 shadow-sm"
+                            : "text-text-muted hover:bg-white/70 hover:text-text-primary"
+                        }`}
+                      >
+                        Departments
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="h-[360px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={chartData}
-                      margin={{
-                        top: 10,
-                        right: 20,
-                        left: 0,
-                        bottom: 10,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-
-                      <XAxis
-                        dataKey="date"
-                        tickFormatter={(value) => {
-                          const date = new Date(value);
-
-                          return date.toLocaleDateString("en-US", {
-                            month: "short",
-                            year: "numeric",
-                          });
+                {/* =====================================================
+        CHART
+    ====================================================== */}
+                <div className="p-5 sm:p-6">
+                  <div className="h-[360px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={activeChartData}
+                        margin={{
+                          top: 10,
+                          right: 20,
+                          left: 0,
+                          bottom: 10,
                         }}
-                      />
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
 
-                      <YAxis />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={(value) => {
+                            const date = new Date(value);
 
-                      <Tooltip
-                        labelFormatter={(value) => {
-                          const date = new Date(value);
-
-                          return date.toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          });
-                        }}
-                      />
-
-                      {departments.map((department) => (
-                        <Line
-                          key={department}
-                          type="monotone"
-                          dataKey={department}
-                          name={department}
-                          strokeWidth={2}
-                          dot={{
-                            r: 3,
+                            return date.toLocaleDateString("en-US", {
+                              month: "short",
+                              year: "numeric",
+                            });
                           }}
-                          activeDot={{
-                            r: 5,
-                          }}
-                          connectNulls
                         />
-                      ))}
-                    </LineChart>
+
+                        <YAxis />
+
+                        <Tooltip
+                          labelFormatter={(value) => {
+                            const date = new Date(value);
+
+                            return date.toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            });
+                          }}
+                        />
+
+                        {chartMode === "overall" ? (
+                          <Line
+                            type="monotone"
+                            dataKey="patients"
+                            name="Total Patients"
+                            strokeWidth={2.5}
+                            dot={{
+                              r: 3,
+                            }}
+                            activeDot={{
+                              r: 5,
+                            }}
+                            connectNulls
+                          />
+                        ) : (
+                          departments.map((department) => (
+                            <Line
+                              key={department}
+                              type="monotone"
+                              dataKey={department}
+                              name={department}
+                              strokeWidth={2}
+                              dot={{
+                                r: 3,
+                              }}
+                              activeDot={{
+                                r: 5,
+                              }}
+                              connectNulls
+                            />
+                          ))
+                        )}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* =====================================================
+          DEPARTMENT LEGEND
+      ====================================================== */}
+                  {chartMode === "departments" && (
                     <div className="mt-4 flex flex-wrap gap-3">
                       {departments.map((department) => (
                         <div
@@ -757,22 +728,16 @@ const Analytics = () => {
                           className="flex items-center gap-2 rounded-full border border-border bg-slate-50 px-3 py-1.5 text-xs font-semibold text-text-secondary"
                         >
                           <span className="h-2.5 w-2.5 rounded-full bg-primary-600" />
+
                           {department}
                         </div>
                       ))}
                     </div>
-                  </ResponsiveContainer>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    {departments.map((department) => (
-                      <div
-                        key={department}
-                        className="flex items-center gap-2 rounded-full border border-border bg-slate-50 px-3 py-1.5 text-xs font-semibold text-text-secondary"
-                      >
-                        <span className="h-2.5 w-2.5 rounded-full bg-primary-600" />
-                        {department}
-                      </div>
-                    ))}
-                  </div>
+                  )}
+
+                  {/* =====================================================
+          FORECAST DATE
+      ====================================================== */}
                   {forecastPoint && (
                     <div className="mt-3 text-xs text-text-muted">
                       Forecast for{" "}
@@ -788,9 +753,15 @@ const Analytics = () => {
                       </strong>
                     </div>
                   )}
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {Object.entries(analytics.departmentPredictions || {}).map(
-                      ([department, prediction]) => (
+
+                  {/* =====================================================
+          DEPARTMENT FORECAST SUMMARY
+      ====================================================== */}
+                  {chartMode === "departments" && (
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      {Object.entries(
+                        analytics.departmentPredictions || {},
+                      ).map(([department, prediction]) => (
                         <div
                           key={department}
                           className="rounded-xl border border-border bg-slate-50 p-4"
@@ -807,9 +778,9 @@ const Analytics = () => {
                             forecast patients
                           </p>
                         </div>
-                      ),
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </section>
             </section>

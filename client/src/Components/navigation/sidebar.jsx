@@ -5,7 +5,6 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { colors } from "../../Theme/colors";
 import {
   FaChartLine,
-  FaChartBar,
   FaSignOutAlt,
   FaUserShield,
   FaClipboardList,
@@ -16,6 +15,7 @@ import {
   FaChevronDown,
   FaChevronRight,
   FaBars,
+  FaTimes,
   FaCalendarAlt,
   FaFileAlt,
 } from "react-icons/fa";
@@ -31,14 +31,14 @@ export default function Sidebar({
   mobileMenuOpen,
   setMobileMenuOpen,
 }) {
+
   const isCollapsed = isMobile ? false : collapsed;
 
-  const closeMobileMenu = () => {
-    if (isMobile) {
-      setMobileMenuOpen(false);
-    }
-  };
-
+const closeMobileMenu = () => {
+  if (isMobile) {
+    setMobileMenuOpen(false);
+  }
+};
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -47,8 +47,13 @@ export default function Sidebar({
 
   const role = user?.role;
   const location = useLocation();
-  const isPharmacyActive =
-    location.pathname.startsWith("/pharmacy");
+  const isPharmacyActive = location.pathname.startsWith("/pharmacy");
+
+  /*
+  |--------------------------------------------------------------------------
+  | COLORS
+  |--------------------------------------------------------------------------
+  */
 
   /*
   |--------------------------------------------------------------------------
@@ -125,39 +130,36 @@ export default function Sidebar({
   */
 
   const getNavStyle = ({ isActive }) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: isCollapsed ? 0 : 12,
-    width: "100%",
-    minHeight: 48,
-    padding: isCollapsed ? "0 10px" : "0 12px",
-    justifyContent: isCollapsed
-      ? "center"
-      : "flex-start",
+  display: "flex",
+  alignItems: "center",
+  gap: isCollapsed ? 0 : 12,
+  width: "100%",
+  minHeight: 48,
+  padding: isCollapsed ? "0 10px" : "0 12px",
+  justifyContent: isCollapsed ? "center" : "flex-start",
 
-    border: "none",
-    borderRadius: 16,
+  border: "none",
+  borderRadius: 16,
 
-    background: isActive
-      ? "#F4C542"
-      : "transparent",
+  background: isActive
+    ? "#F4C542"
+    : "transparent",
 
-    color: isActive
-      ? colors.primary[900]
-      : "rgba(255, 255, 255, 0.68)",
+  color: isActive
+    ? colors.primary[900]
+    : "rgba(255, 255, 255, 0.68)",
 
-    cursor: "pointer",
-    transition:
-      "background 0.2s ease, color 0.2s ease, transform 0.15s ease",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
+  cursor: "pointer",
+  transition: "background 0.2s ease, color 0.2s ease, transform 0.15s ease",
+  WebkitTapHighlightColor: "transparent",
+  userSelect: "none",
 
-    fontSize: 13,
-    fontWeight: isActive ? 700 : 500,
-    fontFamily: "inherit",
+  fontSize: 13,
+  fontWeight: isActive ? 700 : 500,
+  fontFamily: "inherit",
 
-    textDecoration: "none",
-  });
+  textDecoration: "none",
+});
 
   /*
   |--------------------------------------------------------------------------
@@ -170,35 +172,34 @@ export default function Sidebar({
     marginLeft: isCollapsed ? 0 : 20,
     paddingLeft: isCollapsed ? 0 : 12,
     borderLeft: isCollapsed
-      ? "none"
-      : `1px solid ${colors.border.DEFAULT}`,
+  ? "none"
+  : `1px solid ${colors.border.DEFAULT}`,
   };
 
   const submenuLinkStyle = ({ isActive }) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    minHeight: 38,
-    padding: "0 12px",
-    marginBottom: 3,
-    borderRadius: 9,
-    textDecoration: "none",
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  minHeight: 38,
+  padding: "0 12px",
+  marginBottom: 3,
+  borderRadius: 9,
+  textDecoration: "none",
 
-    color: isActive
-      ? colors.primary[600]
-      : colors.text.muted,
+  color: isActive
+    ? colors.primary[600]
+    : colors.text.muted,
 
-    background: isActive
-      ? colors.primary[50]
-      : "transparent",
+  background: isActive
+    ? colors.primary[50]
+    : "transparent",
 
-    fontSize: 13,
-    fontWeight: isActive ? 600 : 500,
-    transition:
-      "background 0.2s ease, color 0.2s ease, transform 0.15s ease",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-  });
+  fontSize: 13,
+  fontWeight: isActive ? 600 : 500,
+  transition: "background 0.2s ease, color 0.2s ease, transform 0.15s ease",
+  WebkitTapHighlightColor: "transparent",
+  userSelect: "none",
+});
 
   /*
   |--------------------------------------------------------------------------
@@ -207,13 +208,13 @@ export default function Sidebar({
   */
 
   const iconStyle = {
-    fontSize: 16,
-    flexShrink: 0,
-  };
+  fontSize: 16,
+  flexShrink: 0,
+};
 
   return (
     <>
-      {/* Mobile backdrop */}
+      {/* Mobile backdrop: fades in/out while the drawer slides. */}
       {isMobile && (
         <div
           onClick={closeMobileMenu}
@@ -223,13 +224,9 @@ export default function Sidebar({
             inset: 0,
             zIndex: 900,
             background: "rgba(15, 23, 42, 0.45)",
-            backdropFilter: mobileMenuOpen
-              ? "blur(3px)"
-              : "blur(0px)",
+            backdropFilter: mobileMenuOpen ? "blur(3px)" : "blur(0px)",
             opacity: mobileMenuOpen ? 1 : 0,
-            pointerEvents: mobileMenuOpen
-              ? "auto"
-              : "none",
+            pointerEvents: mobileMenuOpen ? "auto" : "none",
             transition:
               "opacity 0.28s ease, backdrop-filter 0.28s ease",
           }}
@@ -238,9 +235,7 @@ export default function Sidebar({
 
       <aside
         aria-label="Main navigation"
-        aria-hidden={
-          isMobile ? !mobileMenuOpen : false
-        }
+        aria-hidden={isMobile ? !mobileMenuOpen : false}
         style={{
           position: "fixed",
           top: 12,
@@ -253,10 +248,8 @@ export default function Sidebar({
               : 250,
           background: colors.primary[900],
           borderRadius: 28,
-          border:
-            "1px solid rgba(255, 255, 255, 0.10)",
-          boxShadow:
-            "0 18px 45px rgba(15, 23, 42, 0.22)",
+          border: "1px solid rgba(255, 255, 255, 0.10)",
+          boxShadow: "0 18px 45px rgba(15, 23, 42, 0.22)",
           display: "flex",
           flexDirection: "column",
           padding: 12,
@@ -266,9 +259,7 @@ export default function Sidebar({
               ? "translateX(-115%)"
               : "translateX(0)",
           pointerEvents:
-            isMobile && !mobileMenuOpen
-              ? "none"
-              : "auto",
+            isMobile && !mobileMenuOpen ? "none" : "auto",
           transition: isMobile
             ? "transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)"
             : "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -337,8 +328,7 @@ export default function Sidebar({
                 <span
                   style={{
                     marginTop: 5,
-                    color:
-                      "rgba(255, 255, 255, 0.55)",
+                    color: "rgba(255, 255, 255, 0.55)",
                     fontSize: 9,
                     fontWeight: 600,
                     letterSpacing: "0.7px",
@@ -351,29 +341,33 @@ export default function Sidebar({
           )}
 
           {!isMobile && (
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              aria-label="Toggle sidebar"
-              style={{
-                width: 38,
-                height: 38,
-                border: "none",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                background:
-                  "rgba(255, 255, 255, 0.08)",
-                color:
-                  "rgba(255, 255, 255, 0.82)",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-            >
-              <FaBars size={16} />
-            </button>
+          <button
+  type="button"
+  onClick={toggleSidebar}
+  aria-label="Toggle sidebar"
+  style={{
+    width: 38,
+    height: 38,
+    border: "none",
+    borderRadius: "50%",
+
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+
+    flexShrink: 0,
+
+    background: "rgba(255, 255, 255, 0.08)",
+
+    color: "rgba(255, 255, 255, 0.82)",
+
+    cursor: "pointer",
+
+    transition: "all 0.2s ease",
+  }}
+>
+  <FaBars size={16} />
+</button>
           )}
         </div>
 
@@ -388,31 +382,16 @@ export default function Sidebar({
             }
           }}
           onPointerDown={(event) => {
-            const target =
-              event.target.closest("a, button");
-
-            if (target) {
-              target.style.transform =
-                "scale(0.98)";
-            }
+            const target = event.target.closest("a, button");
+            if (target) target.style.transform = "scale(0.98)";
           }}
           onPointerUp={(event) => {
-            const target =
-              event.target.closest("a, button");
-
-            if (target) {
-              target.style.transform =
-                "scale(1)";
-            }
+            const target = event.target.closest("a, button");
+            if (target) target.style.transform = "scale(1)";
           }}
           onPointerCancel={(event) => {
-            const target =
-              event.target.closest("a, button");
-
-            if (target) {
-              target.style.transform =
-                "scale(1)";
-            }
+            const target = event.target.closest("a, button");
+            if (target) target.style.transform = "scale(1)";
           }}
           style={{
             flex: 1,
@@ -454,8 +433,7 @@ export default function Sidebar({
                   : undefined
               }
             >
-              
-              <FaChartBar style={iconStyle} />
+              <FaChartLine style={iconStyle} />
 
               {!isCollapsed && (
                 <span>Dashboard</span>
@@ -614,16 +592,14 @@ export default function Sidebar({
                     : undefined
                 }
                 style={{
-                  ...getNavStyle({
-                    isActive:
-                      isPharmacyActive,
-                  }),
-                  justifyContent:
-                    isCollapsed
-                      ? "center"
-                      : "space-between",
-                  fontFamily: "inherit",
-                }}
+  ...getNavStyle({
+    isActive: isPharmacyActive,
+  }),
+  justifyContent: isCollapsed
+    ? "center"
+    : "space-between",
+  fontFamily: "inherit",
+}}
               >
                 <span
                   style={{
@@ -657,7 +633,9 @@ export default function Sidebar({
 
               {!isCollapsed &&
                 openPharmacy && (
-                  <div style={submenuStyle}>
+                  <div
+                    style={submenuStyle}
+                  >
                     <NavLink
                       to="/pharmacy/queue"
                       style={
@@ -713,10 +691,8 @@ export default function Sidebar({
                   width: 36,
                   height: 36,
                   borderRadius: 10,
-                  background:
-                    colors.primary[50],
-                  color:
-                    colors.primary[600],
+                  background: colors.primary[50],
+color: colors.primary[600],
                   display: "flex",
                   alignItems: "center",
                   justifyContent:
@@ -761,8 +737,7 @@ export default function Sidebar({
                 <span
                   style={{
                     marginTop: 3,
-                    color:
-                      "rgba(255, 255, 255, 0.55)",
+                    color: "rgba(255, 255, 255, 0.55)",
                     fontSize: 10,
                   }}
                 >
@@ -799,8 +774,7 @@ export default function Sidebar({
               borderRadius: 11,
               background:
                 "transparent",
-              color:
-                "rgba(255, 255, 255, 0.55)",
+              color: "rgba(255, 255, 255, 0.55)",
               fontSize: 14,
               fontWeight: 500,
               cursor: "pointer",
@@ -851,8 +825,7 @@ export default function Sidebar({
             style={{
               width: "100%",
               maxWidth: 400,
-              background:
-                colors.surface.DEFAULT,
+              background: colors.surface.DEFAULT,
               borderRadius: 18,
               padding: 26,
               boxShadow:
@@ -866,10 +839,8 @@ export default function Sidebar({
                 width: 46,
                 height: 46,
                 borderRadius: 12,
-                background:
-                  colors.danger[50],
-                color:
-                  colors.danger[600],
+                background: colors.danger[50],
+color: colors.danger[600],
                 display: "flex",
                 alignItems:
                   "center",
@@ -899,8 +870,7 @@ export default function Sidebar({
             <p
               style={{
                 margin: 0,
-                color:
-                  colors.text.muted,
+                color: colors.text.muted,
                 fontSize: 14,
                 lineHeight: 1.6,
               }}
@@ -931,10 +901,8 @@ export default function Sidebar({
                   padding:
                     "0 17px",
                   border: `1px solid ${colors.border.DEFAULT}`,
-                  background:
-                    colors.surface.DEFAULT,
-                  color:
-                    colors.text.primary,
+background: colors.surface.DEFAULT,
+color: colors.text.primary,
                   fontSize: 13,
                   fontWeight: 600,
                   cursor:
@@ -947,24 +915,23 @@ export default function Sidebar({
               </button>
 
               <button
-                type="button"
-                onClick={handleLogout}
-                style={{
-                  height: 40,
-                  padding: "0 17px",
-                  border: "none",
-                  borderRadius: 9,
-                  background:
-                    colors.danger[600],
-                  color: "#FFFFFF",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                Logout
-              </button>
+  type="button"
+  onClick={handleLogout}
+  style={{
+    height: 40,
+    padding: "0 17px",
+    border: "none",
+    borderRadius: 9,
+    background: colors.danger[600],
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  }}
+>
+  Logout
+</button>
             </div>
           </div>
         </div>

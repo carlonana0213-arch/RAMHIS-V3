@@ -523,31 +523,25 @@ function PatientDoctorView({
         prescriptionItems[index];
 
       if (
-        !item?.medicine ||
-        !String(item.medicine).trim()
-      ) {
-        setAlertMessage(
-          "Please select a medicine first."
-        );
-        return;
-      }
+  !item?.medicine ||
+  !String(item.medicine).trim()
+) {
+  setAlertMessage(
+    "Please select a medicine first."
+  );
+  return;
+}
 
-      if (!item?.medicineId) {
-        setAlertMessage(
-          "Please select a medicine from the list."
-        );
-        return;
-      }
-
-      if (
-        !item?.directions ||
-        !String(item.directions).trim()
-      ) {
-        setAlertMessage(
-          "Please enter directions for this medicine."
-        );
-        return;
-      }
+if (!item?.medicineId) {
+  setAlertMessage(
+    "Please select a medicine from the list."
+  );
+  return;
+}
+if (!item?.directions || !String(item.directions).trim) {
+    setAlertMessage("Please enter directions for this medicine.");
+    return;
+  }
 
       if (
         !patient?._id ||
@@ -560,17 +554,17 @@ function PatientDoctorView({
         setIsSaving(true);
 
         await savePrescription(
-          patient._id,
-          {
-            medicine: item.medicineId,
-            quantity: item.quantity,
-            directions: item.directions,
-            doctorId:
-              storedUser?._id ||
-              storedUser?.id ||
-              undefined,
-          }
-        );
+  patient._id,
+  {
+    medicine: item.medicineId,
+    quantity: item.quantity,
+    directions: item.directions,
+    doctorId:
+      storedUser?._id ||
+      storedUser?.id ||
+      undefined,
+  }
+);
 
         await loadPrescriptions(
           patient._id
@@ -741,157 +735,6 @@ function PatientDoctorView({
 
   /*
    * =========================================================
-   * BUILD DOCTOR RECORD PAYLOAD
-   * =========================================================
-   *
-   * This is shared by:
-   *
-   * 1. Save Changes
-   * 2. Send to Pharmacy
-   * 3. Release Patient
-   *
-   * Save Changes DOES NOT update the patient's status.
-   */
-
-  const buildDoctorRecordPayload =
-    () => {
-      return {
-        examination: {
-          ...EMPTY_DOCTOR_SHEET.examination,
-          ...(doctorSheet.examination ||
-            {}),
-        },
-
-        initComplaint:
-          newComplaint.trim() ||
-          doctorSheet.initComplaint ||
-          patient.initComplaint ||
-          "",
-
-        diagnosis:
-          doctorSheet.diagnosis ||
-          "",
-
-        treatment:
-          doctorSheet.treatment ||
-          "",
-
-        medication:
-          doctorSheet.medication ||
-          "",
-
-        doctorName:
-          storedUser?.name ||
-          storedUser?.fullName ||
-          "Doctor",
-
-        department:
-          patient.department ||
-          storedUser
-            ?.doctorInfo
-            ?.specialization ||
-          storedUser
-            ?.specialization ||
-          "General",
-
-        recordType:
-          hasHistory
-            ? "follow-up"
-            : "initial",
-
-        referral:
-          showReferral &&
-          referralDept
-            ? {
-                department:
-                  referralDept,
-
-                reason:
-                  referralReason ||
-                  "",
-              }
-            : undefined,
-      };
-    };
-
-  /*
-   * =========================================================
-   * SAVE CHANGES
-   * =========================================================
-   *
-   * Saves the consultation record only.
-   *
-   * IMPORTANT:
-   * - Does NOT call updatePatientStatus()
-   * - Does NOT send to pharmacy
-   * - Does NOT release the patient
-   */
-
-  const saveChanges =
-    async () => {
-      if (
-        !patient?._id ||
-        isSaving
-      ) {
-        return;
-      }
-
-      setIsSaving(true);
-
-      try {
-        const savedPatient =
-          await saveDoctorRecord(
-            patient._id,
-            buildDoctorRecordPayload()
-          );
-
-        console.log(
-          "Consultation changes saved:",
-          savedPatient
-        );
-
-        if (refreshQueue) {
-          await refreshQueue();
-        }
-
-        setAlertMessage(
-          "Changes saved successfully."
-        );
-
-        /*
-         * Close after successful save.
-         *
-         * Use a short timeout so the success
-         * message is not immediately hidden
-         * by the parent modal closing.
-         */
-        setTimeout(() => {
-          onClose({
-            saved: true,
-
-            finalized: false,
-
-            patientId:
-              patient._id,
-          });
-        }, 300);
-      } catch (error) {
-        console.error(
-          "Failed to save consultation changes:",
-          error
-        );
-
-        setAlertMessage(
-          error?.message ||
-            "Failed to save the consultation changes."
-        );
-      } finally {
-        setIsSaving(false);
-      }
-    };
-
-  /*
-   * =========================================================
    * FINALIZE CONSULTATION
    * =========================================================
    */
@@ -936,7 +779,63 @@ function PatientDoctorView({
         const savedPatient =
           await saveDoctorRecord(
             patient._id,
-            buildDoctorRecordPayload()
+            {
+              examination: {
+                ...EMPTY_DOCTOR_SHEET.examination,
+                ...(doctorSheet.examination ||
+                  {}),
+              },
+
+              initComplaint:
+                newComplaint.trim() ||
+                doctorSheet.initComplaint ||
+                patient.initComplaint ||
+                "",
+
+              diagnosis:
+                doctorSheet.diagnosis ||
+                "",
+
+              treatment:
+                doctorSheet.treatment ||
+                "",
+
+              medication:
+                doctorSheet.medication ||
+                "",
+
+              doctorName:
+                storedUser?.name ||
+                storedUser?.fullName ||
+                "Doctor",
+
+              department:
+                patient.department ||
+                storedUser
+                  ?.doctorInfo
+                  ?.specialization ||
+                storedUser
+                  ?.specialization ||
+                "General",
+
+              recordType:
+                hasHistory
+                  ? "follow-up"
+                  : "initial",
+
+              referral:
+                showReferral &&
+                referralDept
+                  ? {
+                      department:
+                        referralDept,
+
+                      reason:
+                        referralReason ||
+                        "",
+                    }
+                  : undefined,
+            }
           );
 
         const updatedPatient =
@@ -1644,33 +1543,27 @@ function PatientDoctorView({
                                           }
                                           type="button"
                                           onClick={() => {
-                                            updatePrescriptionItem(
-                                              index,
-                                              "medicine",
-                                              name
-                                            );
+  updatePrescriptionItem(
+    index,
+    "medicine",
+    name
+  );
 
-                                            updatePrescriptionItem(
-                                              index,
-                                              "medicineId",
-                                              medicine._id ||
-                                                medicine.id
-                                            );
+  updatePrescriptionItem(
+    index,
+    "medicineId",
+    medicine._id || medicine.id
+  );
 
-                                            setMedicineSearch(
-                                              (
-                                                previous
-                                              ) => ({
-                                                ...previous,
-                                                [index]:
-                                                  name,
-                                              })
-                                            );
+  setMedicineSearch(
+    (previous) => ({
+      ...previous,
+      [index]: name,
+    })
+  );
 
-                                            setActiveDropdown(
-                                              null
-                                            );
-                                          }}
+  setActiveDropdown(null);
+}}
                                           className="flex w-full items-start justify-between gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-slate-50"
                                         >
                                           <div>
@@ -2131,11 +2024,7 @@ function PatientDoctorView({
                   </button>
                 </div>
 
-                {/* ACTION BUTTONS */}
-
                 <div className="mt-5 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
-
-                  {/* CANCEL */}
 
                   <button
                     type="button"
@@ -2147,36 +2036,6 @@ function PatientDoctorView({
                   >
                     Cancel
                   </button>
-
-                  {/* SAVE CHANGES */}
-
-                  <button
-                    type="button"
-                    onClick={
-                      saveChanges
-                    }
-                    disabled={isSaving}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-5 py-3 text-sm font-bold text-primary-700 shadow-sm transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isSaving ? (
-                      <>
-                        <RotateCcw
-                          size={17}
-                          className="animate-spin"
-                        />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardList
-                          size={17}
-                        />
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-
-                  {/* FINALIZE */}
 
                   <button
                     type="button"

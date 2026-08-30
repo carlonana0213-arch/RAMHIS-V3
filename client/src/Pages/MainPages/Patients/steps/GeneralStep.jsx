@@ -139,7 +139,7 @@ const GeneralStep = ({ form, setForm }) => {
           {/* FULL NAME */}
           <div className="md:col-span-2">
             <label className={labelClass}>
-              Full Name <span className="text-red-500">*</span>
+              Full Name
             </label>
 
             <input
@@ -159,7 +159,7 @@ const GeneralStep = ({ form, setForm }) => {
           {/* BIRTHDATE */}
           <div>
             <label className={labelClass}>
-              Birthdate <span className="text-red-500">*</span>
+              Birthdate
             </label>
 
             <input
@@ -193,7 +193,7 @@ const GeneralStep = ({ form, setForm }) => {
           {/* SEX */}
           <div className="md:col-span-2">
             <label className={labelClass}>
-              Sex <span className="text-red-500">*</span>
+              Sex
             </label>
 
             <div className="button-group flex flex-col gap-3 sm:flex-row">

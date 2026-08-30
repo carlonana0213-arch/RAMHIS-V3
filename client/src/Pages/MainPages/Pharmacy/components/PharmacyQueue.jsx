@@ -6,7 +6,7 @@ import {
   Clock3,
   Search,
   CheckCircle2,
-  ListOrdered,
+  Package,
   AlertTriangle,
   XCircle,
 } from "lucide-react";
@@ -372,7 +372,7 @@ return (
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <div className="mt-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-            <ListOrdered size={21} />
+            <Package size={21} />
           </div>
 
           <div>

@@ -137,7 +137,7 @@ const DepartmentStep = ({ form, setForm }) => {
               </span>
 
               <h3 className="text-xl font-bold tracking-tight text-primary-900">
-                Select Department <span className="text-red-500">*</span>
+                Select Department
               </h3>
 
               <p className="mt-1 text-sm text-text-muted">
@@ -283,28 +283,28 @@ const DepartmentStep = ({ form, setForm }) => {
 
           </div>
 
-{/* SWITCH */}
-<button
-  type="button"
-  role="switch"
-  aria-checked={form.isPriority || false}
-  onClick={togglePriority}
-  className={[
-    "relative h-8 w-14 shrink-0 rounded-full transition-all duration-200 focus:outline-none focus:ring-4",
-    form.isPriority
-      ? "bg-red-600 focus:ring-red-600/20"
-      : "bg-slate-300 focus:ring-slate-200",
-  ].join(" ")}
->
-  <span
-    className={[
-      "absolute top-1 h-6 w-6 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-all duration-200",
-      form.isPriority
-        ? "left-7"
-        : "left-1",
-    ].join(" ")}
-  />
-</button> 
+          {/* SWITCH */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.isPriority || false}
+            onClick={togglePriority}
+            className={[
+              "relative h-8 w-14 shrink-0 rounded-full transition-all duration-200 focus:outline-none focus:ring-4",
+              form.isPriority
+                ? "bg-status-warning-dot focus:ring-status-warning-dot/20"
+                : "bg-slate-300 focus:ring-slate-200",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "absolute top-1 h-6 w-6 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-all duration-200",
+                form.isPriority
+                  ? "left-7"
+                  : "left-1",
+              ].join(" ")}
+            />
+          </button>
 
         </div>
 
