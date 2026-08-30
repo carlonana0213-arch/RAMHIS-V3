@@ -63,9 +63,19 @@ export async function cachePatientQueue(patients) {
 
       await db.offlinePatients.put({
         ...patient,
+
         key: patientKey(ownerKey, patient._id),
+
         ownerKey,
+
         serverId: patient._id,
+
+        serverSnapshot: structuredClone(patient),
+
+        _offline: false,
+
+        _syncStatus: "synced",
+
         updatedAt: new Date().toISOString(),
       });
     }
@@ -253,4 +263,58 @@ export async function getCachedPrescriptions(patientId) {
     .where("[ownerKey+patientId]")
     .equals([ownerKey, patientId])
     .toArray();
+}
+
+export async function createOfflineConflict({
+  entityType,
+  entityKey,
+  operationId,
+  localData,
+  serverData,
+}) {
+  const ownerKey = getOwnerKey();
+
+  const conflictId = crypto.randomUUID();
+
+  await db.offlineConflicts.put({
+    conflictId,
+
+    ownerKey,
+
+    entityType,
+
+    entityKey,
+
+    operationId,
+
+    localData,
+
+    serverData,
+
+    status: "pending",
+
+    createdAt: new Date().toISOString(),
+
+    updatedAt: new Date().toISOString(),
+  });
+
+  return conflictId;
+}
+
+export async function getPendingOfflineConflicts() {
+  const ownerKey = getOwnerKey();
+
+  return db.offlineConflicts
+    .where("ownerKey")
+    .equals(ownerKey)
+    .and((conflict) => conflict.status === "pending")
+    .sortBy("createdAt");
+}
+
+export async function resolveOfflineConflict(conflictId, resolution) {
+  await db.offlineConflicts.update(conflictId, {
+    status: resolution,
+    resolvedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
 }

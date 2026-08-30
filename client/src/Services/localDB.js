@@ -88,6 +88,9 @@ db.version(6).stores({
   offlinePrescriptions:
     "key, ownerKey, [ownerKey+patientId], patientId, serverId, updatedAt",
 
+  offlineConflicts:
+    "conflictId, ownerKey, entityType, entityKey, status, createdAt",
+
   offlineOutbox:
     "operationId, ownerKey, entityType, entityKey, status, createdAt",
 
