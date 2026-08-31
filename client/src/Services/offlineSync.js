@@ -168,6 +168,17 @@ async function processOperation(operation) {
           `[Offline Sync] Conflict detected for doctor record on patient ${operation.entityKey}.`,
         );
 
+        // Notify any currently open React UI that a conflict is available.
+        window.dispatchEvent(
+          new CustomEvent("offline-conflict-created", {
+            detail: {
+              entityType: "doctorRecord",
+              entityKey: operation.entityKey,
+              operationId: operation.operationId,
+            },
+          }),
+        );
+
         return;
       }
     }
@@ -207,6 +218,17 @@ async function processOperation(operation) {
 
         console.warn(
           `[Offline Sync] Conflict detected for patient ${operation.entityKey}.`,
+        );
+
+        // Notify any currently open React UI that a conflict is available.
+        window.dispatchEvent(
+          new CustomEvent("offline-conflict-created", {
+            detail: {
+              entityType: "patient",
+              entityKey: operation.entityKey,
+              operationId: operation.operationId,
+            },
+          }),
         );
 
         return;

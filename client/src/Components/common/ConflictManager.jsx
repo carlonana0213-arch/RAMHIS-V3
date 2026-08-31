@@ -2,18 +2,22 @@ export default function ConflictManager({
   conflict,
   patient,
   onClose,
-  onResolved,
+  onKeepServer,
+  onKeepLocal,
+  isResolving = false,
 }) {
   if (!conflict) {
     return null;
   }
 
   const patientName =
+    patient?.generalInfo?.name ||
     patient?.name ||
     patient?.fullName ||
-    patient?.generalInfo?.name ||
-    patient?.personalInfo?.name ||
     "Selected Patient";
+
+  const localData = conflict.localData || {};
+  const serverData = conflict.serverData || {};
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
@@ -35,27 +39,28 @@ export default function ConflictManager({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-lg text-text-muted transition hover:bg-slate-100 hover:text-slate-700"
+            disabled={isResolving}
+            className="rounded-full p-2 text-lg text-text-muted transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close conflict dialog"
           >
             ✕
           </button>
         </div>
 
-        {/* EXPLANATION */}
+        {/* WARNING */}
         <div className="px-6 pt-5">
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-sm leading-6 text-amber-900">
-              This patient's information was changed on this device while
-              offline, but the server also contains changes made by another
-              user. Please review both versions before continuing.
+              This patient was changed on the server after this device made an
+              offline change. Review both versions before deciding which version
+              should be kept.
             </p>
           </div>
         </div>
 
-        {/* COMPARISON */}
+        {/* CONFLICT INFORMATION */}
         <div className="grid gap-5 px-6 py-6 md:grid-cols-2">
-          {/* LOCAL VERSION */}
+          {/* LOCAL */}
           <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
@@ -64,15 +69,15 @@ export default function ConflictManager({
             </div>
 
             <p className="mt-2 text-sm leading-5 text-blue-800">
-              Changes made on this device while it was offline.
+              Changes made on this device while offline.
             </p>
 
             <pre className="mt-4 max-h-72 overflow-auto rounded-xl bg-white p-4 text-xs leading-5 text-slate-800">
-              {JSON.stringify(conflict.localData, null, 2)}
+              {JSON.stringify(localData, null, 2)}
             </pre>
           </div>
 
-          {/* SERVER VERSION */}
+          {/* SERVER */}
           <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-purple-500" />
@@ -85,7 +90,7 @@ export default function ConflictManager({
             </p>
 
             <pre className="mt-4 max-h-72 overflow-auto rounded-xl bg-white p-4 text-xs leading-5 text-slate-800">
-              {JSON.stringify(conflict.serverData, null, 2)}
+              {JSON.stringify(serverData, null, 2)}
             </pre>
           </div>
         </div>
@@ -94,33 +99,37 @@ export default function ConflictManager({
         <div className="flex flex-wrap justify-end gap-3 border-t border-border-soft px-6 py-5">
           <button
             type="button"
-            disabled
-            className="cursor-not-allowed rounded-xl border border-purple-200 bg-purple-50 px-5 py-2.5 text-sm font-semibold text-purple-700 opacity-60"
+            onClick={onClose}
+            disabled={isResolving}
+            className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Keep Server Version
+            Review Later
           </button>
 
           <button
             type="button"
-            disabled
-            className="cursor-not-allowed rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white opacity-60"
+            onClick={onKeepServer}
+            disabled={isResolving}
+            className="rounded-xl border border-purple-200 bg-purple-50 px-5 py-2.5 text-sm font-semibold text-purple-700 transition hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Keep My Changes
+            {isResolving ? "Resolving..." : "Keep Server Version"}
           </button>
 
           <button
             type="button"
-            disabled
-            className="cursor-not-allowed rounded-xl border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-semibold text-amber-700 opacity-60"
+            onClick={onKeepLocal}
+            disabled={isResolving}
+            className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Merge Manually
+            {isResolving ? "Resolving..." : "Keep My Changes"}
           </button>
         </div>
 
-        {/* CURRENTLY DISABLED NOTICE */}
+        {/* FOOTER */}
         <div className="px-6 pb-6">
           <p className="text-center text-xs text-text-muted">
-            Conflict resolution will be available after reviewing the changes.
+            Keeping the server version discards this device's pending change.
+            Keeping your changes will send the offline version to the server.
           </p>
         </div>
       </div>
