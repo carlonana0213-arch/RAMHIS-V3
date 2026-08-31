@@ -67,6 +67,48 @@ function hasServerChangedSinceBaseline(baseline, server) {
   return JSON.stringify(baseline) !== JSON.stringify(server);
 }
 
+function normalizeForComparison(value) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(normalizeForComparison);
+  }
+
+  if (typeof value === "object") {
+    const result = {};
+
+    Object.keys(value)
+      .sort()
+      .forEach((key) => {
+        // Ignore local-only synchronization fields.
+        if (
+          key === "key" ||
+          key === "serverSnapshot" ||
+          key === "_offline" ||
+          key === "_syncStatus" ||
+          key === "updatedAt"
+        ) {
+          return;
+        }
+
+        result[key] = normalizeForComparison(value[key]);
+      });
+
+    return result;
+  }
+
+  return value;
+}
+
+function recordsAreDifferent(a, b) {
+  return (
+    JSON.stringify(normalizeForComparison(a)) !==
+    JSON.stringify(normalizeForComparison(b))
+  );
+}
+
 async function processOperation(operation) {
   try {
     await db.offlineOutbox.update(operation.operationId, {
@@ -90,51 +132,84 @@ async function processOperation(operation) {
     }
 
     // -------------------------------------------------
-    // CONFLICT DETECTION FOR OFFLINE PATIENT UPDATES
+    // CONFLICT DETECTION
     // -------------------------------------------------
 
-    if (operation.entityType === "patient" && operation.method === "PUT") {
-      const ownerKey = getOwnerKey();
+    if (operation.entityType === "doctorRecord" && operation.baseSnapshot) {
+      const serverPatient = await fetchCurrentServerPatient(
+        operation.entityKey,
+      );
 
-      const patientKey = `${ownerKey}:patient:${operation.entityKey}`;
+      const baseline = operation.baseSnapshot;
 
-      const localPatient = await db.offlinePatients.get(patientKey);
+      const serverChanged = recordsAreDifferent(baseline, serverPatient);
 
-      if (localPatient?.serverSnapshot) {
-        const serverPatient = await fetchCurrentServerPatient(
-          operation.entityKey,
+      if (serverChanged) {
+        await createOfflineConflict({
+          entityType: "doctorRecord",
+          entityKey: operation.entityKey,
+          operationId: operation.operationId,
+
+          localData: {
+            ...operation.payload,
+
+            _baseSnapshot: baseline,
+          },
+
+          serverData: serverPatient,
+        });
+
+        await db.offlineOutbox.update(operation.operationId, {
+          status: "conflict",
+          updatedAt: new Date().toISOString(),
+        });
+
+        console.warn(
+          `[Offline Sync] Conflict detected for doctor record on patient ${operation.entityKey}.`,
         );
 
-        const localChanged = hasChangedSinceBaseline(
-          localPatient.serverSnapshot,
-          localPatient,
+        return;
+      }
+    }
+
+    if (
+      operation.entityType === "patient" &&
+      operation.method === "PUT" &&
+      operation.baseSnapshot
+    ) {
+      const serverPatient = await fetchCurrentServerPatient(
+        operation.entityKey,
+      );
+
+      const baseline = operation.baseSnapshot;
+
+      const serverChanged = recordsAreDifferent(baseline, serverPatient);
+
+      if (serverChanged) {
+        await createOfflineConflict({
+          entityType: "patient",
+          entityKey: operation.entityKey,
+          operationId: operation.operationId,
+
+          localData: {
+            ...operation.payload,
+
+            _baseSnapshot: baseline,
+          },
+
+          serverData: serverPatient,
+        });
+
+        await db.offlineOutbox.update(operation.operationId, {
+          status: "conflict",
+          updatedAt: new Date().toISOString(),
+        });
+
+        console.warn(
+          `[Offline Sync] Conflict detected for patient ${operation.entityKey}.`,
         );
 
-        const serverChanged = hasServerChangedSinceBaseline(
-          localPatient.serverSnapshot,
-          serverPatient,
-        );
-
-        if (localChanged && serverChanged) {
-          await createOfflineConflict({
-            entityType: "patient",
-            entityKey: operation.entityKey,
-            operationId: operation.operationId,
-            localData: localPatient,
-            serverData: serverPatient,
-          });
-
-          await db.offlineOutbox.update(operation.operationId, {
-            status: "conflict",
-            updatedAt: new Date().toISOString(),
-          });
-
-          console.warn(
-            `[Offline Sync] Conflict detected for patient ${operation.entityKey}.`,
-          );
-
-          return;
-        }
+        return;
       }
     }
 

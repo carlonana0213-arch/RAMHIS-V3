@@ -203,6 +203,9 @@ export const saveDoctorRecord = async (patientId, data) => {
     if (!existingPatient) {
       throw new Error("Patient is not available in offline storage.");
     }
+    const baseSnapshot = existingPatient.serverSnapshot
+      ? structuredClone(existingPatient.serverSnapshot)
+      : structuredClone(existingPatient);
 
     /*
      * Create a temporary ID for the new
@@ -258,13 +261,21 @@ export const saveDoctorRecord = async (patientId, data) => {
      */
     await queueOfflineOperation({
       entityType: "doctorRecord",
+
       entityKey: patientId,
+
       method: "POST",
+
       url: `${API}/patients/${patientId}/doctor-record`,
+
       payload: {
         ...data,
         _offlineRecordId: offlineRecordId,
       },
+
+      // Remember exactly what the patient looked like
+      // before this offline consultation was created.
+      baseSnapshot,
     });
 
     console.info(

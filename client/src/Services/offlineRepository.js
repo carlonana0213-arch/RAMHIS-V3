@@ -154,6 +154,7 @@ export async function queueOfflineOperation({
   method,
   url,
   payload,
+  baseSnapshot = null,
 }) {
   const ownerKey = getOwnerKey();
 
@@ -167,6 +168,11 @@ export async function queueOfflineOperation({
     method,
     url,
     payload,
+
+    // The server version that existed when
+    // the user made the offline change.
+    baseSnapshot: baseSnapshot ? structuredClone(baseSnapshot) : null,
+
     status: "pending",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -292,6 +298,8 @@ export async function createOfflineConflict({
     serverData,
 
     status: "pending",
+
+    resolution: null,
 
     createdAt: new Date().toISOString(),
 
