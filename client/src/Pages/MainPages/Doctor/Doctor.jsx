@@ -174,7 +174,8 @@ export default function Doctor() {
       const conflict = conflicts.find(
         (item) =>
           item.status === "pending" &&
-          item.entityType === "patient" &&
+          (item.entityType === "patient" ||
+            item.entityType === "doctorRecord") &&
           String(item.entityKey) === String(patientId),
       );
 

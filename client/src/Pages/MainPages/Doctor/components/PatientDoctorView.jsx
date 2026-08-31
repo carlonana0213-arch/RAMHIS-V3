@@ -298,6 +298,127 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     checkForPatientConflict(patient._id);
   }, [patient?._id, recordMode]);
 
+  const handleKeepServerVersion = async () => {
+    if (!activeConflict) {
+      return;
+    }
+
+    try {
+      setIsResolvingConflict(true);
+
+      const operationId = activeConflict.operationId;
+
+      // Remove the pending offline operation so it
+      // cannot be synchronized later.
+      if (operationId) {
+        await db.offlineOutbox.delete(operationId);
+      }
+
+      // Mark the conflict as resolved.
+      await resolveOfflineConflict(activeConflict.conflictId, "server");
+
+      console.info("[Conflict UI] Server version selected.");
+
+      setActiveConflict(null);
+
+      // Refresh the doctor queue so the UI reflects
+      // the server version.
+      await refreshQueue?.();
+    } catch (error) {
+      console.error("[Conflict UI] Failed to keep server version:", error);
+
+      setAlertMessage(error?.message || "Failed to resolve the conflict.");
+    } finally {
+      setIsResolvingConflict(false);
+    }
+  };
+
+  const handleKeepLocalVersion = async () => {
+    if (!activeConflict) {
+      return;
+    }
+
+    try {
+      setIsResolvingConflict(true);
+
+      const operation = await db.offlineOutbox.get(activeConflict.operationId);
+
+      if (!operation) {
+        throw new Error("The pending offline operation could not be found.");
+      }
+
+      /*
+       * The conflict has already been reviewed by the user.
+       *
+       * We put the operation back into pending so the
+       * normal offline synchronization process can retry it.
+       */
+      await db.offlineOutbox.update(operation.operationId, {
+        status: "pending",
+
+        /*
+         * The server version that caused the conflict
+         * becomes the new comparison baseline.
+         */
+        baseSnapshot: activeConflict.serverData,
+
+        updatedAt: new Date().toISOString(),
+      });
+
+      await resolveOfflineConflict(activeConflict.conflictId, "local");
+
+      console.info(
+        "[Conflict UI] Local version selected. Retrying synchronization.",
+      );
+
+      setActiveConflict(null);
+
+      /*
+       * Tell the application that connectivity is
+       * available so the existing sync listener can
+       * process the pending operation.
+       */
+      window.dispatchEvent(new Event("online"));
+    } catch (error) {
+      console.error("[Conflict UI] Failed to keep local version:", error);
+
+      setAlertMessage(error?.message || "Failed to keep your changes.");
+    } finally {
+      setIsResolvingConflict(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleConflictCreated = async (event) => {
+      const conflictPatientId = event?.detail?.entityKey;
+
+      if (!conflictPatientId) {
+        return;
+      }
+
+      // Only react if this is the patient currently
+      // being viewed in PatientDoctorView.
+      if (String(conflictPatientId) !== String(patient?._id)) {
+        return;
+      }
+
+      console.info(
+        "[Conflict UI] Conflict created for currently selected patient.",
+      );
+
+      await checkForPatientConflict(patient._id);
+    };
+
+    window.addEventListener("offline-conflict-created", handleConflictCreated);
+
+    return () => {
+      window.removeEventListener(
+        "offline-conflict-created",
+        handleConflictCreated,
+      );
+    };
+  }, [patient?._id]);
+
   /*
    * =========================================================
    * LOAD MEDICINES
@@ -1689,6 +1810,21 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
           onClose={() => setConfirmState(null)}
         />
       )}
+
+      <ConflictManager
+        conflict={activeConflict}
+        patient={patient}
+        onClose={() => {
+          if (isResolvingConflict) {
+            return;
+          }
+
+          setActiveConflict(null);
+        }}
+        onKeepServer={handleKeepServerVersion}
+        onKeepLocal={handleKeepLocalVersion}
+        isResolving={isResolvingConflict}
+      />
     </>
   );
 }
