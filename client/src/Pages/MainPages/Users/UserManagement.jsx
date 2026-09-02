@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { API_BASE_URL } from "../../../Services/apiConfig";
 import {
   CheckCircle2,
   ChevronRight,
@@ -33,6 +34,18 @@ import AddUserModal from "../../../Components/admin/AddUserModal";
 import EditUserModal from "../../../Components/admin/EditUserModal";
 
 function UserManagement() {
+  const getFileUrl = (filePath) => {
+    if (!filePath) return "";
+
+    if (/^https?:\/\//i.test(filePath)) {
+      return filePath;
+    }
+
+    return `${API_BASE_URL}${
+      filePath.startsWith("/") ? filePath : `/${filePath}`
+    }`;
+  };
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -594,9 +607,7 @@ function UserManagement() {
                           {user.role === "Doctor" &&
                           user.doctorInfo?.proofOfLicense ? (
                             <a
-                              href={
-                                user.doctorInfo.proofOfLicense
-                              }
+                              href={getFileUrl(user.doctorInfo.proofOfLicense)}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
@@ -617,9 +628,7 @@ function UserManagement() {
                           {user.role === "Doctor" &&
                           user.doctorInfo?.proofOfDoctorate ? (
                             <a
-                              href={
-                                user.doctorInfo.proofOfDoctorate
-                              }
+                              href={getFileUrl(user.doctorInfo.proofOfDoctorate)}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
