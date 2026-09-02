@@ -160,6 +160,15 @@ export async function queueOfflineOperation({
 
   const operationId = crypto.randomUUID();
 
+  // ---------------------------------------------------------
+  // Capture the server version that existed when the user
+  // made the offline change.
+  //
+  // baseSnapshot is normally the last server version cached
+  // for this patient.
+  // ---------------------------------------------------------
+  const baseUpdatedAt = baseSnapshot?.updatedAt || null;
+
   await db.offlineOutbox.put({
     operationId,
     ownerKey,
@@ -169,9 +178,13 @@ export async function queueOfflineOperation({
     url,
     payload,
 
-    // The server version that existed when
-    // the user made the offline change.
+    // Full server snapshot used by the existing frontend
+    // conflict detection.
     baseSnapshot: baseSnapshot ? structuredClone(baseSnapshot) : null,
+
+    // Compact version used by the backend for optimistic
+    // concurrency checking.
+    baseUpdatedAt,
 
     status: "pending",
     createdAt: new Date().toISOString(),

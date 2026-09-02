@@ -126,9 +126,35 @@ async function processOperation(operation) {
     if (operation.entityType === "doctorRecord" && requestPayload) {
       requestPayload = {
         ...requestPayload,
+
+        _sync: {
+          operationId: operation.operationId,
+          baseUpdatedAt:
+            operation.baseUpdatedAt ||
+            operation.baseSnapshot?.updatedAt ||
+            null,
+        },
       };
 
       delete requestPayload._offlineRecordId;
+    }
+
+    if (
+      operation.entityType === "patient" &&
+      operation.method === "PUT" &&
+      requestPayload
+    ) {
+      requestPayload = {
+        ...requestPayload,
+
+        _sync: {
+          operationId: operation.operationId,
+          baseUpdatedAt:
+            operation.baseUpdatedAt ||
+            operation.baseSnapshot?.updatedAt ||
+            null,
+        },
+      };
     }
 
     // -------------------------------------------------

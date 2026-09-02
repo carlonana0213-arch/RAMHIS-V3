@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { getPatientConflicts } from "../../Services/syncConflictService";
 export default function ConflictManager({
   conflict,
   patient,
@@ -9,6 +11,9 @@ export default function ConflictManager({
   if (!conflict) {
     return null;
   }
+  const [conflicts, setConflicts] = useState([]);
+  const [loadingConflicts, setLoadingConflicts] = useState(false);
+  const [conflictError, setConflictError] = useState(null);
 
   const patientName =
     patient?.generalInfo?.name ||
@@ -18,7 +23,43 @@ export default function ConflictManager({
 
   const localData = conflict.localData || {};
   const serverData = conflict.serverData || {};
+  useEffect(() => {
+    if (!patientId) {
+      setConflicts([]);
+      return;
+    }
 
+    let cancelled = false;
+
+    const loadConflicts = async () => {
+      try {
+        setLoadingConflicts(true);
+        setConflictError(null);
+
+        const result = await getPatientConflicts(patientId);
+
+        if (!cancelled) {
+          setConflicts(Array.isArray(result) ? result : []);
+        }
+      } catch (error) {
+        console.error("[Conflict UI] Failed to load conflicts:", error);
+
+        if (!cancelled) {
+          setConflictError(error?.message || "Failed to load conflicts.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingConflicts(false);
+        }
+      }
+    };
+
+    loadConflicts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [patientId]);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
       <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
@@ -57,6 +98,20 @@ export default function ConflictManager({
             </p>
           </div>
         </div>
+        {loadingConflicts && (
+          <div>Checking for synchronization conflicts...</div>
+        )}
+
+        {conflictError && <div>{conflictError}</div>}
+
+        {!loadingConflicts && !conflictError && conflicts.length > 0 && (
+          <div>
+            <strong>
+              {conflicts.length} pending conflict
+              {conflicts.length !== 1 ? "s" : ""} found.
+            </strong>
+          </div>
+        )}
 
         {/* CONFLICT INFORMATION */}
         <div className="grid gap-5 px-6 py-6 md:grid-cols-2">
