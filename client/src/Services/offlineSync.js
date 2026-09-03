@@ -161,54 +161,6 @@ async function processOperation(operation) {
     // CONFLICT DETECTION
     // -------------------------------------------------
 
-    if (operation.entityType === "doctorRecord" && operation.baseSnapshot) {
-      const serverPatient = await fetchCurrentServerPatient(
-        operation.entityKey,
-      );
-
-      const baseline = operation.baseSnapshot;
-
-      const serverChanged = recordsAreDifferent(baseline, serverPatient);
-
-      if (serverChanged) {
-        await createOfflineConflict({
-          entityType: "doctorRecord",
-          entityKey: operation.entityKey,
-          operationId: operation.operationId,
-
-          localData: {
-            ...operation.payload,
-
-            _baseSnapshot: baseline,
-          },
-
-          serverData: serverPatient,
-        });
-
-        await db.offlineOutbox.update(operation.operationId, {
-          status: "conflict",
-          updatedAt: new Date().toISOString(),
-        });
-
-        console.warn(
-          `[Offline Sync] Conflict detected for doctor record on patient ${operation.entityKey}.`,
-        );
-
-        // Notify any currently open React UI that a conflict is available.
-        window.dispatchEvent(
-          new CustomEvent("offline-conflict-created", {
-            detail: {
-              entityType: "doctorRecord",
-              entityKey: operation.entityKey,
-              operationId: operation.operationId,
-            },
-          }),
-        );
-
-        return;
-      }
-    }
-
     if (
       operation.entityType === "patient" &&
       operation.method === "PUT" &&
@@ -276,6 +228,55 @@ async function processOperation(operation) {
       error,
     );
 
+    // ---------------------------------------------------------
+    // BACKEND CONFLICT
+    // ---------------------------------------------------------
+    if (operation.entityType === "doctorRecord" && error?.status === 409) {
+      const conflictData = error?.data;
+
+      console.warn(
+        `[Offline Sync] Backend conflict detected for doctor record ${operation.entityKey}.`,
+        conflictData,
+      );
+
+      await db.offlineOutbox.update(operation.operationId, {
+        status: "conflict",
+        error: "Synchronization conflict requires review.",
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Store the backend conflict locally so the UI can
+      // immediately display it.
+      await createOfflineConflict({
+        entityType: "doctorRecord",
+        entityKey: operation.entityKey,
+        operationId: operation.operationId,
+
+        localData: operation.payload,
+
+        serverData:
+          conflictData?.serverData ||
+          conflictData?.candidates?.find(
+            (candidate) => candidate.source === "server",
+          )?.data ||
+          null,
+      });
+
+      window.dispatchEvent(
+        new CustomEvent("offline-conflict-created", {
+          detail: {
+            entityType: "doctorRecord",
+            entityKey: operation.entityKey,
+            operationId: operation.operationId,
+            conflictId: conflictData?.conflictId || null,
+            candidates: conflictData?.candidates || [],
+          },
+        }),
+      );
+
+      return;
+    }
+
     const networkFailure = isNetworkError(error);
 
     await db.offlineOutbox.update(operation.operationId, {
@@ -285,8 +286,6 @@ async function processOperation(operation) {
     });
 
     if (networkFailure) {
-      // Stop here so later operations don't run while
-      // connectivity is unstable.
       throw error;
     }
   }
