@@ -18,15 +18,22 @@ function patientKey(ownerKey, serverId) {
 export function getPatientName(patient) {
   const generalInfo = patient?.generalInfo || {};
 
-  return String(
-    generalInfo.name ||
-      [generalInfo.firstName, generalInfo.middleName, generalInfo.lastName]
-        .filter(Boolean)
-        .join(" ") ||
-      [patient?.firstName, patient?.lastName].filter(Boolean).join(" "),
-  )
-    .trim()
-    .toLowerCase();
+  const nameParts = [
+    generalInfo.name,
+
+    generalInfo.firstName,
+    generalInfo.middleName,
+    generalInfo.lastName,
+
+    patient?.name,
+    patient?.firstName,
+    patient?.middleName,
+    patient?.lastName,
+  ]
+    .filter(Boolean)
+    .map((value) => String(value).trim());
+
+  return [...new Set(nameParts)].join(" ").toLowerCase();
 }
 
 export function matchesPatientSearch(patient, search) {
@@ -61,10 +68,20 @@ export async function cachePatientQueue(patients) {
     for (const patient of patients) {
       if (!patient?._id) continue;
 
+      const key = patientKey(ownerKey, patient._id);
+
+      const existing = await db.offlinePatients.get(key);
+
+      // Never overwrite a locally modified patient while
+      // there are pending offline changes.
+      if (existing?._syncStatus === "pending") {
+        continue;
+      }
+
       await db.offlinePatients.put({
         ...patient,
 
-        key: patientKey(ownerKey, patient._id),
+        key,
 
         ownerKey,
 

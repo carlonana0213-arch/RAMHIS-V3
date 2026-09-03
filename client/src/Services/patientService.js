@@ -141,7 +141,37 @@ export const deletePatient = (id) =>
     method: "DELETE",
   });
 
-export const getPatientById = (id) => apiFetch(`${API}/${id}`);
+export const getPatientById = async (id) => {
+  if (!id) {
+    throw new Error("Patient ID is required.");
+  }
+
+  try {
+    const patient = await apiFetch(`${API}/${id}`);
+
+    if (patient?._id) {
+      await cachePatientQueue([patient]);
+    }
+
+    return patient;
+  } catch (error) {
+    if (!isNetworkError(error)) {
+      throw error;
+    }
+
+    const patients = await getCachedPatientQueue();
+
+    const cachedPatient = patients.find(
+      (patient) => String(patient._id) === String(id),
+    );
+
+    if (!cachedPatient) {
+      throw new Error("Patient is not available in offline storage.");
+    }
+
+    return cachedPatient;
+  }
+};
 
 /*
 |--------------------------------------------------------------------------

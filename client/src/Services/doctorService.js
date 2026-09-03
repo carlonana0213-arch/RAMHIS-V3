@@ -82,24 +82,53 @@ export const getDoctorQueue = async ({
 
     let patients;
 
-    // When searching offline, use the shared patient cache.
-    // This allows Doctor to search patients cached by the Patients module.
-    if (search?.trim()) {
+    // ---------------------------------------------------------
+    // OFFLINE PATIENT SOURCE
+    // ---------------------------------------------------------
+    //
+    // When searching, use the complete patient cache.
+    // This allows Doctor to find patients that were cached
+    // by the Patient module, regardless of department.
+    //
+    // When there is no search, continue using the cached
+    // Doctor-specific queue.
+    // ---------------------------------------------------------
+
+    const hasSearch = Boolean(search?.trim());
+
+    if (hasSearch) {
       patients = await getCachedPatientQueue();
     } else {
-      // No search: preserve the existing doctor-specific queue.
       patients = await getCachedDoctorQueue();
     }
 
-    if (department && department !== "all") {
+    // ---------------------------------------------------------
+    // OFFLINE SEARCH
+    // ---------------------------------------------------------
+
+    if (hasSearch) {
+      patients = patients.filter((patient) =>
+        matchesPatientSearch(patient, search),
+      );
+    }
+
+    // ---------------------------------------------------------
+    // OFFLINE DEPARTMENT FILTER
+    // ---------------------------------------------------------
+    //
+    // Only apply the department filter to the Doctor-specific
+    // queue. Do NOT apply it to the shared patient cache when
+    // searching.
+    //
+    // This prevents valid cached patients from disappearing
+    // simply because their department isn't "General".
+    // ---------------------------------------------------------
+
+    if (!hasSearch && department && department !== "all") {
       patients = patients.filter(
         (patient) => patient.department === department,
       );
     }
-
-    patients = patients.filter((patient) =>
-      matchesPatientSearch(patient, search),
-    );
 
     // DoctorQueue currently exposes only “All” and “Priority”.
     if (queueFilter === "priority") {

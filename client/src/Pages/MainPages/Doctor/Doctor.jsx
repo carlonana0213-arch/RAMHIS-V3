@@ -8,7 +8,7 @@ import {
   Pill,
   AlertTriangle,
 } from "lucide-react";
-
+import { getPatientById } from "../../../Services/patientService";
 import DoctorQueue from "./components/DoctorQueue";
 import PatientCard from "./components/PatientCard";
 import PatientDoctorView from "./components/PatientDoctorView";
@@ -158,18 +158,49 @@ export default function Doctor() {
   const openDoctorView = async (patient) => {
     if (!patient) return;
 
-    // Only check for conflicts when online.
-    if (!navigator.onLine) {
-      setSelectedPatient(patient);
-      return;
-    }
-
     try {
       setCheckingConflict(true);
 
-      const conflicts = await getPendingOfflineConflicts();
+      let fullPatient = patient;
+
+      // ---------------------------------------------------------
+      // LOAD THE FULL PATIENT RECORD
+      // ---------------------------------------------------------
+      //
+      // Online:
+      //   GET /api/patients/:id
+      //
+      // Offline:
+      //   Read the complete patient from IndexedDB.
+      //
+      // This ensures doctorSheets/history are available.
+      // ---------------------------------------------------------
 
       const patientId = patient?._id || patient?.id || patient?.serverId;
+
+      if (patientId) {
+        try {
+          fullPatient = await getPatientById(patientId);
+        } catch (error) {
+          console.info(
+            "[Offline] Could not load full patient record. Using cached queue patient.",
+            error,
+          );
+
+          fullPatient = patient;
+        }
+      }
+
+      // ---------------------------------------------------------
+      // CONFLICT CHECK
+      // ---------------------------------------------------------
+
+      if (!navigator.onLine) {
+        setSelectedPatient(fullPatient);
+        return;
+      }
+
+      const conflicts = await getPendingOfflineConflicts();
 
       const conflict = conflicts.find(
         (item) =>
@@ -180,19 +211,16 @@ export default function Doctor() {
       );
 
       if (conflict) {
-        // Do NOT open the consultation yet.
-        setConflictPatient(patient);
+        setConflictPatient(fullPatient);
         setPatientConflict(conflict);
         return;
       }
 
-      // No conflict → open normally.
-      setSelectedPatient(patient);
+      setSelectedPatient(fullPatient);
     } catch (error) {
-      console.error("Failed to check patient conflicts:", error);
+      console.error("Failed to open patient:", error);
 
-      // If conflict checking fails, preserve
-      // the existing behaviour and open the patient.
+      // Preserve the previous behavior as a fallback.
       setSelectedPatient(patient);
     } finally {
       setCheckingConflict(false);
