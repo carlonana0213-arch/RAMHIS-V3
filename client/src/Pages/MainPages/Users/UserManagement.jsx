@@ -601,13 +601,23 @@ function UserManagement() {
                             : "N/A"}
                         </td>
 
-                        {/* License */}
+                        {/* License / Valid ID */}
 
                         <td className="px-5 py-4">
                           {user.role === "Doctor" &&
                           user.doctorInfo?.proofOfLicense ? (
                             <a
                               href={getFileUrl(user.doctorInfo.proofOfLicense)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
+                            >
+                              <FileCheck2 size={15} />
+                              View
+                            </a>
+                          ) : user.validIdUrl ? (
+                            <a
+                              href={getFileUrl(user.validIdUrl)}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
