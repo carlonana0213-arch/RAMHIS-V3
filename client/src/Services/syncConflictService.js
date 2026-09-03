@@ -1,7 +1,7 @@
 import { apiFetch } from "./api";
 import { API_BASE_URL } from "./apiConfig";
 
-const API_URL = `${API_BASE_URL}/sync-conflicts`;
+const API_URL = `${API_BASE_URL}/api/sync-conflicts`;
 
 /**
  * Get all pending conflicts for a patient.

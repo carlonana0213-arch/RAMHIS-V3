@@ -16,6 +16,11 @@ import PatientDoctorView from "./components/PatientDoctorView";
 import { getDoctorQueue } from "../../../Services/doctorService";
 import { getPendingOfflineConflicts } from "../../../Services/offlineRepository";
 import ConflictManager from "../../../Components/common/ConflictManager";
+import {
+  getPatientConflicts,
+  resolveConflict,
+  markLocalConflictResolved,
+} from "../../../Services/conflictService";
 
 export default function Doctor() {
   const [patients, setPatients] = useState([]);
@@ -272,6 +277,54 @@ export default function Doctor() {
     }
   };
 
+  const handleConflictResolution = async (
+    selectedOperationId,
+    resolvedData,
+  ) => {
+    if (!patientConflict?._id) {
+      throw new Error("Conflict ID is missing.");
+    }
+
+    try {
+      setCheckingConflict(true);
+
+      console.info(
+        "[Conflict UI] Resolving conflict:",
+        patientConflict._id,
+        "using candidate:",
+        selectedOperationId,
+      );
+
+      await resolveConflict(
+        patientConflict._id,
+        selectedOperationId,
+        resolvedData,
+      );
+
+      // Clean up the local conflict record associated
+      // with this browser/device.
+      if (patientConflict.conflictId) {
+        await markLocalConflictResolved(patientConflict.conflictId);
+      }
+
+      console.info(
+        "[Conflict UI] Conflict resolved successfully:",
+        patientConflict._id,
+      );
+
+      setPatientConflict(null);
+      setConflictPatient(null);
+
+      await loadQueue(false);
+    } catch (error) {
+      console.error("[Conflict UI] Failed to resolve conflict:", error);
+
+      throw error;
+    } finally {
+      setCheckingConflict(false);
+    }
+  };
+
   return (
     <div className="min-h-full w-full bg-transparent px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
       <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-5">
@@ -381,12 +434,10 @@ export default function Doctor() {
               setPatientConflict(null);
               setConflictPatient(null);
             }}
-            onResolved={async () => {
-              setPatientConflict(null);
-              setConflictPatient(null);
-
-              await loadQueue(false);
+            onResolveCandidate={async (selectedOperationId, resolvedData) => {
+              await handleConflictResolution(selectedOperationId, resolvedData);
             }}
+            isResolving={checkingConflict}
           />
         )}
 

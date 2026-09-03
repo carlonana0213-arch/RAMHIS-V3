@@ -8,6 +8,7 @@ export default function ConflictManager({
   onClose,
   onKeepServer,
   onKeepLocal,
+  onResolveCandidate,
   isResolving = false,
 }) {
   // ---------------------------------------------------------
@@ -251,52 +252,6 @@ export default function ConflictManager({
         )}
 
         {/* =====================================================
-            CONFLICT INFORMATION
-        ====================================================== */}
-
-        <div className="grid gap-5 px-6 py-6 md:grid-cols-2">
-          {/* ===================================================
-              LOCAL VERSION
-          ==================================================== */}
-
-          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-
-              <h3 className="font-bold text-blue-900">Your Offline Changes</h3>
-            </div>
-
-            <p className="mt-2 text-sm leading-5 text-blue-800">
-              Changes made on this device while offline.
-            </p>
-
-            <pre className="mt-4 max-h-72 overflow-auto rounded-xl bg-white p-4 text-xs leading-5 text-slate-800">
-              {JSON.stringify(localData, null, 2)}
-            </pre>
-          </div>
-
-          {/* ===================================================
-              SERVER VERSION
-          ==================================================== */}
-
-          <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-purple-500" />
-
-              <h3 className="font-bold text-purple-900">Server Version</h3>
-            </div>
-
-            <p className="mt-2 text-sm leading-5 text-purple-800">
-              The version currently stored on the server.
-            </p>
-
-            <pre className="mt-4 max-h-72 overflow-auto rounded-xl bg-white p-4 text-xs leading-5 text-slate-800">
-              {JSON.stringify(serverData, null, 2)}
-            </pre>
-          </div>
-        </div>
-
-        {/* =====================================================
             ALL BACKEND CANDIDATES
         ====================================================== */}
 
@@ -322,7 +277,20 @@ export default function ConflictManager({
 
                   const operation =
                     candidate.operationId || `Candidate ${index + 1}`;
-
+                  <button
+                    type="button"
+                    disabled={isResolving}
+                    onClick={() => {
+                      onResolveCandidate(candidate.operationId, candidate.data);
+                    }}
+                    className={`mt-4 w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isServer
+                        ? "bg-purple-600 text-white hover:bg-purple-700"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    {isResolving ? "Resolving..." : "Use This Version"}
+                  </button>;
                   return (
                     <div
                       key={
@@ -391,24 +359,6 @@ export default function ConflictManager({
             className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Review Later
-          </button>
-
-          <button
-            type="button"
-            onClick={onKeepServer}
-            disabled={isResolving}
-            className="rounded-xl border border-purple-200 bg-purple-50 px-5 py-2.5 text-sm font-semibold text-purple-700 transition hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isResolving ? "Resolving..." : "Keep Server Version"}
-          </button>
-
-          <button
-            type="button"
-            onClick={onKeepLocal}
-            disabled={isResolving}
-            className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isResolving ? "Resolving..." : "Keep My Changes"}
           </button>
         </div>
 
