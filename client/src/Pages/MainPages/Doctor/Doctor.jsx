@@ -376,6 +376,7 @@ export default function Doctor() {
           <ConflictManager
             conflict={patientConflict}
             patient={conflictPatient}
+            patientId={conflictPatient?._id}
             onClose={() => {
               setPatientConflict(null);
               setConflictPatient(null);
