@@ -7,6 +7,14 @@ import {
   FaStethoscope,
   FaCheck,
   FaExclamationTriangle,
+  FaBrain,
+  FaMicroscope,
+  FaCut,
+  FaSyringe,
+  FaWalking,
+  FaUserMd,
+  FaChild,
+  FaAllergies,
 } from "react-icons/fa";
 
 const departments = [
@@ -16,6 +24,15 @@ const departments = [
   "Dental",
   "Cardio",
   "General",
+  "Neurology",
+  "Pathology",
+  "Circumcision",
+  "Surgery",
+  "PT & Rehabilitation",
+  "OBGyn",
+  "Ophthalmology",
+  "Dermatology",
+  "Adult Medicine",
 ];
 
 const departmentConfig = {
@@ -54,6 +71,60 @@ const departmentConfig = {
     iconBg: "bg-slate-100",
     iconColor: "text-text-secondary",
   },
+
+  Neurology: {
+    icon: FaBrain,
+    iconBg: "bg-violet-50",
+    iconColor: "text-violet-700",
+  },
+
+  Pathology: {
+    icon: FaMicroscope,
+    iconBg: "bg-purple-50",
+    iconColor: "text-purple-700",
+  },
+
+  Circumcision: {
+    icon: FaCut,
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-700",
+  },
+
+  Surgery: {
+    icon: FaSyringe,
+    iconBg: "bg-rose-50",
+    iconColor: "text-rose-700",
+  },
+
+  "PT & Rehabilitation": {
+    icon: FaWalking,
+    iconBg: "bg-teal-50",
+    iconColor: "text-teal-700",
+  },
+
+  OBGyn: {
+    icon: FaChild,
+    iconBg: "bg-pink-50",
+    iconColor: "text-pink-700",
+  },
+
+  Ophthalmology: {
+    icon: FaEye,
+    iconBg: "bg-cyan-50",
+    iconColor: "text-cyan-700",
+  },
+
+  Dermatology: {
+    icon: FaAllergies,
+    iconBg: "bg-orange-50",
+    iconColor: "text-orange-700",
+  },
+
+  "Adult Medicine": {
+    icon: FaUserMd,
+    iconBg: "bg-blue-50",
+    iconColor: "text-blue-700",
+  },
 };
 
 const DepartmentStep = ({ form, setForm }) => {
@@ -80,10 +151,8 @@ const DepartmentStep = ({ form, setForm }) => {
 
   return (
     <div className="step-wrapper space-y-5">
-
       {/* INITIAL REMARKS */}
       <div className="overflow-hidden rounded-[20px] border border-border-soft bg-surface shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
-
         {/* HEADER */}
         <div className="border-b border-border-soft px-5 py-5 sm:px-6">
           <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-primary-600">
@@ -95,8 +164,8 @@ const DepartmentStep = ({ form, setForm }) => {
           </h3>
 
           <p className="mt-1 text-sm text-text-muted">
-            Record the patient's initial complaint,
-            concern, or reason for consultation.
+            Record the patient's initial complaint, concern, or reason for
+            consultation.
           </p>
         </div>
 
@@ -104,9 +173,7 @@ const DepartmentStep = ({ form, setForm }) => {
         <div className="p-5 sm:p-6">
           <textarea
             value={form.initComplaint || ""}
-            onChange={(e) =>
-              updateRemarks(e.target.value)
-            }
+            onChange={(e) => updateRemarks(e.target.value)}
             placeholder="Describe the patient's remarks or initial complaint..."
             rows={5}
             className="w-full resize-none rounded-xl border border-border-soft bg-surface px-4 py-3 text-sm text-text-primary outline-none transition-all duration-200 placeholder:text-text-subtle hover:border-border-strong focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
@@ -126,11 +193,9 @@ const DepartmentStep = ({ form, setForm }) => {
 
       {/* DEPARTMENT SELECTION */}
       <div className="overflow-hidden rounded-[20px] border border-border-soft bg-surface shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
-
         {/* HEADER */}
         <div className="border-b border-border-soft px-5 py-5 sm:px-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
-
             <div>
               <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-primary-600">
                 Medical Service
@@ -141,8 +206,7 @@ const DepartmentStep = ({ form, setForm }) => {
               </h3>
 
               <p className="mt-1 text-sm text-text-muted">
-                Assign the patient to the appropriate
-                medical department.
+                Assign the patient to the appropriate medical department.
               </p>
             </div>
 
@@ -151,21 +215,16 @@ const DepartmentStep = ({ form, setForm }) => {
                 {form.department} Selected
               </span>
             )}
-
           </div>
         </div>
 
         {/* DEPARTMENTS */}
         <div className="p-5 sm:p-6">
-
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-
             {departments.map((department) => {
-              const active =
-                form.department === department;
+              const active = form.department === department;
 
-              const config =
-                departmentConfig[department];
+              const config = departmentConfig[department];
 
               const Icon = config.icon;
 
@@ -173,9 +232,7 @@ const DepartmentStep = ({ form, setForm }) => {
                 <button
                   key={department}
                   type="button"
-                  onClick={() =>
-                    selectDepartment(department)
-                  }
+                  onClick={() => selectDepartment(department)}
                   className={[
                     "group relative flex min-h-[120px] flex-col items-start rounded-2xl border p-4 text-left transition-all duration-200",
                     active
@@ -183,7 +240,6 @@ const DepartmentStep = ({ form, setForm }) => {
                       : "border-border-soft bg-surface hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-[0_8px_24px_rgba(15,23,42,0.06)]",
                   ].join(" ")}
                 >
-
                   {/* SELECTED INDICATOR */}
                   {active && (
                     <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary-700 text-[10px] text-white">
@@ -210,26 +266,20 @@ const DepartmentStep = ({ form, setForm }) => {
                     </span>
 
                     <span className="mt-1 block text-[11px] text-text-muted">
-                      {active
-                        ? "Currently selected"
-                        : "Select department"}
+                      {active ? "Currently selected" : "Select department"}
                     </span>
                   </div>
-
                 </button>
               );
             })}
-
           </div>
 
           {!form.department && (
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-dashed border-border-strong bg-surface-muted px-4 py-3 text-xs text-text-muted">
               <span className="h-1.5 w-1.5 rounded-full bg-status-warning-dot" />
-
               Select a department to continue.
             </div>
           )}
-
         </div>
       </div>
 
@@ -242,12 +292,9 @@ const DepartmentStep = ({ form, setForm }) => {
             : "border-border-soft bg-surface shadow-[0_4px_20px_rgba(0,0,0,0.05)]",
         ].join(" ")}
       >
-
         <div className="flex items-center justify-between gap-4 p-5 sm:p-6">
-
           {/* LEFT */}
           <div className="flex min-w-0 items-center gap-4">
-
             <div
               className={[
                 "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
@@ -276,36 +323,31 @@ const DepartmentStep = ({ form, setForm }) => {
               </h3>
 
               <p className="mt-1 text-sm text-text-muted">
-                Mark this patient for urgent medical
-                attention.
+                Mark this patient for urgent medical attention.
               </p>
             </div>
-
           </div>
 
-{/* SWITCH */}
-<button
-  type="button"
-  role="switch"
-  aria-checked={form.isPriority || false}
-  onClick={togglePriority}
-  className={[
-    "relative h-8 w-14 shrink-0 rounded-full transition-all duration-200 focus:outline-none focus:ring-4",
-    form.isPriority
-      ? "bg-red-600 focus:ring-red-600/20"
-      : "bg-slate-300 focus:ring-slate-200",
-  ].join(" ")}
->
-  <span
-    className={[
-      "absolute top-1 h-6 w-6 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-all duration-200",
-      form.isPriority
-        ? "left-7"
-        : "left-1",
-    ].join(" ")}
-  />
-</button> 
-
+          {/* SWITCH */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.isPriority || false}
+            onClick={togglePriority}
+            className={[
+              "relative h-8 w-14 shrink-0 rounded-full transition-all duration-200 focus:outline-none focus:ring-4",
+              form.isPriority
+                ? "bg-red-600 focus:ring-red-600/20"
+                : "bg-slate-300 focus:ring-slate-200",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "absolute top-1 h-6 w-6 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-all duration-200",
+                form.isPriority ? "left-7" : "left-1",
+              ].join(" ")}
+            />
+          </button>
         </div>
 
         {/* ACTIVE PRIORITY MESSAGE */}
@@ -320,9 +362,7 @@ const DepartmentStep = ({ form, setForm }) => {
             </div>
           </div>
         )}
-
       </div>
-
     </div>
   );
 };

@@ -32,6 +32,15 @@ export default function Patients() {
     Dental: 0,
     Cardio: 0,
     General: 0,
+    Neurology: 0,
+    Pathology: 0,
+    Circumcision: 0,
+    Surgery: 0,
+    "PT & Rehabilitation": 0,
+    OBGyn: 0,
+    Ophthalmology: 0,
+    Dermatology: 0,
+    "Adult Medicine": 0,
   });
 
   const hasLoadedOnce = useRef(false);
@@ -58,6 +67,12 @@ export default function Patients() {
 
   const [selectedPatient, setSelectedPatient] = useState(null);
 
+  /*
+  |--------------------------------------------------------------------------
+  | DEBOUNCE SEARCH
+  |--------------------------------------------------------------------------
+  */
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       setSearch(searchInput);
@@ -67,12 +82,18 @@ export default function Patients() {
   }, [searchInput]);
 
   /*
-|--------------------------------------------------------------------------
-| LOAD CURRENT MISSION
-|--------------------------------------------------------------------------
-*/
+  |--------------------------------------------------------------------------
+  | LOAD CURRENT MISSION
+  |--------------------------------------------------------------------------
+  */
 
   const fetchCurrentMission = useCallback(async () => {
+    /*
+    |--------------------------------------------------------------------------
+    | OFFLINE
+    |--------------------------------------------------------------------------
+    */
+
     if (!navigator.onLine) {
       const cachedMission = await getOfflineMeta("currentMission");
 
@@ -84,20 +105,96 @@ export default function Patients() {
     try {
       const result = await getCurrentMission();
 
-      const mission =
-        result?.ongoingEvent ||
-        result?.event ||
-        result?.mission ||
-        result ||
-        null;
+      /*
+      |--------------------------------------------------------------------------
+      | NORMALIZE CURRENT MISSION RESPONSE
+      |--------------------------------------------------------------------------
+      |
+      | IMPORTANT:
+      |
+      | If the backend returns:
+      |
+      | {
+      |   ongoingEvent: null
+      | }
+      |
+      | we MUST treat this as:
+      |
+      | null
+      |
+      | and NOT use the whole response object as the event.
+      |
+      */
+
+      let mission = null;
+
+      if (
+        result &&
+        Object.prototype.hasOwnProperty.call(result, "ongoingEvent")
+      ) {
+        mission = result.ongoingEvent || null;
+      } else if (
+        result &&
+        Object.prototype.hasOwnProperty.call(result, "event")
+      ) {
+        mission = result.event || null;
+      } else if (
+        result &&
+        Object.prototype.hasOwnProperty.call(result, "mission")
+      ) {
+        mission = result.mission || null;
+      } else {
+        /*
+        |--------------------------------------------------------------------------
+        | DIRECT EVENT RESPONSE
+        |--------------------------------------------------------------------------
+        |
+        | If getCurrentMission() directly returns an
+        | event object, only treat it as a mission if
+        | it actually looks like an event.
+        |
+        */
+
+        if (result?._id || result?.title || result?.status) {
+          mission = result;
+        }
+      }
+
+      /*
+      |--------------------------------------------------------------------------
+      | UPDATE CURRENT MISSION STATE
+      |--------------------------------------------------------------------------
+      */
 
       setOngoingEvent(mission);
 
+      /*
+      |--------------------------------------------------------------------------
+      | UPDATE OFFLINE CACHE
+      |--------------------------------------------------------------------------
+      |
+      | If the server confirms there is no ongoing
+      | mission, clear the previous cached mission.
+      |
+      */
+
       if (mission) {
         await setOfflineMeta("currentMission", mission);
+      } else {
+        await setOfflineMeta("currentMission", null);
       }
     } catch (error) {
       console.error("Failed to load current mission:", error);
+
+      /*
+      |--------------------------------------------------------------------------
+      | FALL BACK TO CACHED MISSION
+      |--------------------------------------------------------------------------
+      |
+      | Only use cached mission data when the request
+      | itself failed.
+      |
+      */
 
       const cachedMission = await getOfflineMeta("currentMission");
 
@@ -134,24 +231,35 @@ export default function Patients() {
         console.error("Failed to load patient queue:", error);
 
         setPatients([]);
+
         setTotalPatients(0);
+
         setTotalPages(1);
-        setOngoingEvent(null);
       } finally {
         setLoading(false);
+
         hasLoadedOnce.current = true;
       }
     },
     [currentPage, search, departmentFilter],
   );
 
+  /*
+  |--------------------------------------------------------------------------
+  | PREPARE OFFLINE CACHE
+  |--------------------------------------------------------------------------
+  */
+
   useEffect(() => {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine) {
+      return;
+    }
 
     cachePatientQueueForOffline().catch((error) => {
       console.error("Failed to prepare Patient data for offline use:", error);
     });
   }, []);
+
   /*
   |--------------------------------------------------------------------------
   | LOAD DEPARTMENT SUMMARY
@@ -177,6 +285,15 @@ export default function Patients() {
         Dental: 0,
         Cardio: 0,
         General: 0,
+        Neurology: 0,
+        Pathology: 0,
+        Circumcision: 0,
+        Surgery: 0,
+        "PT & Rehabilitation": 0,
+        OBGyn: 0,
+        Ophthalmology: 0,
+        Dermatology: 0,
+        "Adult Medicine": 0,
       });
     } finally {
       setSummaryLoading(false);
@@ -185,9 +302,10 @@ export default function Patients() {
 
   /*
   |--------------------------------------------------------------------------
-  | INITIAL + REAL-TIME-LIKE REFRESH
+  | INITIAL LOAD
   |--------------------------------------------------------------------------
   */
+
   useEffect(() => {
     fetchCurrentMission();
   }, [fetchCurrentMission]);
@@ -201,17 +319,21 @@ export default function Patients() {
   }, [fetchQueueSummary]);
 
   /*
-   * Keep the queue and department summary
-   * reasonably fresh.
-   *
-   * Later, this can be replaced with
-   * Socket.IO queueUpdated events.
-   */
+  |--------------------------------------------------------------------------
+  | REAL-TIME-LIKE REFRESH
+  |--------------------------------------------------------------------------
+  */
+
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!navigator.onLine) return;
+      if (!navigator.onLine) {
+        return;
+      }
+
       fetchCurrentMission();
+
       fetchQueue(true);
+
       fetchQueueSummary(true);
     }, 5000);
 
@@ -265,7 +387,10 @@ export default function Patients() {
   return (
     <main className="min-h-full w-full bg-slate-50 px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
-        {/* HEADER */}
+        {/* =====================================================
+            HEADER
+        ====================================================== */}
+
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-start gap-3">
             <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
@@ -288,10 +413,13 @@ export default function Patients() {
             </div>
           </div>
 
+          {/* ADD PATIENT */}
+
           <button
             type="button"
             onClick={() => {
               console.log("ADD PATIENT CLICKED");
+
               setShowAddModal(true);
             }}
             disabled={!ongoingEvent}
@@ -310,39 +438,59 @@ export default function Patients() {
           </button>
         </div>
 
-        {/* CURRENT EVENT */}
+        {/* =====================================================
+            CURRENT EVENT
+        ====================================================== */}
+
         {ongoingEvent && (
           <div className="mb-6 overflow-hidden rounded-2xl border border-blue-100 bg-surface shadow-sm">
             <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-4">
+              {/* MISSION INFORMATION */}
+
+              <div className="flex min-w-0 items-start gap-4">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
                   <span className="text-lg">✚</span>
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
                     Ongoing Mission
                   </p>
 
-                  <h2 className="mt-1 text-base font-bold text-text-primary">
+                  <h2 className="mt-1 truncate text-base font-bold text-text-primary">
                     {ongoingEvent.title || "Medical Mission"}
                   </h2>
 
+                  {/* LOCATION */}
+
                   {ongoingEvent.location && (
-                    <p className="mt-1 text-sm text-text-muted">
-                      {ongoingEvent.location}
-                    </p>
+                    <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
+                      <span className="shrink-0 text-sm">📍</span>
+
+                      <p
+                        className="truncate text-sm font-medium text-text-muted"
+                        title={ongoingEvent.location}
+                      >
+                        {ongoingEvent.location}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 self-start rounded-full bg-status-stable-bg px-3 py-1.5 text-xs font-semibold text-status-stable-text sm:self-center">
+              {/* STATUS */}
+
+              <div className="flex shrink-0 items-center gap-2 rounded-full bg-status-stable-bg px-3 py-1.5 text-xs font-semibold text-status-stable-text sm:self-center">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 Ongoing
               </div>
             </div>
           </div>
         )}
+
+        {/* =====================================================
+            NO ONGOING MISSION
+        ====================================================== */}
 
         {!ongoingEvent && !loading && (
           <div className="mb-6 flex items-center gap-3 rounded-2xl border border-status-watch-border bg-status-watch-bg px-5 py-4">
@@ -363,10 +511,16 @@ export default function Patients() {
           </div>
         )}
 
-        {/* DEPARTMENT SUMMARY */}
+        {/* =====================================================
+            DEPARTMENT SUMMARY
+        ====================================================== */}
+
         <PatientDashboard summary={queueSummary} loading={summaryLoading} />
 
-        {/* QUEUE */}
+        {/* =====================================================
+            PATIENT QUEUE
+        ====================================================== */}
+
         <div className="mt-6">
           <PatientQueue
             patients={patients}
@@ -384,7 +538,10 @@ export default function Patients() {
         </div>
       </div>
 
-      {/* ADD PATIENT MODAL */}
+      {/* =====================================================
+          ADD PATIENT MODAL
+      ====================================================== */}
+
       {showAddModal && ongoingEvent && (
         <AddPatientModal
           ongoingEvent={ongoingEvent}
@@ -396,7 +553,10 @@ export default function Patients() {
         />
       )}
 
-      {/* PATIENT RECORD MODAL */}
+      {/* =====================================================
+          PATIENT RECORD MODAL
+      ====================================================== */}
+
       {selectedPatient && (
         <PatientViewModal
           patient={selectedPatient}

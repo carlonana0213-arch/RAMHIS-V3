@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  X,
   Plus,
   Trash2,
   ClipboardList,
@@ -11,9 +10,11 @@ import {
   Send,
   UserRound,
   ChevronRight,
+  ChevronDown,
   CheckCircle2,
   PackageCheck,
   RotateCcw,
+  Save,
 } from "lucide-react";
 
 import Modal from "../../../../Components/ui/modal";
@@ -31,15 +32,6 @@ import {
 
 import AlertModal from "../../../../Components/ui/AlertModal";
 import ConfirmModal from "../../../../Components/ui/ConfirmModal";
-import ConflictManager from "../../../../Components/common/ConflictManager";
-
-import {
-  getPendingOfflineConflicts,
-  resolveOfflineConflict,
-  getOwnerKey,
-} from "../../../../Services/offlineRepository";
-
-import db from "../../../../Services/localDB";
 
 const EMPTY_DOCTOR_SHEET = {
   examination: {
@@ -82,6 +74,15 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     "Dental",
     "Cardio",
     "General",
+    "Neurology",
+    "Pathology",
+    "Circumcision",
+    "Surgery",
+    "PT & Rehabilitation",
+    "OBGyn",
+    "Ophthalmology",
+    "Dermatology",
+    "Adult Medicine",
   ];
 
   const [doctorSheet, setDoctorSheet] = useState(createEmptyDoctorSheet(""));
@@ -99,6 +100,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
   const [prescriptionItems, setPrescriptionItems] = useState([
     {
       medicine: "",
+      medicineId: "",
       quantity: "",
       directions: "",
     },
@@ -122,9 +124,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  const [activeConflict, setActiveConflict] = useState(null);
-
-  const [isResolvingConflict, setIsResolvingConflict] = useState(false);
+  const [isSavingChanges, setIsSavingChanges] = useState(false);
 
   const hasHistory =
     Array.isArray(patient?.doctorSheets) && patient.doctorSheets.length > 0;
@@ -132,6 +132,44 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
   const activePrescriptions = useMemo(() => {
     return Array.isArray(existingPrescriptions) ? existingPrescriptions : [];
   }, [existingPrescriptions]);
+
+  /*
+   * The prescription API returns prescription documents
+   * containing an `items` array. Each item contains the
+   * medicine, quantity, and directions.
+   *
+   * Keep the existing UI unchanged, but normalize the
+   * response here so the Saved Prescriptions section
+   * displays the actual prescription details.
+   */
+  const displayPrescriptions = useMemo(() => {
+    const source = Array.isArray(activePrescriptions)
+      ? activePrescriptions
+      : [];
+
+    return source.flatMap((prescription) => {
+      if (Array.isArray(prescription?.items) && prescription.items.length > 0) {
+        return prescription.items.map((item) => ({
+          ...item,
+          _id:
+            item?._id ||
+            `${prescription?._id || prescription?.id}-${item?._id || "item"}`,
+          prescriptionId: prescription?._id || prescription?.id,
+          medicine: item?.medicine,
+          quantity: item?.quantity ?? prescription?.quantity,
+          directions: item?.directions ?? prescription?.directions,
+          given:
+            item?.given ??
+            item?.isGiven ??
+            prescription?.given ??
+            prescription?.isGiven,
+          status: item?.status ?? prescription?.status,
+        }));
+      }
+
+      return [prescription];
+    });
+  }, [activePrescriptions]);
 
   const patientName = patient?.generalInfo?.name || "Unnamed Patient";
 
@@ -158,6 +196,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     setPrescriptionItems([
       {
         medicine: "",
+        medicineId: "",
         quantity: "",
         directions: "",
       },
@@ -196,38 +235,6 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
       console.error("Failed to load prescriptions:", error);
 
       setExistingPrescriptions([]);
-    }
-  };
-
-  const checkForPatientConflict = async (patientId) => {
-    try {
-      if (!patientId) {
-        return;
-      }
-
-      const conflicts = await getPendingOfflineConflicts();
-
-      const matchingConflict = conflicts.find(
-        (conflict) =>
-          String(conflict.entityKey) === String(patientId) &&
-          (conflict.entityType === "patient" ||
-            conflict.entityType === "doctorRecord"),
-      );
-
-      if (matchingConflict) {
-        console.info(
-          "[Conflict UI] Pending conflict found for patient:",
-          patientId,
-        );
-
-        setActiveConflict(matchingConflict);
-
-        return;
-      }
-
-      setActiveConflict(null);
-    } catch (error) {
-      console.error("[Conflict UI] Failed to check for conflicts:", error);
     }
   };
 
@@ -275,6 +282,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     setPrescriptionItems([
       {
         medicine: "",
+        medicineId: "",
         quantity: "",
         directions: "",
       },
@@ -292,132 +300,10 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     setReferralReason("");
 
     setIsSaving(false);
+    setIsSavingChanges(false);
 
     loadPrescriptions(patient._id);
-
-    checkForPatientConflict(patient._id);
   }, [patient?._id, recordMode]);
-
-  const handleKeepServerVersion = async () => {
-    if (!activeConflict) {
-      return;
-    }
-
-    try {
-      setIsResolvingConflict(true);
-
-      const operationId = activeConflict.operationId;
-
-      // Remove the pending offline operation so it
-      // cannot be synchronized later.
-      if (operationId) {
-        await db.offlineOutbox.delete(operationId);
-      }
-
-      // Mark the conflict as resolved.
-      await resolveOfflineConflict(activeConflict.conflictId, "server");
-
-      console.info("[Conflict UI] Server version selected.");
-
-      setActiveConflict(null);
-
-      // Refresh the doctor queue so the UI reflects
-      // the server version.
-      await refreshQueue?.();
-    } catch (error) {
-      console.error("[Conflict UI] Failed to keep server version:", error);
-
-      setAlertMessage(error?.message || "Failed to resolve the conflict.");
-    } finally {
-      setIsResolvingConflict(false);
-    }
-  };
-
-  const handleKeepLocalVersion = async () => {
-    if (!activeConflict) {
-      return;
-    }
-
-    try {
-      setIsResolvingConflict(true);
-
-      const operation = await db.offlineOutbox.get(activeConflict.operationId);
-
-      if (!operation) {
-        throw new Error("The pending offline operation could not be found.");
-      }
-
-      /*
-       * The conflict has already been reviewed by the user.
-       *
-       * We put the operation back into pending so the
-       * normal offline synchronization process can retry it.
-       */
-      await db.offlineOutbox.update(operation.operationId, {
-        status: "pending",
-
-        /*
-         * The server version that caused the conflict
-         * becomes the new comparison baseline.
-         */
-        baseSnapshot: activeConflict.serverData,
-
-        updatedAt: new Date().toISOString(),
-      });
-
-      await resolveOfflineConflict(activeConflict.conflictId, "local");
-
-      console.info(
-        "[Conflict UI] Local version selected. Retrying synchronization.",
-      );
-
-      setActiveConflict(null);
-
-      /*
-       * Tell the application that connectivity is
-       * available so the existing sync listener can
-       * process the pending operation.
-       */
-      window.dispatchEvent(new Event("online"));
-    } catch (error) {
-      console.error("[Conflict UI] Failed to keep local version:", error);
-
-      setAlertMessage(error?.message || "Failed to keep your changes.");
-    } finally {
-      setIsResolvingConflict(false);
-    }
-  };
-
-  useEffect(() => {
-    const handleConflictCreated = async (event) => {
-      const conflictPatientId = event?.detail?.entityKey;
-
-      if (!conflictPatientId) {
-        return;
-      }
-
-      // Only react if this is the patient currently
-      // being viewed in PatientDoctorView.
-      if (String(conflictPatientId) !== String(patient?._id)) {
-        return;
-      }
-
-      console.info(
-        "[Conflict UI] Conflict created for currently selected patient.",
-      );
-
-      await checkForPatientConflict(patient._id);
-    };
-
-    window.addEventListener("offline-conflict-created", handleConflictCreated);
-
-    return () => {
-      window.removeEventListener(
-        "offline-conflict-created",
-        handleConflictCreated,
-      );
-    };
-  }, [patient?._id]);
 
   /*
    * =========================================================
@@ -443,16 +329,16 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
   /*
    * =========================================================
-   * CLOSE WITHOUT FINALIZING
+   * CLOSE
    * =========================================================
    */
 
   const handleCancelClose = () => {
-    if (isSaving) {
+    if (isSaving || isSavingChanges) {
       return;
     }
 
-    onClose();
+    onClose?.();
   };
 
   /*
@@ -481,6 +367,73 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
   /*
    * =========================================================
+   * SAVE CHANGES ONLY
+   *
+   * This saves the current doctor information without
+   * changing the patient's queue status.
+   * =========================================================
+   */
+
+  const handleSaveChanges = async () => {
+    if (!patient?._id || isSaving || isSavingChanges) {
+      return;
+    }
+
+    setIsSavingChanges(true);
+
+    try {
+      await saveDoctorRecord(patient._id, {
+        examination: {
+          ...EMPTY_DOCTOR_SHEET.examination,
+          ...(doctorSheet.examination || {}),
+        },
+
+        initComplaint:
+          newComplaint.trim() ||
+          doctorSheet.initComplaint ||
+          patient.initComplaint ||
+          "",
+
+        diagnosis: doctorSheet.diagnosis || "",
+
+        treatment: doctorSheet.treatment || "",
+
+        medication: doctorSheet.medication || "",
+
+        doctorName: storedUser?.name || storedUser?.fullName || "Doctor",
+
+        department:
+          patient.department ||
+          storedUser?.doctorInfo?.specialization ||
+          storedUser?.specialization ||
+          "General",
+
+        recordType: hasHistory ? "follow-up" : "initial",
+
+        referral:
+          showReferral && referralDept
+            ? {
+                department: referralDept,
+
+                reason: referralReason || "",
+              }
+            : undefined,
+      });
+
+      await refreshQueue?.();
+
+      setAlertMessage("Changes saved successfully.");
+    } catch (error) {
+      console.error("Failed to save changes:", error);
+
+      setAlertMessage(error?.message || "Failed to save changes.");
+    } finally {
+      setIsSavingChanges(false);
+    }
+  };
+
+  /*
+   * =========================================================
    * PRESCRIPTIONS
    * =========================================================
    */
@@ -490,6 +443,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
       ...previous,
       {
         medicine: "",
+        medicineId: "",
         quantity: "",
         directions: "",
       },
@@ -502,6 +456,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
         return [
           {
             medicine: "",
+            medicineId: "",
             quantity: "",
             directions: "",
           },
@@ -537,68 +492,93 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     );
   };
 
-  const handleSavePrescription = async (index) => {
-    const item = prescriptionItems[index];
+  const handleSavePrescriptions = async () => {
+    if (!patient?._id || isSaving || isSavingChanges) return;
 
-    if (!item?.medicine || !String(item.medicine).trim()) {
-      setAlertMessage("Please select a medicine first.");
+    const enteredItems = prescriptionItems.filter(
+      (item) =>
+        item?.medicine ||
+        item?.medicineId ||
+        item?.quantity ||
+        item?.directions,
+    );
+
+    if (enteredItems.length === 0) {
+      setAlertMessage("Please add at least one prescription before saving.");
       return;
     }
 
-    if (!item?.medicineId) {
-      setAlertMessage("Please select a medicine from the list.");
-      return;
-    }
+    for (const item of enteredItems) {
+      if (!item?.medicine || !String(item.medicine).trim()) {
+        setAlertMessage("Please select a medicine for every prescription.");
+        return;
+      }
 
-    if (!item?.directions || !String(item.directions).trim()) {
-      setAlertMessage("Please enter directions for this medicine.");
-      return;
-    }
+      if (!item?.medicineId) {
+        setAlertMessage(
+          "Please select a medicine from the list for every prescription.",
+        );
+        return;
+      }
 
-    if (!patient?._id || isSaving) {
-      return;
+      if (!Number(item.quantity) || Number(item.quantity) <= 0) {
+        setAlertMessage(
+          "Please enter a valid quantity for every prescription.",
+        );
+        return;
+      }
+
+      if (!item?.directions || !String(item.directions).trim()) {
+        setAlertMessage("Please enter directions for every prescription.");
+        return;
+      }
     }
 
     try {
       setIsSaving(true);
 
-      await savePrescription(patient._id, {
-        medicine: item.medicineId,
-        quantity: item.quantity,
-        directions: item.directions,
-        doctorId: storedUser?._id || storedUser?.id || undefined,
-      });
-
-      await loadPrescriptions(patient._id);
-
-      setPrescriptionItems((previous) =>
-        previous.map((prescription, prescriptionIndex) =>
-          prescriptionIndex === index
-            ? {
-                medicine: "",
-                quantity: "",
-                directions: "",
-              }
-            : prescription,
+      await Promise.all(
+        enteredItems.map((item) =>
+          savePrescription(patient._id, {
+            medicine: item.medicineId,
+            quantity: Number(item.quantity),
+            directions: item.directions.trim(),
+            doctorId: storedUser?._id || storedUser?.id || undefined,
+          }),
         ),
       );
 
-      setMedicineSearch((previous) => ({
-        ...previous,
-        [index]: "",
-      }));
+      await loadPrescriptions(patient._id);
 
+      setPrescriptionItems([
+        {
+          medicine: "",
+          medicineId: "",
+          quantity: "",
+          directions: "",
+        },
+      ]);
+      setMedicineSearch({});
       setActiveDropdown(null);
 
-      setAlertMessage("Prescription saved successfully.");
+      setAlertMessage(
+        enteredItems.length === 1
+          ? "Prescription saved successfully."
+          : `${enteredItems.length} prescriptions saved successfully.`,
+      );
     } catch (error) {
-      console.error("Failed to save prescription:", error);
-
-      setAlertMessage(error?.message || "Failed to save prescription.");
+      console.error("Failed to save prescriptions:", error);
+      setAlertMessage(error?.message || "Failed to save prescriptions.");
     } finally {
       setIsSaving(false);
     }
   };
+
+  /*
+   * =========================================================
+   * MARK MEDICINE GIVEN
+   * =========================================================
+   */
 
   const handleMarkMedicineGiven = (prescription) => {
     const prescriptionId = prescription?._id || prescription?.id;
@@ -652,6 +632,8 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
       onConfirm: async () => {
         try {
+          setIsSaving(true);
+
           await deleteDoctorRecord(
             patient._id,
             recordId,
@@ -669,6 +651,8 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
           setConfirmState(null);
 
           setAlertMessage(error?.message || "Failed to delete doctor record.");
+        } finally {
+          setIsSaving(false);
         }
       },
     });
@@ -690,127 +674,12 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
   /*
    * =========================================================
-   * BUILD DOCTOR RECORD PAYLOAD
-   * =========================================================
-   *
-   * This is shared by:
-   *
-   * 1. Save Changes
-   * 2. Send to Pharmacy
-   * 3. Release Patient
-   *
-   * Save Changes DOES NOT update the patient's status.
-   */
-
-  const buildDoctorRecordPayload = () => {
-    return {
-      examination: {
-        ...EMPTY_DOCTOR_SHEET.examination,
-        ...(doctorSheet.examination || {}),
-      },
-
-      initComplaint:
-        newComplaint.trim() ||
-        doctorSheet.initComplaint ||
-        patient.initComplaint ||
-        "",
-
-      diagnosis: doctorSheet.diagnosis || "",
-
-      treatment: doctorSheet.treatment || "",
-
-      medication: doctorSheet.medication || "",
-
-      doctorName: storedUser?.name || storedUser?.fullName || "Doctor",
-
-      department:
-        patient.department ||
-        storedUser?.doctorInfo?.specialization ||
-        storedUser?.specialization ||
-        "General",
-
-      recordType: hasHistory ? "follow-up" : "initial",
-
-      referral:
-        showReferral && referralDept
-          ? {
-              department: referralDept,
-
-              reason: referralReason || "",
-            }
-          : undefined,
-    };
-  };
-
-  /*
-   * =========================================================
-   * SAVE CHANGES
-   * =========================================================
-   *
-   * Saves the consultation record only.
-   *
-   * IMPORTANT:
-   * - Does NOT call updatePatientStatus()
-   * - Does NOT send to pharmacy
-   * - Does NOT release the patient
-   */
-
-  const saveChanges = async () => {
-    if (!patient?._id || isSaving) {
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      const savedPatient = await saveDoctorRecord(
-        patient._id,
-        buildDoctorRecordPayload(),
-      );
-
-      console.log("Consultation changes saved:", savedPatient);
-
-      if (refreshQueue) {
-        await refreshQueue();
-      }
-
-      setAlertMessage("Changes saved successfully.");
-
-      /*
-       * Close after successful save.
-       *
-       * Use a short timeout so the success
-       * message is not immediately hidden
-       * by the parent modal closing.
-       */
-      setTimeout(() => {
-        onClose({
-          saved: true,
-
-          finalized: false,
-
-          patientId: patient._id,
-        });
-      }, 300);
-    } catch (error) {
-      console.error("Failed to save consultation changes:", error);
-
-      setAlertMessage(
-        error?.message || "Failed to save the consultation changes.",
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  /*
-   * =========================================================
    * FINALIZE CONSULTATION
    * =========================================================
    */
 
   const finalizeConsultation = async () => {
-    if (!patient?._id || isSaving) {
+    if (!patient?._id || isSaving || isSavingChanges) {
       return;
     }
 
@@ -837,17 +706,49 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     setIsSaving(true);
 
     try {
-      const savedPatient = await saveDoctorRecord(
-        patient._id,
-        buildDoctorRecordPayload(),
-      );
+      await saveDoctorRecord(patient._id, {
+        examination: {
+          ...EMPTY_DOCTOR_SHEET.examination,
+          ...(doctorSheet.examination || {}),
+        },
+
+        initComplaint:
+          newComplaint.trim() ||
+          doctorSheet.initComplaint ||
+          patient.initComplaint ||
+          "",
+
+        diagnosis: doctorSheet.diagnosis || "",
+
+        treatment: doctorSheet.treatment || "",
+
+        medication: doctorSheet.medication || "",
+
+        doctorName: storedUser?.name || storedUser?.fullName || "Doctor",
+
+        department:
+          patient.department ||
+          storedUser?.doctorInfo?.specialization ||
+          storedUser?.specialization ||
+          "General",
+
+        recordType: hasHistory ? "follow-up" : "initial",
+
+        referral:
+          showReferral && referralDept
+            ? {
+                department: referralDept,
+
+                reason: referralReason || "",
+              }
+            : undefined,
+      });
 
       const updatedPatient = await updatePatientStatus(patient._id, {
         status: nextPatientStatus,
       });
 
       console.log("Consultation status updated:", {
-        savedPatient,
         updatedPatient,
         status: nextPatientStatus,
       });
@@ -856,7 +757,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
         await refreshQueue();
       }
 
-      onClose({
+      onClose?.({
         finalized: true,
 
         patientId: patient._id,
@@ -882,6 +783,73 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
   const handleReferralToggle = () => {
     setShowReferral((previous) => !previous);
+  };
+
+  const handleSendToDepartment = async () => {
+    if (!patient?._id || isSaving || isSavingChanges) return;
+
+    if (!referralDept) {
+      setAlertMessage("Please select a referral department.");
+      return;
+    }
+
+    if (!referralReason.trim()) {
+      setAlertMessage("Please enter a referral reason.");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      await saveDoctorRecord(patient._id, {
+        examination: {
+          ...EMPTY_DOCTOR_SHEET.examination,
+          ...(doctorSheet.examination || {}),
+        },
+        initComplaint:
+          newComplaint.trim() ||
+          doctorSheet.initComplaint ||
+          patient.initComplaint ||
+          "",
+        diagnosis: doctorSheet.diagnosis || "",
+        treatment: doctorSheet.treatment || "",
+        medication: doctorSheet.medication || "",
+        doctorName: storedUser?.name || storedUser?.fullName || "Doctor",
+        department:
+          patient.department ||
+          storedUser?.doctorInfo?.specialization ||
+          storedUser?.specialization ||
+          "General",
+        recordType: hasHistory ? "follow-up" : "initial",
+        referral: {
+          department: referralDept,
+          reason: referralReason.trim(),
+        },
+      });
+
+      await updatePatientStatus(patient._id, {
+        status: "waiting",
+        department: referralDept,
+      });
+
+      await refreshQueue?.();
+
+      onClose?.({
+        finalized: true,
+        referred: true,
+        patientId: patient._id,
+        status: "waiting",
+        department: referralDept,
+      });
+    } catch (error) {
+      console.error("Failed to refer patient:", error);
+      setAlertMessage(
+        error?.message ||
+          "Failed to send the patient to the selected department.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   /*
@@ -977,7 +945,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
           recordMode === "new" ? "New consultation record" : patientName
         }
         size="xl"
-        closeOnOverlay={!isSaving}
+        closeOnOverlay={!isSaving && !isSavingChanges}
       >
         <div className="max-h-[72vh] space-y-5 overflow-y-auto pr-1">
           {/* PATIENT SUMMARY */}
@@ -1097,7 +1065,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
             <button
               type="button"
               onClick={handleNewRecord}
-              disabled={isSaving}
+              disabled={isSaving || isSavingChanges}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-bold text-primary-700 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus size={16} />
@@ -1300,6 +1268,8 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
                               updatePrescriptionItem(index, "medicine", value);
 
+                              updatePrescriptionItem(index, "medicineId", "");
+
                               setActiveDropdown(index);
                             }}
                             placeholder="Search medicine..."
@@ -1404,28 +1374,27 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                           />
                         </div>
                       </div>
-
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          type="button"
-                          disabled={isSaving}
-                          onClick={() => handleSavePrescription(index)}
-                          className="inline-flex items-center gap-2 rounded-xl bg-primary-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          <Pill size={16} />
-                          Save Prescription
-                        </button>
-                      </div>
                     </div>
                   ))}
 
                   <button
                     type="button"
                     onClick={addPrescriptionItem}
-                    className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary-300 bg-primary-50 px-4 py-3 text-sm font-bold text-primary-700 transition hover:bg-primary-100"
+                    disabled={isSaving || isSavingChanges}
+                    className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary-300 bg-primary-50 px-4 py-3 text-sm font-bold text-primary-700 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Plus size={17} />
                     Add Another Medicine
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSavePrescriptions}
+                    disabled={isSaving || isSavingChanges}
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Save size={17} />
+                    Save Prescriptions
                   </button>
 
                   {/* SAVED PRESCRIPTIONS */}
@@ -1451,44 +1420,106 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                           const isGiven = Boolean(
                             prescription?.given ||
                             prescription?.isGiven ||
-                            prescription?.status === "given",
+                            prescription?.status === "given" ||
+                            prescription?.status === "Completed",
                           );
+
+                          const prescriptionItemsFromApi =
+                            Array.isArray(prescription?.items) &&
+                            prescription.items.length > 0
+                              ? prescription.items
+                              : [
+                                  {
+                                    medicine: prescription?.medicine,
+                                    quantity: prescription?.quantity,
+                                    directions: prescription?.directions,
+                                  },
+                                ];
 
                           return (
                             <div
-                              key={prescription._id || prescription.id}
+                              key={prescription?._id || prescription?.id}
                               className="rounded-xl border border-border bg-surface p-4"
                             >
-                              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold text-text-primary">
-                                    {prescription.medicine}
-                                  </p>
+                              <div className="space-y-3">
+                                {prescriptionItemsFromApi.map(
+                                  (item, itemIndex) => {
+                                    const medicine = item?.medicine;
 
-                                  <p className="mt-1 text-xs leading-5 text-text-muted">
-                                    Qty: {prescription.quantity || "--"}
-                                    {" · "}
-                                    {prescription.directions || "No directions"}
-                                  </p>
-                                </div>
+                                    const medicineName = Array.isArray(
+                                      medicine?.names,
+                                    )
+                                      ? medicine.names.join(", ")
+                                      : typeof medicine === "string"
+                                        ? medicine
+                                        : medicine?.name ||
+                                          medicine?.genericName ||
+                                          medicine?.medicineName ||
+                                          item?.medicineName ||
+                                          prescription?.medicineName ||
+                                          "Unknown Medicine";
 
-                                {isGiven ? (
-                                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                                    <CheckCircle2 size={14} />
-                                    Medicine Given
-                                  </span>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleMarkMedicineGiven(prescription)
-                                    }
-                                    disabled={isSaving}
-                                    className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-xs font-bold text-primary-700 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                  >
-                                    <PackageCheck size={15} />
-                                    Mark as Given
-                                  </button>
+                                    const dosage =
+                                      medicine?.dosage || item?.dosage || "";
+
+                                    const quantity =
+                                      item?.quantity ??
+                                      prescription?.quantity ??
+                                      "--";
+
+                                    const directions =
+                                      item?.directions ||
+                                      prescription?.directions ||
+                                      "No directions";
+
+                                    return (
+                                      <div
+                                        key={
+                                          item?._id ||
+                                          item?.id ||
+                                          `${prescription?._id || prescription?.id}-${itemIndex}`
+                                        }
+                                        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                                      >
+                                        <div className="min-w-0">
+                                          <p className="text-sm font-bold text-text-primary">
+                                            {medicineName}
+                                            {dosage ? ` (${dosage})` : ""}
+                                          </p>
+
+                                          <p className="mt-1 text-xs leading-5 text-text-muted">
+                                            Qty: {quantity}
+                                            {" · "}
+                                            {directions}
+                                          </p>
+                                        </div>
+
+                                        {itemIndex === 0 &&
+                                          (isGiven ? (
+                                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                                              <CheckCircle2 size={14} />
+                                              Medicine Given
+                                            </span>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleMarkMedicineGiven(
+                                                  prescription,
+                                                )
+                                              }
+                                              disabled={
+                                                isSaving || isSavingChanges
+                                              }
+                                              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-xs font-bold text-primary-700 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                              <PackageCheck size={15} />
+                                              Mark as Given
+                                            </button>
+                                          ))}
+                                      </div>
+                                    );
+                                  },
                                 )}
                               </div>
                             </div>
@@ -1544,21 +1575,28 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                           Referral Department
                         </label>
 
-                        <select
-                          value={referralDept}
-                          onChange={(event) =>
-                            setReferralDept(event.target.value)
-                          }
-                          className={inputClass}
-                        >
-                          <option value="">Select department</option>
+                        <div className="relative">
+                          <select
+                            value={referralDept}
+                            onChange={(event) =>
+                              setReferralDept(event.target.value)
+                            }
+                            className={`${inputClass} appearance-none pr-10`}
+                          >
+                            <option value="">Select department</option>
 
-                          {DEPARTMENTS.map((department) => (
-                            <option key={department} value={department}>
-                              {department}
-                            </option>
-                          ))}
-                        </select>
+                            {DEPARTMENTS.map((department) => (
+                              <option key={department} value={department}>
+                                {department}
+                              </option>
+                            ))}
+                          </select>
+
+                          <ChevronDown
+                            size={17}
+                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted"
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -1586,151 +1624,209 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                   <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
                     Consultation Outcome
                   </p>
-
                   <h3 className="mt-1 text-lg font-bold text-text-primary">
                     Choose Patient Destination
                   </h3>
-
                   <p className="mt-1 text-sm text-text-muted">
                     Select what should happen after this consultation.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={handleSelectForPharmacy}
-                    className={`rounded-2xl border p-4 text-left transition ${
-                      nextPatientStatus === "forPharmacy"
-                        ? "border-primary-300 bg-primary-50 ring-2 ring-primary-500/10"
-                        : "border-border bg-surface hover:border-primary-200 hover:bg-slate-50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                          nextPatientStatus === "forPharmacy"
-                            ? "bg-primary-700 text-white"
-                            : "bg-primary-50 text-primary-700"
-                        }`}
-                      >
-                        <Pill size={18} />
-                      </div>
-
-                      <div>
-                        <p className="font-bold text-text-primary">
-                          Send to Pharmacy
-                        </p>
-
-                        <p className="mt-1 text-xs leading-5 text-text-muted">
-                          Patient will proceed to the pharmacy queue for
-                          prescribed medicines.
-                        </p>
+                {showReferral && referralDept ? (
+                  <>
+                    <div className="rounded-2xl border border-primary-200 bg-primary-50 p-4 ring-2 ring-primary-500/10">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white">
+                          <Send size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-text-primary">
+                            Send to Department
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-text-muted">
+                            Patient will be placed back in the waiting queue for
+                            the selected department.
+                          </p>
+                          <span className="mt-3 inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-bold text-primary-700 ring-1 ring-inset ring-primary-200">
+                            {referralDept}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </button>
 
-                  <button
-                    type="button"
-                    onClick={handleSelectReleased}
-                    className={`rounded-2xl border p-4 text-left transition ${
-                      nextPatientStatus === "released"
-                        ? "border-emerald-300 bg-emerald-50 ring-2 ring-emerald-500/10"
-                        : "border-border bg-surface hover:border-emerald-200 hover:bg-slate-50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                          nextPatientStatus === "released"
-                            ? "bg-emerald-600 text-white"
-                            : "bg-emerald-50 text-emerald-700"
-                        }`}
+                    <div className="mt-5 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={handleCancelClose}
+                        disabled={isSaving || isSavingChanges}
+                        className="rounded-xl border border-border bg-surface px-5 py-3 text-sm font-bold text-text-secondary transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <CheckCircle2 size={18} />
-                      </div>
-
-                      <div>
-                        <p className="font-bold text-text-primary">
-                          Release Patient
-                        </p>
-
-                        <p className="mt-1 text-xs leading-5 text-text-muted">
-                          Consultation is complete and no pharmacy processing is
-                          required.
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-
-                {/* ACTION BUTTONS */}
-
-                <div className="mt-5 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
-                  {/* CANCEL */}
-
-                  <button
-                    type="button"
-                    onClick={handleCancelClose}
-                    disabled={isSaving}
-                    className="rounded-xl border border-border bg-surface px-5 py-3 text-sm font-bold text-text-secondary transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Cancel
-                  </button>
-
-                  {/* SAVE CHANGES */}
-
-                  <button
-                    type="button"
-                    onClick={saveChanges}
-                    disabled={isSaving}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-5 py-3 text-sm font-bold text-primary-700 shadow-sm transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isSaving ? (
-                      <>
-                        <RotateCcw size={17} className="animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardList size={17} />
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-
-                  {/* FINALIZE */}
-
-                  <button
-                    type="button"
-                    onClick={finalizeConsultation}
-                    disabled={isSaving}
-                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                      nextPatientStatus === "released"
-                        ? "bg-emerald-600 hover:bg-emerald-700"
-                        : "bg-primary-700 hover:bg-primary-800"
-                    }`}
-                  >
-                    {isSaving ? (
-                      <>
-                        <RotateCcw size={17} className="animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        {nextPatientStatus === "released" ? (
-                          <CheckCircle2 size={17} />
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveChanges}
+                        disabled={isSaving || isSavingChanges}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-5 py-3 text-sm font-bold text-primary-700 shadow-sm transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSavingChanges ? (
+                          <>
+                            <RotateCcw size={17} className="animate-spin" />
+                            Saving...
+                          </>
                         ) : (
-                          <Send size={17} />
+                          <>
+                            <Save size={17} />
+                            Save Changes
+                          </>
                         )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSendToDepartment}
+                        disabled={isSaving || isSavingChanges}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSaving ? (
+                          <>
+                            <RotateCcw size={17} className="animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send size={17} />
+                            Send to {referralDept}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectForPharmacy}
+                        disabled={isSaving || isSavingChanges}
+                        className={`rounded-2xl border p-4 text-left transition ${
+                          nextPatientStatus === "forPharmacy"
+                            ? "border-primary-300 bg-primary-50 ring-2 ring-primary-500/10"
+                            : "border-border bg-surface hover:border-primary-200 hover:bg-slate-50"
+                        } disabled:cursor-not-allowed disabled:opacity-60`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                              nextPatientStatus === "forPharmacy"
+                                ? "bg-primary-700 text-white"
+                                : "bg-primary-50 text-primary-700"
+                            }`}
+                          >
+                            <Pill size={18} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-text-primary">
+                              Send to Pharmacy
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-text-muted">
+                              Patient will proceed to the pharmacy queue for
+                              prescribed medicines.
+                            </p>
+                          </div>
+                        </div>
+                      </button>
 
-                        {nextPatientStatus === "released"
-                          ? "Complete & Release"
-                          : "Complete & Send to Pharmacy"}
-                      </>
-                    )}
-                  </button>
-                </div>
+                      <button
+                        type="button"
+                        onClick={handleSelectReleased}
+                        disabled={isSaving || isSavingChanges}
+                        className={`rounded-2xl border p-4 text-left transition ${
+                          nextPatientStatus === "released"
+                            ? "border-emerald-300 bg-emerald-50 ring-2 ring-emerald-500/10"
+                            : "border-border bg-surface hover:border-emerald-200 hover:bg-slate-50"
+                        } disabled:cursor-not-allowed disabled:opacity-60`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                              nextPatientStatus === "released"
+                                ? "bg-emerald-600 text-white"
+                                : "bg-emerald-50 text-emerald-700"
+                            }`}
+                          >
+                            <CheckCircle2 size={18} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-text-primary">
+                              Release Patient
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-text-muted">
+                              Consultation is complete and no pharmacy
+                              processing is required.
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+
+                    <div className="mt-5 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={handleCancelClose}
+                        disabled={isSaving || isSavingChanges}
+                        className="rounded-xl border border-border bg-surface px-5 py-3 text-sm font-bold text-text-secondary transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveChanges}
+                        disabled={isSaving || isSavingChanges}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-5 py-3 text-sm font-bold text-primary-700 shadow-sm transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSavingChanges ? (
+                          <>
+                            <RotateCcw size={17} className="animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save size={17} />
+                            Save Changes
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={finalizeConsultation}
+                        disabled={isSaving || isSavingChanges}
+                        className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          nextPatientStatus === "released"
+                            ? "bg-emerald-600 hover:bg-emerald-700"
+                            : "bg-primary-700 hover:bg-primary-800"
+                        }`}
+                      >
+                        {isSaving ? (
+                          <>
+                            <RotateCcw size={17} className="animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            {nextPatientStatus === "released" ? (
+                              <CheckCircle2 size={17} />
+                            ) : (
+                              <Send size={17} />
+                            )}
+                            {nextPatientStatus === "released"
+                              ? "Complete & Release"
+                              : "Complete & Send to Pharmacy"}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
               </section>
             </div>
           )}
@@ -1810,21 +1906,6 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
           onClose={() => setConfirmState(null)}
         />
       )}
-
-      <ConflictManager
-        conflict={activeConflict}
-        patient={patient}
-        onClose={() => {
-          if (isResolvingConflict) {
-            return;
-          }
-
-          setActiveConflict(null);
-        }}
-        onKeepServer={handleKeepServerVersion}
-        onKeepLocal={handleKeepLocalVersion}
-        isResolving={isResolvingConflict}
-      />
     </>
   );
 }
