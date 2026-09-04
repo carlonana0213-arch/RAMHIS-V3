@@ -37,16 +37,17 @@ function UserManagement() {
   const getFileUrl = (filePath) => {
   if (!filePath) return "";
 
-  // If backend already returned a complete URL, use it directly.
+  // If the backend already returned a complete URL,
+  // use it exactly as provided.
   if (/^https?:\/\//i.test(filePath)) {
     return filePath;
   }
 
-  // Always load uploaded files from the deployed Render backend.
   const normalizedPath = filePath.startsWith("/")
     ? filePath
     : `/${filePath}`;
 
+  // Production Render backend
   return `https://ramhis-v2-1.onrender.com${normalizedPath}`;
 };
 
