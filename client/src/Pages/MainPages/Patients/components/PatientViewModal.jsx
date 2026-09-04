@@ -1,17 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-
-import {
-  getPatientById,
-  updatePatient,
-} from "../../../../Services/patientService";
-
-import {
-  dashboardBadgeVariants,
-} from "../../../../ui/variants";
-
-/* ============================================================
-   SECTION
-============================================================ */
+import { updatePatient, getPatientById } from "../../../../Services/patientService";
 
 function Section({
   eyebrow,
@@ -19,40 +7,43 @@ function Section({
   children,
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-      <div className="border-b border-border-soft bg-slate-50/70 px-5 py-4">
+    <section className="overflow-hidden rounded-[22px] border border-border-soft bg-surface shadow-sm">
+      <div className="border-b border-border-soft bg-slate-50/70 px-5 py-4 sm:px-6">
         {eyebrow && (
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
             {eyebrow}
           </p>
         )}
 
-        <h3 className="mt-1 text-sm font-bold text-text-primary">
+        <h3 className="mt-1 text-base font-bold tracking-tight text-text-primary">
           {title}
         </h3>
       </div>
 
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         {children}
       </div>
     </section>
   );
 }
 
-/* ============================================================
-   FIELD
-============================================================ */
-
 function Field({
   label,
   value,
   editing = false,
-  type = "text",
   onChange,
+  type = "text",
 }) {
+  const displayValue =
+    value === null ||
+    value === undefined ||
+    value === ""
+      ? "—"
+      : String(value);
+
   return (
-    <div className="rounded-xl border border-border-soft bg-slate-50/60 px-4 py-3">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-text-subtle">
+    <div className="min-w-0 rounded-2xl border border-border-soft bg-surface-muted p-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-subtle">
         {label}
       </p>
 
@@ -61,72 +52,16 @@ function Field({
           type={type}
           value={value ?? ""}
           onChange={onChange}
-          className="mt-1 w-full rounded-lg border border-border-soft bg-surface px-2.5 py-1.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+          className="mt-2 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold text-text-primary outline-none transition focus:border-primary-400 focus:ring-4 focus:ring-primary-100"
         />
       ) : (
-        <p className="mt-1 break-words text-sm font-semibold text-slate-700">
-          {value === null ||
-          value === undefined ||
-          value === ""
-            ? "—"
-            : String(value)}
+        <p className="mt-2 break-words text-sm font-semibold text-text-primary">
+          {displayValue}
         </p>
       )}
     </div>
   );
 }
-
-/* ============================================================
-   SELECT FIELD
-============================================================ */
-
-function SelectField({
-  label,
-  value,
-  options,
-  editing = false,
-  onChange,
-}) {
-  if (!editing) {
-    return (
-      <Field
-        label={label}
-        value={value}
-      />
-    );
-  }
-
-  return (
-    <div className="rounded-xl border border-border-soft bg-slate-50/60 px-4 py-3">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-text-subtle">
-        {label}
-      </p>
-
-      <select
-        value={value ?? ""}
-        onChange={onChange}
-        className="mt-1 w-full rounded-lg border border-border-soft bg-surface px-2.5 py-1.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-      >
-        <option value="">
-          Select
-        </option>
-
-        {options.map((option) => (
-          <option
-            key={option}
-            value={option}
-          >
-            {option}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-/* ============================================================
-   YES / NO FIELD
-============================================================ */
 
 function YesNoField({
   label,
@@ -134,6 +69,40 @@ function YesNoField({
   editing = false,
   onChange,
 }) {
+  if (editing) {
+    return (
+      <div className="min-w-0 rounded-2xl border border-border-soft bg-surface-muted p-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-subtle">
+          {label}
+        </p>
+
+        <select
+          value={
+            value === true
+              ? "Yes"
+              : value === false
+                ? "No"
+                : value || ""
+          }
+          onChange={(event) =>
+            onChange(
+              event.target.value === "Yes"
+                ? true
+                : event.target.value === "No"
+                  ? false
+                  : "",
+            )
+          }
+          className="mt-2 w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm font-semibold text-text-primary outline-none transition focus:border-primary-400 focus:ring-4 focus:ring-primary-100"
+        >
+          <option value="">—</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+    );
+  }
+
   let display = "—";
 
   if (
@@ -152,43 +121,13 @@ function YesNoField({
     display = "No";
   }
 
-  if (!editing) {
-    return (
-      <Field
-        label={label}
-        value={display}
-      />
-    );
-  }
-
   return (
-    <SelectField
+    <Field
       label={label}
-      value={
-        value === true ||
-        value === "Yes" ||
-        value === "yes"
-          ? "Yes"
-          : value === false ||
-              value === "No" ||
-              value === "no"
-            ? "No"
-            : ""
-      }
-      options={["Yes", "No"]}
-      editing
-      onChange={(event) =>
-        onChange(
-          event.target.value === "Yes"
-        )
-      }
+      value={display}
     />
   );
 }
-
-/* ============================================================
-   STATUS BADGE
-============================================================ */
 
 function StatusBadge({
   status,
@@ -198,51 +137,44 @@ function StatusBadge({
       label: "Waiting",
       classes:
         "bg-status-watch-bg text-status-watch-text",
-      dot:
-        "bg-status-watch-text",
+      dot: "bg-status-watch-text",
     },
 
     beingSeen: {
       label: "Being Served",
       classes:
         "bg-primary-50 text-primary-700",
-      dot:
-        "bg-primary-700",
+      dot: "bg-primary-600",
     },
 
     forPharmacy: {
       label: "For Pharmacy",
       classes:
         "bg-status-stable-bg text-status-stable-text",
-      dot:
-        "bg-status-stable-text",
+      dot: "bg-status-stable-dot",
     },
 
     released: {
       label: "Released",
       classes:
         "bg-slate-100 text-text-secondary",
-      dot:
-        "bg-slate-400",
+      dot: "bg-slate-400",
     },
 
     unconsulted: {
       label: "Unconsulted",
       classes:
         "bg-slate-100 text-text-secondary",
-      dot:
-        "bg-slate-400",
+      dot: "bg-slate-400",
     },
   };
 
   const item =
     config[status] || {
-      label:
-        status || "Unknown",
+      label: status || "Unknown",
       classes:
         "bg-slate-100 text-text-secondary",
-      dot:
-        "bg-slate-400",
+      dot: "bg-slate-400",
     };
 
   return (
@@ -265,10 +197,6 @@ function StatusBadge({
     </span>
   );
 }
-
-/* ============================================================
-   HISTORY CONDITION
-============================================================ */
 
 function HistoryCondition({
   label,
@@ -309,16 +237,10 @@ function HistoryCondition({
   );
 }
 
-/* ============================================================
-   LOADING SKELETON
-============================================================ */
-
 function PatientSkeleton() {
   return (
     <div className="space-y-5">
-      {Array.from(
-        { length: 5 },
-      ).map(
+      {Array.from({ length: 5 }).map(
         (_, sectionIndex) => (
           <div
             key={sectionIndex}
@@ -326,21 +248,17 @@ function PatientSkeleton() {
           >
             <div className="border-b border-border-soft px-5 py-4">
               <div className="h-3 w-24 rounded bg-slate-200" />
-
               <div className="mt-2 h-4 w-40 rounded bg-slate-200" />
             </div>
 
             <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from(
-                { length: 3 },
-              ).map(
+              {Array.from({ length: 3 }).map(
                 (_, fieldIndex) => (
                   <div
                     key={fieldIndex}
                     className="rounded-2xl border border-border-soft bg-surface-muted p-4"
                   >
                     <div className="h-2.5 w-16 rounded bg-slate-200" />
-
                     <div className="mt-3 h-4 w-24 rounded bg-slate-200" />
                   </div>
                 ),
@@ -353,57 +271,36 @@ function PatientSkeleton() {
   );
 }
 
-/* ============================================================
-   MAIN COMPONENT
-============================================================ */
-
 export default function PatientViewModal({
   patient,
   onClose,
 }) {
-  const [
-    patientDetails,
-    setPatientDetails,
-  ] = useState(null);
+  const [patientDetails, setPatientDetails] =
+    useState(null);
 
-  const [
-    loadingPatient,
-    setLoadingPatient,
-  ] = useState(false);
+  const [loadingPatient, setLoadingPatient] =
+    useState(false);
 
-  const [
-    isPriority,
-    setIsPriority,
-  ] = useState(
-    Boolean(patient?.isPriority),
-  );
+  const [isPriority, setIsPriority] =
+    useState(Boolean(patient?.isPriority));
 
-  const [
-    savingPriority,
-    setSavingPriority,
-  ] = useState(false);
+  const [savingPriority, setSavingPriority] =
+    useState(false);
+
+  const [isEditing, setIsEditing] =
+    useState(false);
+
+  const [editForm, setEditForm] =
+    useState(null);
+
+  const [savingChanges, setSavingChanges] =
+    useState(false);
 
   /*
-   * EDIT MODE
+   * ==========================================================
+   * LOAD COMPLETE PATIENT RECORD
+   * ==========================================================
    */
-  const [
-    isEditing,
-    setIsEditing,
-  ] = useState(false);
-
-  const [
-    editForm,
-    setEditForm,
-  ] = useState(null);
-
-  const [
-    savingChanges,
-    setSavingChanges,
-  ] = useState(false);
-
-  /* ==========================================================
-     LOAD COMPLETE PATIENT RECORD
-  ========================================================== */
 
   useEffect(() => {
     const loadPatientDetails =
@@ -428,9 +325,7 @@ export default function PatientViewModal({
             error,
           );
 
-          setPatientDetails(
-            patient,
-          );
+          setPatientDetails(patient);
         } finally {
           setLoadingPatient(false);
         }
@@ -439,9 +334,11 @@ export default function PatientViewModal({
     loadPatientDetails();
   }, [patient?._id]);
 
-  /* ==========================================================
-     RESET WHEN PATIENT CHANGES
-  ========================================================== */
+  /*
+   * ==========================================================
+   * RESET WHEN PATIENT CHANGES
+   * ==========================================================
+   */
 
   useEffect(() => {
     setIsEditing(false);
@@ -455,16 +352,18 @@ export default function PatientViewModal({
     patient?.isPriority,
   ]);
 
-  /* ==========================================================
-     CURRENT PATIENT
-  ========================================================== */
+  if (!patient) {
+    return null;
+  }
 
   const currentPatient =
     patientDetails || patient;
 
-  /* ==========================================================
-     CREATE EDIT FORM
-  ========================================================== */
+  /*
+   * ==========================================================
+   * CREATE EDIT FORM
+   * ==========================================================
+   */
 
   const createEditForm = (
     source,
@@ -577,18 +476,14 @@ export default function PatientViewModal({
         Array.isArray(
           source?.medicalHistory,
         )
-          ? [
-              ...source.medicalHistory,
-            ]
+          ? [...source.medicalHistory]
           : [],
 
       familyHistory:
         Array.isArray(
           source?.familyHistory,
         )
-          ? [
-              ...source.familyHistory,
-            ]
+          ? [...source.familyHistory]
           : [],
 
       department:
@@ -598,51 +493,47 @@ export default function PatientViewModal({
         source?.initComplaint || "",
 
       isPriority:
-        Boolean(
-          source?.isPriority,
-        ),
+        Boolean(source?.isPriority),
     };
   };
 
-  /* ==========================================================
-     START EDITING
-  ========================================================== */
+  /*
+   * ==========================================================
+   * EDIT MODE
+   * ==========================================================
+   */
 
-  const handleStartEditing =
-    () => {
-      setEditForm(
-        createEditForm(
-          currentPatient,
-        ),
-      );
+  const handleStartEditing = () => {
+    setEditForm(
+      createEditForm(
+        currentPatient,
+      ),
+    );
 
-      setIsEditing(true);
-    };
+    setIsEditing(true);
+  };
 
-  /* ==========================================================
-     CANCEL EDITING
-  ========================================================== */
+  const handleCancelEditing = () => {
+    setEditForm(
+      createEditForm(
+        currentPatient,
+      ),
+    );
 
-  const handleCancelEditing =
-    () => {
-      setEditForm(
-        createEditForm(
-          currentPatient,
-        ),
-      );
+    setIsPriority(
+      Boolean(
+        currentPatient?.isPriority,
+      ),
+    );
 
-      setIsPriority(
-        Boolean(
-          currentPatient?.isPriority,
-        ),
-      );
+    setIsEditing(false);
+  };
 
-      setIsEditing(false);
-    };
-
-  /* ==========================================================
-     UPDATE NESTED FIELD
-  ========================================================== */
+  /*
+   * ==========================================================
+   * FIELD CHANGES
+   * ==========================================================
+   */
 
   const handleFieldChange = (
     section,
@@ -654,17 +545,12 @@ export default function PatientViewModal({
         ...previous,
 
         [section]: {
-          ...(previous?.[section] ||
-            {}),
+          ...(previous?.[section] || {}),
           [field]: value,
         },
       }),
     );
   };
-
-  /* ==========================================================
-     UPDATE ROOT FIELD
-  ========================================================== */
 
   const handleRootFieldChange = (
     field,
@@ -678,9 +564,11 @@ export default function PatientViewModal({
     );
   };
 
-  /* ==========================================================
-     SAVE CHANGES
-  ========================================================== */
+  /*
+   * ==========================================================
+   * SAVE CHANGES
+   * ==========================================================
+   */
 
   const handleSaveChanges =
     async () => {
@@ -698,67 +586,62 @@ export default function PatientViewModal({
         const payload = {
           generalInfo: {
             name:
-              editForm.generalInfo
-                ?.name || "",
+              editForm.generalInfo?.name ||
+              "",
 
             age:
-              editForm.generalInfo
-                ?.age === ""
+              editForm.generalInfo?.age === ""
                 ? undefined
                 : Number(
-                    editForm.generalInfo
-                      ?.age,
+                    editForm.generalInfo?.age,
                   ),
 
             birthdate:
-              editForm.generalInfo
-                ?.birthdate || "",
+              editForm.generalInfo?.birthdate ||
+              "",
 
             sex:
-              editForm.generalInfo
-                ?.sex || "",
+              editForm.generalInfo?.sex || "",
 
             insurance:
-              editForm.generalInfo
-                ?.insurance || "",
+              editForm.generalInfo?.insurance ||
+              "",
 
             tobacco:
-              editForm.generalInfo
-                ?.tobacco || "",
+              editForm.generalInfo?.tobacco ||
+              "",
 
             alcohol:
-              editForm.generalInfo
-                ?.alcohol || "",
+              editForm.generalInfo?.alcohol ||
+              "",
 
             allergies:
-              editForm.generalInfo
-                ?.allergies || "",
+              editForm.generalInfo?.allergies ||
+              "",
 
             vaccine:
-              editForm.generalInfo
-                ?.vaccine || "",
+              editForm.generalInfo?.vaccine ||
+              "",
           },
 
           examination: {
             bp:
-              editForm.examination
-                ?.bp || "",
+              editForm.examination?.bp || "",
 
             temp:
-              editForm.examination
-                ?.temp || "",
+              editForm.examination?.temp ||
+              "",
 
             height:
-              editForm.examination
-                ?.height || "",
+              editForm.examination?.height ||
+              "",
 
             weight:
-              editForm.examination
-                ?.weight || "",
+              editForm.examination?.weight ||
+              "",
 
             bmi:
-              editForm.examination
-                ?.bmi || "",
+              editForm.examination?.bmi || "",
           },
 
           obstetricHistory: {
@@ -787,14 +670,12 @@ export default function PatientViewModal({
             birthHistory:
               editForm
                 .obstetricHistory
-                ?.birthHistory ||
-              "",
+                ?.birthHistory || "",
 
             deliverySite:
               editForm
                 .obstetricHistory
-                ?.deliverySite ||
-              "",
+                ?.deliverySite || "",
 
             lmp:
               editForm
@@ -827,20 +708,16 @@ export default function PatientViewModal({
           },
 
           medicalHistory:
-            editForm.medicalHistory ||
-            [],
+            editForm.medicalHistory || [],
 
           familyHistory:
-            editForm.familyHistory ||
-            [],
+            editForm.familyHistory || [],
 
           department:
-            editForm.department ||
-            "",
+            editForm.department || "",
 
           initComplaint:
-            editForm.initComplaint ||
-            "",
+            editForm.initComplaint || "",
 
           isPriority:
             Boolean(
@@ -855,12 +732,6 @@ export default function PatientViewModal({
             payload,
           );
 
-        /*
-         * Update local modal state first.
-         * This keeps the data correct if
-         * the modal is ever reused without
-         * immediately unmounting.
-         */
         setPatientDetails(
           updated || {
             ...currentPatient,
@@ -876,15 +747,7 @@ export default function PatientViewModal({
 
         setIsEditing(false);
 
-        /*
-         * IMPORTANT:
-         * Close only after the update succeeds.
-         *
-         * Patients.jsx already refreshes the
-         * patient queue inside its onClose handler.
-         */
         await onClose?.();
-
       } catch (error) {
         console.error(
           "Failed to save patient changes:",
@@ -900,9 +763,11 @@ export default function PatientViewModal({
       }
     };
 
-  /* ==========================================================
-     PRIORITY UPDATE
-  ========================================================== */
+  /*
+   * ==========================================================
+   * PRIORITY
+   * ==========================================================
+   */
 
   const handlePriorityToggle =
     async () => {
@@ -919,14 +784,13 @@ export default function PatientViewModal({
           },
         );
 
-        setIsPriority(
-          newValue,
-        );
+        setIsPriority(newValue);
 
         setPatientDetails(
           (previous) => ({
             ...(previous ||
               currentPatient),
+
             isPriority:
               newValue,
           }),
@@ -942,10 +806,9 @@ export default function PatientViewModal({
                 }
               : previous,
         );
-
       } catch (error) {
         console.error(
-          "Failed to update priority:",
+          "Failed to update patient priority:",
           error,
         );
 
@@ -958,25 +821,23 @@ export default function PatientViewModal({
       }
     };
 
-  /* ==========================================================
-     DATA
-  ========================================================== */
+  /*
+   * ==========================================================
+   * DATA
+   * ==========================================================
+   */
 
   const general =
-    currentPatient.generalInfo ||
-    {};
+    currentPatient.generalInfo || {};
 
   const examination =
-    currentPatient.examination ||
-    {};
+    currentPatient.examination || {};
 
   const obstetric =
-    currentPatient.obstetricHistory ||
-    {};
+    currentPatient.obstetricHistory || {};
 
   const perinatal =
-    currentPatient.perinatalHistory ||
-    {};
+    currentPatient.perinatalHistory || {};
 
   const medicalHistory =
     Array.isArray(
@@ -991,10 +852,6 @@ export default function PatientViewModal({
     )
       ? currentPatient.familyHistory
       : [];
-
-  /* ==========================================================
-     HISTORY HELPERS
-  ========================================================== */
 
   const formatHistory = (
     history,
@@ -1017,10 +874,6 @@ export default function PatientViewModal({
       })
       .join(", ");
   };
-
-  /* ==========================================================
-     PATIENT INFORMATION
-  ========================================================== */
 
   const name =
     general.name ||
@@ -1046,27 +899,18 @@ export default function PatientViewModal({
     currentPatient.status ||
     "Unknown";
 
-  const initials =
-    useMemo(() => {
-      return name
-        .split(" ")
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((word) =>
-          word
-            .charAt(0)
-            .toUpperCase(),
-        )
-        .join("");
-    }, [name]);
-
-  if (!patient) {
-    return null;
-  }
-
-  /* ==========================================================
-     EDIT VALUES
-  ========================================================== */
+  const initials = useMemo(() => {
+    return name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) =>
+        word
+          .charAt(0)
+          .toUpperCase(),
+      )
+      .join("");
+  }, [name]);
 
   const editGeneral =
     editForm?.generalInfo || {};
@@ -1080,15 +924,46 @@ export default function PatientViewModal({
   const editPerinatal =
     editForm?.perinatalHistory || {};
 
-  /* ==========================================================
-     UI
-  ========================================================== */
+  /*
+   * ==========================================================
+   * RENDER
+   *
+   * IMPORTANT:
+   * The overlay stays full-screen.
+   * The modal itself receives the sidebar offset on desktop.
+   * This prevents the modal/white background from covering
+   * or sitting underneath the navbar/sidebar.
+   * ==========================================================
+   */
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-4">
-
-      <div className="flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[24px] border border-border-soft bg-surface shadow-2xl">
-
+    <div
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-4"
+      onMouseDown={(event) => {
+        if (
+          event.target ===
+          event.currentTarget
+        ) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="
+          flex
+          h-[92vh]
+          w-full
+          max-w-6xl
+          flex-col
+          overflow-hidden
+          rounded-[24px]
+          border
+          border-border-soft
+          bg-surface
+          shadow-2xl
+          lg:ml-64
+        "
+      >
         {/* =====================================================
             HEADER
         ====================================================== */}
@@ -1111,8 +986,10 @@ export default function PatientViewModal({
                 {name}
               </h2>
 
-              <p className="mt-0.5 truncate text-xs font-medium text-text-muted">
-                {age} years old
+              <p className="mt-0.5 text-xs font-medium text-text-muted">
+                {age !== "Not provided"
+                  ? `${age} years old`
+                  : age}
                 {" • "}
                 {sex}
                 {" • "}
@@ -1120,94 +997,81 @@ export default function PatientViewModal({
               </p>
 
             </div>
-
           </div>
 
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
 
             <StatusBadge
               status={status}
             />
 
-            {/* PRIORITY */}
-
             <div
               className={[
-                "hidden items-center gap-3 rounded-xl border px-3 py-2 sm:flex",
+                "flex items-center gap-3 rounded-2xl border px-3 py-2",
                 isPriority
-                  ? "border-status-critical-bg bg-status-critical-bg"
-                  : "border-border-soft bg-surface-muted",
+                  ? "border-rose-100 bg-rose-50"
+                  : "border-border-soft bg-slate-50",
               ].join(" ")}
             >
-
-              <div className="hidden sm:block">
-
-                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-subtle">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
                   Queue Status
                 </p>
 
-                <p className="mt-0.5 text-xs font-bold text-text-primary">
-                  Priority Patient
+                <p className="text-xs font-bold text-text-primary">
+                  {isPriority
+                    ? "Priority Patient"
+                    : "Regular Patient"}
                 </p>
-
               </div>
 
               <button
                 type="button"
-                role="switch"
-                aria-checked={
-                  isPriority
-                }
-                disabled={
-                  savingPriority ||
-                  loadingPatient
-                }
                 onClick={
                   handlePriorityToggle
                 }
+                disabled={
+                  savingPriority
+                }
+                aria-label="Toggle priority patient"
                 className={[
                   "relative h-7 w-12 shrink-0 rounded-full transition",
                   isPriority
-                    ? "bg-status-critical-text"
+                    ? "bg-rose-600"
                     : "bg-slate-300",
-                  savingPriority ||
-                  loadingPatient
+                  savingPriority
                     ? "cursor-not-allowed opacity-60"
                     : "",
                 ].join(" ")}
               >
-
                 <span
                   className={[
-                    "absolute top-1 h-5 w-5 rounded-full bg-surface shadow-sm transition",
+                    "absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition",
                     isPriority
                       ? "left-6"
                       : "left-1",
                   ].join(" ")}
                 />
-
               </button>
-
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-border-soft text-xl font-medium text-text-secondary transition hover:bg-surface-muted hover:text-text-primary"
-              aria-label="Close"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border-soft bg-surface text-lg font-semibold text-text-secondary transition hover:bg-surface-muted hover:text-text-primary"
+              aria-label="Close patient record"
             >
               ×
             </button>
 
           </div>
-
         </header>
 
         {/* =====================================================
-            CONTENT
-        ===================================================== */}
+            BODY
+        ====================================================== */}
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-surface-muted p-4 sm:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/40 p-4 sm:p-5 lg:p-6">
 
           {loadingPatient ? (
             <PatientSkeleton />
@@ -1215,14 +1079,13 @@ export default function PatientViewModal({
             <div className="space-y-5">
 
               {/* =================================================
-                  GENERAL INFORMATION
-              ================================================= */}
+                  PERSONAL PROFILE
+              ================================================== */}
 
               <Section
                 eyebrow="Personal Profile"
                 title="General Information"
               >
-
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
                   <Field
@@ -1230,17 +1093,14 @@ export default function PatientViewModal({
                     value={
                       isEditing
                         ? editGeneral.name
-                        : name
+                        : general.name
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "generalInfo",
                         "name",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1252,16 +1112,13 @@ export default function PatientViewModal({
                         ? editGeneral.birthdate
                         : general.birthdate
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     type="date"
                     onChange={(event) =>
                       handleFieldChange(
                         "generalInfo",
                         "birthdate",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1271,69 +1128,47 @@ export default function PatientViewModal({
                     value={
                       isEditing
                         ? editGeneral.age
-                        : age
+                        : general.age
                     }
-                    editing={
-                      isEditing
-                    }
-                    type="number"
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "generalInfo",
                         "age",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
 
-                  <SelectField
+                  <Field
                     label="Sex"
                     value={
                       isEditing
                         ? editGeneral.sex
                         : sex
                     }
-                    options={[
-                      "Male",
-                      "Female",
-                    ]}
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "generalInfo",
                         "sex",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
 
-                  <SelectField
+                  <Field
                     label="Department"
                     value={
                       isEditing
                         ? editForm?.department
                         : department
                     }
-                    options={[
-                      "Pediatrics",
-                      "Ortho",
-                      "Opta",
-                      "Dental",
-                      "Cardio",
-                      "General",
-                    ]}
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleRootFieldChange(
                         "department",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1345,75 +1180,62 @@ export default function PatientViewModal({
                         ? editGeneral.insurance
                         : general.insurance
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "generalInfo",
                         "insurance",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
 
-                  <YesNoField
+                  <Field
                     label="Tobacco Use"
                     value={
                       isEditing
                         ? editGeneral.tobacco
                         : general.tobacco
                     }
-                    editing={
-                      isEditing
-                    }
-                    onChange={(value) =>
+                    editing={isEditing}
+                    onChange={(event) =>
                       handleFieldChange(
                         "generalInfo",
                         "tobacco",
-                        value
-                          ? "Yes"
-                          : "No",
+                        event.target.value,
                       )
                     }
                   />
 
-                  <YesNoField
+                  <Field
                     label="Alcohol Use"
                     value={
                       isEditing
                         ? editGeneral.alcohol
                         : general.alcohol
                     }
-                    editing={
-                      isEditing
-                    }
-                    onChange={(value) =>
+                    editing={isEditing}
+                    onChange={(event) =>
                       handleFieldChange(
                         "generalInfo",
                         "alcohol",
-                        value
-                          ? "Yes"
-                          : "No",
+                        event.target.value,
                       )
                     }
                   />
 
                 </div>
-
               </Section>
 
               {/* =================================================
-                  PATIENT INFORMATION
-              ================================================= */}
+                  CLINICAL NOTES
+              ================================================== */}
 
               <Section
                 eyebrow="Clinical Notes"
                 title="Patient Information"
               >
-
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 
                   <Field
                     label="Known Allergies"
@@ -1422,15 +1244,12 @@ export default function PatientViewModal({
                         ? editGeneral.allergies
                         : general.allergies
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "generalInfo",
                         "allergies",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1442,15 +1261,12 @@ export default function PatientViewModal({
                         ? editGeneral.vaccine
                         : general.vaccine
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "generalInfo",
                         "vaccine",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1462,31 +1278,26 @@ export default function PatientViewModal({
                         ? editForm?.initComplaint
                         : currentPatient.initComplaint
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleRootFieldChange(
                         "initComplaint",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
 
                 </div>
-
               </Section>
 
               {/* =================================================
-                  EXAMINATION
-              ================================================= */}
+                  CLINICAL ASSESSMENT
+              ================================================== */}
 
               <Section
                 eyebrow="Clinical Assessment"
                 title="Examination"
               >
-
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 
                   <Field
@@ -1496,15 +1307,12 @@ export default function PatientViewModal({
                         ? editExamination.bp
                         : examination.bp
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "examination",
                         "bp",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1516,15 +1324,12 @@ export default function PatientViewModal({
                         ? editExamination.temp
                         : examination.temp
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "examination",
                         "temp",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1536,15 +1341,12 @@ export default function PatientViewModal({
                         ? editExamination.height
                         : examination.height
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "examination",
                         "height",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1556,15 +1358,12 @@ export default function PatientViewModal({
                         ? editExamination.weight
                         : examination.weight
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "examination",
                         "weight",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1576,32 +1375,27 @@ export default function PatientViewModal({
                         ? editExamination.bmi
                         : examination.bmi
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "examination",
                         "bmi",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
 
                 </div>
-
               </Section>
 
               {/* =================================================
                   OBSTETRIC HISTORY
-              ================================================= */}
+              ================================================== */}
 
               <Section
                 eyebrow="Maternal Information"
                 title="Obstetric History"
               >
-
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 
                   <YesNoField
@@ -1611,9 +1405,7 @@ export default function PatientViewModal({
                         ? editObstetric.contraception
                         : obstetric.contraception
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(value) =>
                       handleFieldChange(
                         "obstetricHistory",
@@ -1630,15 +1422,12 @@ export default function PatientViewModal({
                         ? editObstetric.type
                         : obstetric.type
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "obstetricHistory",
                         "type",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1650,15 +1439,12 @@ export default function PatientViewModal({
                         ? editObstetric.gpfpal
                         : obstetric.gpfpal
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "obstetricHistory",
                         "gpfpal",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1670,15 +1456,12 @@ export default function PatientViewModal({
                         ? editObstetric.bf
                         : obstetric.bf
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "obstetricHistory",
                         "bf",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1690,15 +1473,12 @@ export default function PatientViewModal({
                         ? editObstetric.birthHistory
                         : obstetric.birthHistory
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "obstetricHistory",
                         "birthHistory",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1710,15 +1490,12 @@ export default function PatientViewModal({
                         ? editObstetric.deliverySite
                         : obstetric.deliverySite
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "obstetricHistory",
                         "deliverySite",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1730,34 +1507,29 @@ export default function PatientViewModal({
                         ? editObstetric.lmp
                         : obstetric.lmp
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     type="date"
                     onChange={(event) =>
                       handleFieldChange(
                         "obstetricHistory",
                         "lmp",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
 
                 </div>
-
               </Section>
 
               {/* =================================================
                   PERINATAL HISTORY
-              ================================================= */}
+              ================================================== */}
 
               <Section
                 eyebrow="Newborn Information"
                 title="Perinatal History"
               >
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 
                   <Field
                     label="Birth Weight"
@@ -1766,15 +1538,12 @@ export default function PatientViewModal({
                         ? editPerinatal.bw
                         : perinatal.bw
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "perinatalHistory",
                         "bw",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1786,15 +1555,12 @@ export default function PatientViewModal({
                         ? editPerinatal.bf
                         : perinatal.bf
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "perinatalHistory",
                         "bf",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1806,15 +1572,12 @@ export default function PatientViewModal({
                         ? editPerinatal.birthHistory
                         : perinatal.birthHistory
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "perinatalHistory",
                         "birthHistory",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
@@ -1826,32 +1589,27 @@ export default function PatientViewModal({
                         ? editPerinatal.deliverySite
                         : perinatal.deliverySite
                     }
-                    editing={
-                      isEditing
-                    }
+                    editing={isEditing}
                     onChange={(event) =>
                       handleFieldChange(
                         "perinatalHistory",
                         "deliverySite",
-                        event.target
-                          .value,
+                        event.target.value,
                       )
                     }
                   />
 
                 </div>
-
               </Section>
 
               {/* =================================================
-                  RECORD SUMMARY
-              ================================================= */}
+                  MEDICAL HISTORY
+              ================================================== */}
 
               <Section
                 eyebrow="Record Overview"
-                title="History Summary"
+                title="Medical History"
               >
-
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
 
                   <Field
@@ -1871,7 +1629,6 @@ export default function PatientViewModal({
                   />
 
                 </div>
-
               </Section>
 
             </div>
@@ -1883,11 +1640,9 @@ export default function PatientViewModal({
             FOOTER
         ====================================================== */}
 
-        <div className="flex items-center justify-between border-t border-border bg-surface px-5 py-4 sm:px-7">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-surface px-5 py-4 sm:px-7">
 
-          <span
-            className={`${dashboardBadgeVariants.base} ${dashboardBadgeVariants.overview}`}
-          >
+          <span className="rounded-full bg-primary-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-primary-700">
             Patient Record
           </span>
 
@@ -1949,7 +1704,6 @@ export default function PatientViewModal({
             )}
 
           </div>
-
         </div>
 
       </div>

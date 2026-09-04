@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   FaCalendarAlt,
-  FaEye,
   FaMapMarkerAlt,
   FaPlus,
   FaUsers,
@@ -334,46 +333,51 @@ const EventManagement = () => {
     }
   };
 
-return (
-<main className="min-h-full w-full bg-slate-50 px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+  return (
+    <main className="min-h-screen w-full overflow-y-scroll bg-slate-50 px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
 
-<div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
 
-{/* PAGE HEADER */}
-<div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-  <div className="flex items-center gap-3">
-    <div className="mt-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-      <FaCalendarAlt size={21} />
-    </div>
+        {/* PAGE HEADER */}
 
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-        Mission Management
-      </p>
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 
-      <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
-        Event Management
-      </h1>
+          <div className="flex items-center gap-3">
 
-      <p className="mt-1 text-sm text-text-muted">
-        Create, manage, and monitor community health missions.
-      </p>
-    </div>
-  </div>
+            <div className="mt-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+              <FaCalendarAlt size={21} />
+            </div>
 
-  <button
-    type="button"
-    onClick={handleCreateEvent}
-    className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl bg-primary-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:self-auto"
-  >
-    <FaPlus size={14} />
-    Create New Event
-  </button>
-</div>
+            <div>
 
-        {/* ======================================================
-            STATISTICS
-        ====================================================== */}
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                Mission Management
+              </p>
+
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+                Event Management
+              </h1>
+
+              <p className="mt-1 text-sm text-text-muted">
+                Create, manage, and monitor community health missions.
+              </p>
+
+            </div>
+
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCreateEvent}
+            className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl bg-primary-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:self-auto"
+          >
+            <FaPlus size={14} />
+            Create New Event
+          </button>
+
+        </div>
+
+        {/* STATISTICS */}
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
 
@@ -407,9 +411,7 @@ return (
 
         </section>
 
-        {/* ======================================================
-            EVENTS TABLE
-        ====================================================== */}
+        {/* EVENTS TABLE */}
 
         <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
 
@@ -420,15 +422,11 @@ return (
             <div>
 
               <h2 className="text-lg font-extrabold text-text-primary">
-
                 Events
-
               </h2>
 
               <p className="mt-1 text-sm text-text-muted">
-
                 Manage your health missions and events.
-
               </p>
 
             </div>
@@ -451,9 +449,7 @@ return (
                       : "border border-border bg-surface text-text-secondary hover:bg-slate-50"
                   }`}
                 >
-
                   {tab}
-
                 </button>
 
               ))}
@@ -467,9 +463,7 @@ return (
           {error && (
 
             <div className="border-b border-red-100 bg-status-critical-bg px-5 py-4 text-sm font-medium text-status-critical-text">
-
               {error}
-
             </div>
 
           )}
@@ -478,52 +472,43 @@ return (
 
           <div className="overflow-x-auto">
 
-            <table className="w-full min-w-[1050px]">
+            <table className="w-full min-w-[1050px] table-fixed">
+
+              <colgroup>
+                <col className="w-[28%]" />
+                <col className="w-[14%]" />
+                <col className="w-[20%]" />
+                <col className="w-[15%]" />
+                <col className="w-[13%]" />
+                <col className="w-[10%]" />
+              </colgroup>
 
               <thead className="border-b border-border bg-slate-50">
 
                 <tr>
 
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
-
                     Event
-
                   </th>
 
                   <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
-
                     Date & Time
-
                   </th>
 
                   <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
-
                     Location
-
                   </th>
 
                   <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
-
                     Type
-
                   </th>
 
                   <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
-
                     Status
-
                   </th>
 
                   <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wide text-text-muted">
-
                     Participants
-
-                  </th>
-
-                  <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wide text-text-muted">
-
-                    Action
-
                   </th>
 
                 </tr>
@@ -537,16 +522,12 @@ return (
                   <tr>
 
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="px-6 py-16 text-center"
                     >
-
                       <div className="inline-flex items-center gap-3 text-sm font-medium text-text-muted">
-
                         Loading events...
-
                       </div>
-
                     </td>
 
                   </tr>
@@ -556,28 +537,22 @@ return (
                   <tr>
 
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="px-6 py-16 text-center"
                     >
 
                       <div className="mx-auto flex max-w-sm flex-col items-center">
 
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-text-subtle">
-
                           <FaCalendarAlt size={20} />
-
                         </div>
 
                         <p className="mt-4 text-sm font-bold text-slate-700">
-
                           No events found
-
                         </p>
 
                         <p className="mt-1 text-xs text-text-muted">
-
                           No events are available for this status.
-
                         </p>
 
                       </div>
@@ -593,7 +568,26 @@ return (
 
                       <tr
                         key={event._id}
-                        className="transition hover:bg-slate-50/80"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() =>
+                          handleViewEvent(
+                            event
+                          )
+                        }
+                        onKeyDown={(keyboardEvent) => {
+                          if (
+                            keyboardEvent.key === "Enter" ||
+                            keyboardEvent.key === " "
+                          ) {
+                            keyboardEvent.preventDefault();
+
+                            handleViewEvent(
+                              event
+                            );
+                          }
+                        }}
+                        className="cursor-pointer outline-none transition hover:bg-slate-50/80 focus:bg-slate-50/80"
                       >
 
                         <td className="px-6 py-4">
@@ -601,16 +595,12 @@ return (
                           <div className="max-w-[280px]">
 
                             <p className="truncate text-sm font-bold text-text-primary">
-
                               {event.title}
-
                             </p>
 
                             <p className="mt-1 truncate text-xs text-text-muted">
-
                               {event.description ||
                                 "No description provided"}
-
                             </p>
 
                           </div>
@@ -620,24 +610,20 @@ return (
                         <td className="px-4 py-4">
 
                           <p className="text-sm font-medium text-slate-700">
-
                             {event.date
                               ? new Date(
                                   event.date
                                 ).toLocaleDateString()
                               : "--"}
-
                           </p>
 
                           <p className="mt-1 text-xs text-text-muted">
-
                             {event.startTime ||
                               "--"}
 
                             {event.endTime
                               ? ` - ${event.endTime}`
                               : ""}
-
                           </p>
 
                         </td>
@@ -645,10 +631,8 @@ return (
                         <td className="px-4 py-4">
 
                           <p className="max-w-[200px] truncate text-sm font-medium text-slate-700">
-
                             {event.location ||
                               "--"}
-
                           </p>
 
                         </td>
@@ -656,10 +640,8 @@ return (
                         <td className="px-4 py-4">
 
                           <span className="text-sm font-medium text-text-secondary">
-
                             {event.type ||
                               "--"}
-
                           </span>
 
                         </td>
@@ -674,10 +656,8 @@ return (
                               "border-border bg-slate-100 text-text-secondary"
                             }`}
                           >
-
                             {event.status ||
                               "Unknown"}
-
                           </span>
 
                         </td>
@@ -685,30 +665,9 @@ return (
                         <td className="px-4 py-4 text-center">
 
                           <span className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700">
-
                             {event.participants
                               ?.length || 0}
-
                           </span>
-
-                        </td>
-
-                        <td className="px-6 py-4 text-center">
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleViewEvent(
-                                event
-                              )
-                            }
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition hover:border-blue-200 hover:bg-primary-50 hover:text-primary-700"
-                            title="View event"
-                          >
-
-                            <FaEye size={14} />
-
-                          </button>
 
                         </td>
 
@@ -729,9 +688,7 @@ return (
 
       </div>
 
-      {/* ======================================================
-          VIEW EVENT MODAL
-      ====================================================== */}
+      {/* VIEW EVENT MODAL */}
 
       {showViewModal &&
         selectedEvent && (
@@ -740,7 +697,6 @@ return (
             event={selectedEvent}
             onClose={() => {
               setShowViewModal(false);
-
               setSelectedEvent(null);
             }}
             onParticipantAction={
@@ -762,9 +718,7 @@ return (
 
         )}
 
-      {/* ======================================================
-          CREATE / EDIT EVENT MODAL
-      ====================================================== */}
+      {/* CREATE / EDIT EVENT MODAL */}
 
       {showModal && (
 
@@ -772,7 +726,6 @@ return (
           event={editEvent}
           onClose={() => {
             setShowModal(false);
-
             setEditEvent(null);
           }}
           refreshEvents={
@@ -800,15 +753,11 @@ function StatCard({
         <div>
 
           <p className="text-sm font-medium text-text-muted">
-
             {label}
-
           </p>
 
           <p className="mt-2 text-3xl font-bold tracking-tight text-text-primary">
-
             {value}
-
           </p>
 
         </div>
@@ -816,9 +765,7 @@ function StatCard({
         <div
           className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconClass}`}
         >
-
           {icon}
-
         </div>
 
       </div>

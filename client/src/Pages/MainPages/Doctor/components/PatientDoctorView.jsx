@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
-  X,
   Plus,
   Trash2,
   ClipboardList,
@@ -11,9 +14,11 @@ import {
   Send,
   UserRound,
   ChevronRight,
+  ChevronDown,
   CheckCircle2,
   PackageCheck,
   RotateCcw,
+  Save,
 } from "lucide-react";
 
 import Modal from "../../../../Components/ui/modal";
@@ -31,15 +36,6 @@ import {
 
 import AlertModal from "../../../../Components/ui/AlertModal";
 import ConfirmModal from "../../../../Components/ui/ConfirmModal";
-import ConflictManager from "../../../../Components/common/ConflictManager";
-
-import {
-  getPendingOfflineConflicts,
-  resolveOfflineConflict,
-  getOwnerKey,
-} from "../../../../Services/offlineRepository";
-
-import db from "../../../../Services/localDB";
 
 const EMPTY_DOCTOR_SHEET = {
   examination: {
@@ -72,8 +68,14 @@ const createEmptyDoctorSheet = (complaint = "") => ({
   medication: "",
 });
 
-function PatientDoctorView({ patient, onClose, refreshQueue }) {
-  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+function PatientDoctorView({
+  patient,
+  onClose,
+  refreshQueue,
+}) {
+  const storedUser = JSON.parse(
+    localStorage.getItem("user") || "{}"
+  );
 
   const DEPARTMENTS = [
     "Pediatrics",
@@ -82,66 +84,155 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     "Dental",
     "Cardio",
     "General",
+    "Neurology",
+    "Pathology",
+    "Circumcision",
+    "Surgery",
+    "PT & Rehabilitation",
+    "OB-Gyn",
+    "Ophthalmology",
+    "Dermatology",
+    "Adult Medicine",
   ];
 
-  const [doctorSheet, setDoctorSheet] = useState(createEmptyDoctorSheet(""));
+  const [doctorSheet, setDoctorSheet] = useState(
+    createEmptyDoctorSheet("")
+  );
 
   const [activeTab, setActiveTab] = useState("current");
 
-  const [existingPrescriptions, setExistingPrescriptions] = useState([]);
+  const [
+    existingPrescriptions,
+    setExistingPrescriptions,
+  ] = useState([]);
 
-  const [recordMode, setRecordMode] = useState("existing");
+  const [recordMode, setRecordMode] =
+    useState("existing");
 
   const [medicines, setMedicines] = useState([]);
 
-  const [nextPatientStatus, setNextPatientStatus] = useState("forPharmacy");
+  const [
+    nextPatientStatus,
+    setNextPatientStatus,
+  ] = useState("forPharmacy");
 
-  const [prescriptionItems, setPrescriptionItems] = useState([
-    {
-      medicine: "",
-      quantity: "",
-      directions: "",
-    },
-  ]);
+  const [prescriptionItems, setPrescriptionItems] =
+    useState([
+      {
+        medicine: "",
+        medicineId: "",
+        quantity: "",
+        directions: "",
+      },
+    ]);
 
-  const [medicineSearch, setMedicineSearch] = useState({});
+  const [medicineSearch, setMedicineSearch] =
+    useState({});
 
-  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [activeDropdown, setActiveDropdown] =
+    useState(null);
 
-  const [showReferral, setShowReferral] = useState(false);
+  const [showReferral, setShowReferral] =
+    useState(false);
 
-  const [referralDept, setReferralDept] = useState("");
+  const [referralDept, setReferralDept] =
+    useState("");
 
-  const [referralReason, setReferralReason] = useState("");
+  const [referralReason, setReferralReason] =
+    useState("");
 
-  const [newComplaint, setNewComplaint] = useState("");
+  const [newComplaint, setNewComplaint] =
+    useState("");
 
-  const [alertMessage, setAlertMessage] = useState("");
+  const [alertMessage, setAlertMessage] =
+    useState("");
 
-  const [confirmState, setConfirmState] = useState(null);
+  const [confirmState, setConfirmState] =
+    useState(null);
 
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] =
+    useState(false);
 
-  const [activeConflict, setActiveConflict] = useState(null);
-
-  const [isResolvingConflict, setIsResolvingConflict] = useState(false);
+  const [
+    isSavingChanges,
+    setIsSavingChanges,
+  ] = useState(false);
 
   const hasHistory =
-    Array.isArray(patient?.doctorSheets) && patient.doctorSheets.length > 0;
+    Array.isArray(patient?.doctorSheets) &&
+    patient.doctorSheets.length > 0;
 
   const activePrescriptions = useMemo(() => {
-    return Array.isArray(existingPrescriptions) ? existingPrescriptions : [];
+    return Array.isArray(existingPrescriptions)
+      ? existingPrescriptions
+      : [];
   }, [existingPrescriptions]);
 
-  const patientName = patient?.generalInfo?.name || "Unnamed Patient";
+  /*
+   * The prescription API returns prescription documents
+   * containing an `items` array. Each item contains the
+   * medicine, quantity, and directions.
+   *
+   * Keep the existing UI unchanged, but normalize the
+   * response here so the Saved Prescriptions section
+   * displays the actual prescription details.
+   */
+  const displayPrescriptions = useMemo(() => {
+    const source = Array.isArray(activePrescriptions)
+      ? activePrescriptions
+      : [];
 
-  const patientAge = patient?.generalInfo?.age ?? "--";
+    return source.flatMap((prescription) => {
+      if (
+        Array.isArray(prescription?.items) &&
+        prescription.items.length > 0
+      ) {
+        return prescription.items.map((item) => ({
+          ...item,
+          _id:
+            item?._id ||
+            `${prescription?._id || prescription?.id}-${item?._id || "item"}`,
+          prescriptionId:
+            prescription?._id ||
+            prescription?.id,
+          medicine: item?.medicine,
+          quantity:
+            item?.quantity ??
+            prescription?.quantity,
+          directions:
+            item?.directions ??
+            prescription?.directions,
+          given:
+            item?.given ??
+            item?.isGiven ??
+            prescription?.given ??
+            prescription?.isGiven,
+          status:
+            item?.status ??
+            prescription?.status,
+        }));
+      }
+
+      return [prescription];
+    });
+  }, [activePrescriptions]);
+
+  const patientName =
+    patient?.generalInfo?.name ||
+    "Unnamed Patient";
+
+  const patientAge =
+    patient?.generalInfo?.age ?? "--";
 
   const patientSex =
-    patient?.generalInfo?.sex || patient?.generalInfo?.gender || "--";
+    patient?.generalInfo?.sex ||
+    patient?.generalInfo?.gender ||
+    "--";
 
   const latestRecord = hasHistory
-    ? patient.doctorSheets[patient.doctorSheets.length - 1]
+    ? patient.doctorSheets[
+        patient.doctorSheets.length - 1
+      ]
     : null;
 
   /*
@@ -153,11 +244,16 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
   const handleNewRecord = () => {
     setRecordMode("new");
 
-    setDoctorSheet(createEmptyDoctorSheet(patient?.initComplaint || ""));
+    setDoctorSheet(
+      createEmptyDoctorSheet(
+        patient?.initComplaint || ""
+      )
+    );
 
     setPrescriptionItems([
       {
         medicine: "",
+        medicineId: "",
         quantity: "",
         directions: "",
       },
@@ -189,45 +285,19 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
         return;
       }
 
-      const data = await loadPatientPrescriptions(patientId);
+      const data =
+        await loadPatientPrescriptions(patientId);
 
-      setExistingPrescriptions(Array.isArray(data) ? data : []);
+      setExistingPrescriptions(
+        Array.isArray(data) ? data : []
+      );
     } catch (error) {
-      console.error("Failed to load prescriptions:", error);
-
-      setExistingPrescriptions([]);
-    }
-  };
-
-  const checkForPatientConflict = async (patientId) => {
-    try {
-      if (!patientId) {
-        return;
-      }
-
-      const conflicts = await getPendingOfflineConflicts();
-
-      const matchingConflict = conflicts.find(
-        (conflict) =>
-          String(conflict.entityKey) === String(patientId) &&
-          (conflict.entityType === "patient" ||
-            conflict.entityType === "doctorRecord"),
+      console.error(
+        "Failed to load prescriptions:",
+        error
       );
 
-      if (matchingConflict) {
-        console.info(
-          "[Conflict UI] Pending conflict found for patient:",
-          patientId,
-        );
-
-        setActiveConflict(matchingConflict);
-
-        return;
-      }
-
-      setActiveConflict(null);
-    } catch (error) {
-      console.error("[Conflict UI] Failed to check for conflicts:", error);
+      setExistingPrescriptions([]);
     }
   };
 
@@ -252,7 +322,10 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
       Array.isArray(patient.doctorSheets) &&
       patient.doctorSheets.length > 0
     ) {
-      const latest = patient.doctorSheets[patient.doctorSheets.length - 1];
+      const latest =
+        patient.doctorSheets[
+          patient.doctorSheets.length - 1
+        ];
 
       setDoctorSheet({
         examination: {
@@ -260,21 +333,32 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
           ...(latest.examination || {}),
         },
 
-        initComplaint: latest.initComplaint || patient.initComplaint || "",
+        initComplaint:
+          latest.initComplaint ||
+          patient.initComplaint ||
+          "",
 
-        diagnosis: latest.diagnosis || "",
+        diagnosis:
+          latest.diagnosis || "",
 
-        treatment: latest.treatment || "",
+        treatment:
+          latest.treatment || "",
 
-        medication: latest.medication || "",
+        medication:
+          latest.medication || "",
       });
     } else {
-      setDoctorSheet(createEmptyDoctorSheet(patient.initComplaint || ""));
+      setDoctorSheet(
+        createEmptyDoctorSheet(
+          patient.initComplaint || ""
+        )
+      );
     }
 
     setPrescriptionItems([
       {
         medicine: "",
+        medicineId: "",
         quantity: "",
         directions: "",
       },
@@ -292,132 +376,13 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     setReferralReason("");
 
     setIsSaving(false);
+    setIsSavingChanges(false);
 
     loadPrescriptions(patient._id);
-
-    checkForPatientConflict(patient._id);
-  }, [patient?._id, recordMode]);
-
-  const handleKeepServerVersion = async () => {
-    if (!activeConflict) {
-      return;
-    }
-
-    try {
-      setIsResolvingConflict(true);
-
-      const operationId = activeConflict.operationId;
-
-      // Remove the pending offline operation so it
-      // cannot be synchronized later.
-      if (operationId) {
-        await db.offlineOutbox.delete(operationId);
-      }
-
-      // Mark the conflict as resolved.
-      await resolveOfflineConflict(activeConflict.conflictId, "server");
-
-      console.info("[Conflict UI] Server version selected.");
-
-      setActiveConflict(null);
-
-      // Refresh the doctor queue so the UI reflects
-      // the server version.
-      await refreshQueue?.();
-    } catch (error) {
-      console.error("[Conflict UI] Failed to keep server version:", error);
-
-      setAlertMessage(error?.message || "Failed to resolve the conflict.");
-    } finally {
-      setIsResolvingConflict(false);
-    }
-  };
-
-  const handleKeepLocalVersion = async () => {
-    if (!activeConflict) {
-      return;
-    }
-
-    try {
-      setIsResolvingConflict(true);
-
-      const operation = await db.offlineOutbox.get(activeConflict.operationId);
-
-      if (!operation) {
-        throw new Error("The pending offline operation could not be found.");
-      }
-
-      /*
-       * The conflict has already been reviewed by the user.
-       *
-       * We put the operation back into pending so the
-       * normal offline synchronization process can retry it.
-       */
-      await db.offlineOutbox.update(operation.operationId, {
-        status: "pending",
-
-        /*
-         * The server version that caused the conflict
-         * becomes the new comparison baseline.
-         */
-        baseSnapshot: activeConflict.serverData,
-
-        updatedAt: new Date().toISOString(),
-      });
-
-      await resolveOfflineConflict(activeConflict.conflictId, "local");
-
-      console.info(
-        "[Conflict UI] Local version selected. Retrying synchronization.",
-      );
-
-      setActiveConflict(null);
-
-      /*
-       * Tell the application that connectivity is
-       * available so the existing sync listener can
-       * process the pending operation.
-       */
-      window.dispatchEvent(new Event("online"));
-    } catch (error) {
-      console.error("[Conflict UI] Failed to keep local version:", error);
-
-      setAlertMessage(error?.message || "Failed to keep your changes.");
-    } finally {
-      setIsResolvingConflict(false);
-    }
-  };
-
-  useEffect(() => {
-    const handleConflictCreated = async (event) => {
-      const conflictPatientId = event?.detail?.entityKey;
-
-      if (!conflictPatientId) {
-        return;
-      }
-
-      // Only react if this is the patient currently
-      // being viewed in PatientDoctorView.
-      if (String(conflictPatientId) !== String(patient?._id)) {
-        return;
-      }
-
-      console.info(
-        "[Conflict UI] Conflict created for currently selected patient.",
-      );
-
-      await checkForPatientConflict(patient._id);
-    };
-
-    window.addEventListener("offline-conflict-created", handleConflictCreated);
-
-    return () => {
-      window.removeEventListener(
-        "offline-conflict-created",
-        handleConflictCreated,
-      );
-    };
-  }, [patient?._id]);
+  }, [
+    patient?._id,
+    recordMode,
+  ]);
 
   /*
    * =========================================================
@@ -430,9 +395,16 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
       try {
         const data = await getMedicines();
 
-        setMedicines(Array.isArray(data) ? data : data?.medicines || []);
+        setMedicines(
+          Array.isArray(data)
+            ? data
+            : data?.medicines || []
+        );
       } catch (error) {
-        console.error("Failed to load medicines:", error);
+        console.error(
+          "Failed to load medicines:",
+          error
+        );
 
         setMedicines([]);
       }
@@ -443,16 +415,16 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
   /*
    * =========================================================
-   * CLOSE WITHOUT FINALIZING
+   * CLOSE
    * =========================================================
    */
 
   const handleCancelClose = () => {
-    if (isSaving) {
+    if (isSaving || isSavingChanges) {
       return;
     }
 
-    onClose();
+    onClose?.();
   };
 
   /*
@@ -461,14 +433,20 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
    * =========================================================
    */
 
-  const updateDoctorSheet = (field, value) => {
+  const updateDoctorSheet = (
+    field,
+    value
+  ) => {
     setDoctorSheet((previous) => ({
       ...previous,
       [field]: value,
     }));
   };
 
-  const updateExamination = (field, value) => {
+  const updateExamination = (
+    field,
+    value
+  ) => {
     setDoctorSheet((previous) => ({
       ...previous,
 
@@ -477,6 +455,101 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
         [field]: value,
       },
     }));
+  };
+
+  /*
+   * =========================================================
+   * SAVE CHANGES ONLY
+   *
+   * This saves the current doctor information without
+   * changing the patient's queue status.
+   * =========================================================
+   */
+
+  const handleSaveChanges = async () => {
+    if (
+      !patient?._id ||
+      isSaving ||
+      isSavingChanges
+    ) {
+      return;
+    }
+
+    setIsSavingChanges(true);
+
+    try {
+      await saveDoctorRecord(
+        patient._id,
+        {
+          examination: {
+            ...EMPTY_DOCTOR_SHEET.examination,
+            ...(doctorSheet.examination || {}),
+          },
+
+          initComplaint:
+            newComplaint.trim() ||
+            doctorSheet.initComplaint ||
+            patient.initComplaint ||
+            "",
+
+          diagnosis:
+            doctorSheet.diagnosis || "",
+
+          treatment:
+            doctorSheet.treatment || "",
+
+          medication:
+            doctorSheet.medication || "",
+
+          doctorName:
+            storedUser?.name ||
+            storedUser?.fullName ||
+            "Doctor",
+
+          department:
+            patient.department ||
+            storedUser?.doctorInfo
+              ?.specialization ||
+            storedUser?.specialization ||
+            "General",
+
+          recordType:
+            hasHistory
+              ? "follow-up"
+              : "initial",
+
+          referral:
+            showReferral &&
+            referralDept
+              ? {
+                  department:
+                    referralDept,
+
+                  reason:
+                    referralReason || "",
+                }
+              : undefined,
+        }
+      );
+
+      await refreshQueue?.();
+
+      setAlertMessage(
+        "Changes saved successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Failed to save changes:",
+        error
+      );
+
+      setAlertMessage(
+        error?.message ||
+          "Failed to save changes."
+      );
+    } finally {
+      setIsSavingChanges(false);
+    }
   };
 
   /*
@@ -490,25 +563,32 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
       ...previous,
       {
         medicine: "",
+        medicineId: "",
         quantity: "",
         directions: "",
       },
     ]);
   };
 
-  const removePrescriptionItem = (index) => {
+  const removePrescriptionItem = (
+    index
+  ) => {
     setPrescriptionItems((previous) => {
       if (previous.length === 1) {
         return [
           {
             medicine: "",
+            medicineId: "",
             quantity: "",
             directions: "",
           },
         ];
       }
 
-      return previous.filter((_, itemIndex) => itemIndex !== index);
+      return previous.filter(
+        (_, itemIndex) =>
+          itemIndex !== index
+      );
     });
 
     setMedicineSearch((previous) => {
@@ -524,110 +604,166 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     setActiveDropdown(null);
   };
 
-  const updatePrescriptionItem = (index, field, value) => {
+  const updatePrescriptionItem = (
+    index,
+    field,
+    value
+  ) => {
     setPrescriptionItems((previous) =>
-      previous.map((item, itemIndex) =>
-        itemIndex === index
-          ? {
-              ...item,
-              [field]: value,
-            }
-          : item,
-      ),
+      previous.map(
+        (item, itemIndex) =>
+          itemIndex === index
+            ? {
+                ...item,
+                [field]: value,
+              }
+            : item
+      )
     );
   };
 
-  const handleSavePrescription = async (index) => {
-    const item = prescriptionItems[index];
+  const handleSavePrescriptions = async () => {
+    if (!patient?._id || isSaving || isSavingChanges) return;
 
-    if (!item?.medicine || !String(item.medicine).trim()) {
-      setAlertMessage("Please select a medicine first.");
+    const enteredItems = prescriptionItems.filter(
+      (item) =>
+        item?.medicine ||
+        item?.medicineId ||
+        item?.quantity ||
+        item?.directions
+    );
+
+    if (enteredItems.length === 0) {
+      setAlertMessage(
+        "Please add at least one prescription before saving."
+      );
       return;
     }
 
-    if (!item?.medicineId) {
-      setAlertMessage("Please select a medicine from the list.");
-      return;
-    }
+    for (const item of enteredItems) {
+      if (!item?.medicine || !String(item.medicine).trim()) {
+        setAlertMessage(
+          "Please select a medicine for every prescription."
+        );
+        return;
+      }
 
-    if (!item?.directions || !String(item.directions).trim()) {
-      setAlertMessage("Please enter directions for this medicine.");
-      return;
-    }
+      if (!item?.medicineId) {
+        setAlertMessage(
+          "Please select a medicine from the list for every prescription."
+        );
+        return;
+      }
 
-    if (!patient?._id || isSaving) {
-      return;
+      if (!Number(item.quantity) || Number(item.quantity) <= 0) {
+        setAlertMessage(
+          "Please enter a valid quantity for every prescription."
+        );
+        return;
+      }
+
+      if (!item?.directions || !String(item.directions).trim()) {
+        setAlertMessage(
+          "Please enter directions for every prescription."
+        );
+        return;
+      }
     }
 
     try {
       setIsSaving(true);
 
-      await savePrescription(patient._id, {
-        medicine: item.medicineId,
-        quantity: item.quantity,
-        directions: item.directions,
-        doctorId: storedUser?._id || storedUser?.id || undefined,
-      });
+      await Promise.all(
+        enteredItems.map((item) =>
+          savePrescription(patient._id, {
+            medicine: item.medicineId,
+            quantity: Number(item.quantity),
+            directions: item.directions.trim(),
+            doctorId:
+              storedUser?._id ||
+              storedUser?.id ||
+              undefined,
+          })
+        )
+      );
 
       await loadPrescriptions(patient._id);
 
-      setPrescriptionItems((previous) =>
-        previous.map((prescription, prescriptionIndex) =>
-          prescriptionIndex === index
-            ? {
-                medicine: "",
-                quantity: "",
-                directions: "",
-              }
-            : prescription,
-        ),
-      );
-
-      setMedicineSearch((previous) => ({
-        ...previous,
-        [index]: "",
-      }));
-
+      setPrescriptionItems([
+        {
+          medicine: "",
+          medicineId: "",
+          quantity: "",
+          directions: "",
+        },
+      ]);
+      setMedicineSearch({});
       setActiveDropdown(null);
 
-      setAlertMessage("Prescription saved successfully.");
+      setAlertMessage(
+        enteredItems.length === 1
+          ? "Prescription saved successfully."
+          : `${enteredItems.length} prescriptions saved successfully.`
+      );
     } catch (error) {
-      console.error("Failed to save prescription:", error);
-
-      setAlertMessage(error?.message || "Failed to save prescription.");
+      console.error("Failed to save prescriptions:", error);
+      setAlertMessage(
+        error?.message || "Failed to save prescriptions."
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleMarkMedicineGiven = (prescription) => {
-    const prescriptionId = prescription?._id || prescription?.id;
+  /*
+   * =========================================================
+   * MARK MEDICINE GIVEN
+   * =========================================================
+   */
+
+  const handleMarkMedicineGiven = (
+    prescription
+  ) => {
+    const prescriptionId =
+      prescription?._id ||
+      prescription?.id;
 
     if (!prescriptionId) {
       return;
     }
 
     setConfirmState({
-      message: "Mark this medicine as given to the patient?",
+      message:
+        "Mark this medicine as given to the patient?",
 
       onConfirm: async () => {
         try {
           setIsSaving(true);
 
-          await markMedicineGiven(prescriptionId);
+          await markMedicineGiven(
+            prescriptionId
+          );
 
           setConfirmState(null);
 
-          await loadPrescriptions(patient._id);
+          await loadPrescriptions(
+            patient._id
+          );
 
-          setAlertMessage("Medicine marked as given.");
+          setAlertMessage(
+            "Medicine marked as given."
+          );
         } catch (error) {
-          console.error("Failed to update medicine status:", error);
+          console.error(
+            "Failed to update medicine status:",
+            error
+          );
 
           setConfirmState(null);
 
           setAlertMessage(
-            error?.message || "Failed to update medicine status.",
+            error?.message ||
+              "Failed to update medicine status."
           );
         } finally {
           setIsSaving(false);
@@ -642,33 +778,49 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
    * =========================================================
    */
 
-  const handleDeleteRecord = (recordId) => {
+  const handleDeleteRecord = (
+    recordId
+  ) => {
     if (!recordId) {
       return;
     }
 
     setConfirmState({
-      message: "Are you sure you want to delete this doctor record?",
+      message:
+        "Are you sure you want to delete this doctor record?",
 
       onConfirm: async () => {
         try {
+          setIsSaving(true);
+
           await deleteDoctorRecord(
             patient._id,
             recordId,
-            storedUser?.name || "Unknown User",
+            storedUser?.name ||
+              "Unknown User"
           );
 
           setConfirmState(null);
 
           await refreshQueue?.();
 
-          setAlertMessage("Doctor record deleted successfully.");
+          setAlertMessage(
+            "Doctor record deleted successfully."
+          );
         } catch (error) {
-          console.error("Failed to delete doctor record:", error);
+          console.error(
+            "Failed to delete doctor record:",
+            error
+          );
 
           setConfirmState(null);
 
-          setAlertMessage(error?.message || "Failed to delete doctor record.");
+          setAlertMessage(
+            error?.message ||
+              "Failed to delete doctor record."
+          );
+        } finally {
+          setIsSaving(false);
         }
       },
     });
@@ -681,126 +833,15 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
    */
 
   const handleSelectForPharmacy = () => {
-    setNextPatientStatus("forPharmacy");
+    setNextPatientStatus(
+      "forPharmacy"
+    );
   };
 
   const handleSelectReleased = () => {
-    setNextPatientStatus("released");
-  };
-
-  /*
-   * =========================================================
-   * BUILD DOCTOR RECORD PAYLOAD
-   * =========================================================
-   *
-   * This is shared by:
-   *
-   * 1. Save Changes
-   * 2. Send to Pharmacy
-   * 3. Release Patient
-   *
-   * Save Changes DOES NOT update the patient's status.
-   */
-
-  const buildDoctorRecordPayload = () => {
-    return {
-      examination: {
-        ...EMPTY_DOCTOR_SHEET.examination,
-        ...(doctorSheet.examination || {}),
-      },
-
-      initComplaint:
-        newComplaint.trim() ||
-        doctorSheet.initComplaint ||
-        patient.initComplaint ||
-        "",
-
-      diagnosis: doctorSheet.diagnosis || "",
-
-      treatment: doctorSheet.treatment || "",
-
-      medication: doctorSheet.medication || "",
-
-      doctorName: storedUser?.name || storedUser?.fullName || "Doctor",
-
-      department:
-        patient.department ||
-        storedUser?.doctorInfo?.specialization ||
-        storedUser?.specialization ||
-        "General",
-
-      recordType: hasHistory ? "follow-up" : "initial",
-
-      referral:
-        showReferral && referralDept
-          ? {
-              department: referralDept,
-
-              reason: referralReason || "",
-            }
-          : undefined,
-    };
-  };
-
-  /*
-   * =========================================================
-   * SAVE CHANGES
-   * =========================================================
-   *
-   * Saves the consultation record only.
-   *
-   * IMPORTANT:
-   * - Does NOT call updatePatientStatus()
-   * - Does NOT send to pharmacy
-   * - Does NOT release the patient
-   */
-
-  const saveChanges = async () => {
-    if (!patient?._id || isSaving) {
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      const savedPatient = await saveDoctorRecord(
-        patient._id,
-        buildDoctorRecordPayload(),
-      );
-
-      console.log("Consultation changes saved:", savedPatient);
-
-      if (refreshQueue) {
-        await refreshQueue();
-      }
-
-      setAlertMessage("Changes saved successfully.");
-
-      /*
-       * Close after successful save.
-       *
-       * Use a short timeout so the success
-       * message is not immediately hidden
-       * by the parent modal closing.
-       */
-      setTimeout(() => {
-        onClose({
-          saved: true,
-
-          finalized: false,
-
-          patientId: patient._id,
-        });
-      }, 300);
-    } catch (error) {
-      console.error("Failed to save consultation changes:", error);
-
-      setAlertMessage(
-        error?.message || "Failed to save the consultation changes.",
-      );
-    } finally {
-      setIsSaving(false);
-    }
+    setNextPatientStatus(
+      "released"
+    );
   };
 
   /*
@@ -810,25 +851,34 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
    */
 
   const finalizeConsultation = async () => {
-    if (!patient?._id || isSaving) {
-      return;
-    }
-
     if (
-      nextPatientStatus !== "forPharmacy" &&
-      nextPatientStatus !== "released"
+      !patient?._id ||
+      isSaving ||
+      isSavingChanges
     ) {
-      setAlertMessage("Please select For Pharmacy or Release Patient.");
+      return;
+    }
+
+    if (
+      nextPatientStatus !==
+        "forPharmacy" &&
+      nextPatientStatus !==
+        "released"
+    ) {
+      setAlertMessage(
+        "Please select For Pharmacy or Release Patient."
+      );
 
       return;
     }
 
     if (
-      nextPatientStatus === "forPharmacy" &&
+      nextPatientStatus ===
+        "forPharmacy" &&
       existingPrescriptions.length === 0
     ) {
       setAlertMessage(
-        "Please save at least one prescription before sending the patient to Pharmacy.",
+        "Please save at least one prescription before sending the patient to Pharmacy."
       );
 
       return;
@@ -837,37 +887,105 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     setIsSaving(true);
 
     try {
-      const savedPatient = await saveDoctorRecord(
+      await saveDoctorRecord(
         patient._id,
-        buildDoctorRecordPayload(),
+        {
+          examination: {
+            ...EMPTY_DOCTOR_SHEET.examination,
+            ...(doctorSheet.examination ||
+              {}),
+          },
+
+          initComplaint:
+            newComplaint.trim() ||
+            doctorSheet.initComplaint ||
+            patient.initComplaint ||
+            "",
+
+          diagnosis:
+            doctorSheet.diagnosis ||
+            "",
+
+          treatment:
+            doctorSheet.treatment ||
+            "",
+
+          medication:
+            doctorSheet.medication ||
+            "",
+
+          doctorName:
+            storedUser?.name ||
+            storedUser?.fullName ||
+            "Doctor",
+
+          department:
+            patient.department ||
+            storedUser?.doctorInfo
+              ?.specialization ||
+            storedUser?.specialization ||
+            "General",
+
+          recordType:
+            hasHistory
+              ? "follow-up"
+              : "initial",
+
+          referral:
+            showReferral &&
+            referralDept
+              ? {
+                  department:
+                    referralDept,
+
+                  reason:
+                    referralReason ||
+                    "",
+                }
+              : undefined,
+        }
       );
 
-      const updatedPatient = await updatePatientStatus(patient._id, {
-        status: nextPatientStatus,
-      });
+      const updatedPatient =
+        await updatePatientStatus(
+          patient._id,
+          {
+            status:
+              nextPatientStatus,
+          }
+        );
 
-      console.log("Consultation status updated:", {
-        savedPatient,
-        updatedPatient,
-        status: nextPatientStatus,
-      });
+      console.log(
+        "Consultation status updated:",
+        {
+          updatedPatient,
+          status:
+            nextPatientStatus,
+        }
+      );
 
       if (refreshQueue) {
         await refreshQueue();
       }
 
-      onClose({
+      onClose?.({
         finalized: true,
 
-        patientId: patient._id,
+        patientId:
+          patient._id,
 
-        status: nextPatientStatus,
+        status:
+          nextPatientStatus,
       });
     } catch (error) {
-      console.error("Failed to finalize consultation:", error);
+      console.error(
+        "Failed to finalize consultation:",
+        error
+      );
 
       setAlertMessage(
-        error?.message || "Failed to save the consultation record.",
+        error?.message ||
+          "Failed to save the consultation record."
       );
     } finally {
       setIsSaving(false);
@@ -881,7 +999,77 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
    */
 
   const handleReferralToggle = () => {
-    setShowReferral((previous) => !previous);
+    setShowReferral(
+      (previous) => !previous
+    );
+  };
+
+  const handleSendToDepartment = async () => {
+    if (!patient?._id || isSaving || isSavingChanges) return;
+
+    if (!referralDept) {
+      setAlertMessage("Please select a referral department.");
+      return;
+    }
+
+    if (!referralReason.trim()) {
+      setAlertMessage("Please enter a referral reason.");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      await saveDoctorRecord(patient._id, {
+        examination: {
+          ...EMPTY_DOCTOR_SHEET.examination,
+          ...(doctorSheet.examination || {}),
+        },
+        initComplaint:
+          newComplaint.trim() ||
+          doctorSheet.initComplaint ||
+          patient.initComplaint ||
+          "",
+        diagnosis: doctorSheet.diagnosis || "",
+        treatment: doctorSheet.treatment || "",
+        medication: doctorSheet.medication || "",
+        doctorName:
+          storedUser?.name || storedUser?.fullName || "Doctor",
+        department:
+          patient.department ||
+          storedUser?.doctorInfo?.specialization ||
+          storedUser?.specialization ||
+          "General",
+        recordType: hasHistory ? "follow-up" : "initial",
+        referral: {
+          department: referralDept,
+          reason: referralReason.trim(),
+        },
+      });
+
+      await updatePatientStatus(patient._id, {
+        status: "waiting",
+        department: referralDept,
+      });
+
+      await refreshQueue?.();
+
+      onClose?.({
+        finalized: true,
+        referred: true,
+        patientId: patient._id,
+        status: "waiting",
+        department: referralDept,
+      });
+    } catch (error) {
+      console.error("Failed to refer patient:", error);
+      setAlertMessage(
+        error?.message ||
+          "Failed to send the patient to the selected department."
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   /*
@@ -890,20 +1078,40 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
    * =========================================================
    */
 
-  const getMedicineName = (medicine) => {
+  const getMedicineName = (
+    medicine
+  ) => {
     if (!medicine) {
       return "";
     }
 
-    if (Array.isArray(medicine.names)) {
-      return medicine.names.join(", ");
+    if (
+      Array.isArray(
+        medicine.names
+      )
+    ) {
+      return medicine.names.join(
+        ", "
+      );
     }
 
-    return medicine.name || medicine.genericName || medicine.medicineName || "";
+    return (
+      medicine.name ||
+      medicine.genericName ||
+      medicine.medicineName ||
+      ""
+    );
   };
 
-  const filteredMedicines = (index) => {
-    const query = (medicineSearch[index] || "").trim().toLowerCase();
+  const filteredMedicines = (
+    index
+  ) => {
+    const query = (
+      medicineSearch[index] ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
 
     if (!query) {
       return medicines.slice(0, 10);
@@ -911,7 +1119,9 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
     return medicines
       .filter((medicine) =>
-        getMedicineName(medicine).toLowerCase().includes(query),
+        getMedicineName(medicine)
+          .toLowerCase()
+          .includes(query)
       )
       .slice(0, 10);
   };
@@ -922,48 +1132,57 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
   const textAreaClass =
     "w-full resize-none rounded-xl border border-border bg-surface px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition placeholder:text-text-subtle focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10";
 
-  const labelClass = "mb-2 block text-sm font-semibold text-slate-700";
+  const labelClass =
+    "mb-2 block text-sm font-semibold text-slate-700";
 
   const examinationFields = [
     {
       key: "generalAppearance",
       label: "General Appearance",
-      placeholder: "Describe the patient's overall appearance...",
+      placeholder:
+        "Describe the patient's overall appearance...",
     },
     {
       key: "heent",
       label: "HEENT",
-      placeholder: "Head, eyes, ears, nose, and throat findings...",
+      placeholder:
+        "Head, eyes, ears, nose, and throat findings...",
     },
     {
       key: "pulmonary",
       label: "Pulmonary",
-      placeholder: "Respiratory and lung examination findings...",
+      placeholder:
+        "Respiratory and lung examination findings...",
     },
     {
       key: "cardiovascular",
       label: "Cardiovascular",
-      placeholder: "Cardiac and cardiovascular findings...",
+      placeholder:
+        "Cardiac and cardiovascular findings...",
     },
     {
       key: "gastrointestinal",
       label: "Gastrointestinal",
-      placeholder: "Abdominal and gastrointestinal findings...",
+      placeholder:
+        "Abdominal and gastrointestinal findings...",
     },
     {
       key: "musculoskeletal",
       label: "Musculoskeletal",
-      placeholder: "Musculoskeletal examination findings...",
+      placeholder:
+        "Musculoskeletal examination findings...",
     },
     {
       key: "genitourinary",
       label: "Genitourinary",
-      placeholder: "Genitourinary examination findings...",
+      placeholder:
+        "Genitourinary examination findings...",
     },
     {
       key: "neuroPsych",
       label: "Neurological / Psychological",
-      placeholder: "Neurological or psychological findings...",
+      placeholder:
+        "Neurological or psychological findings...",
     },
   ];
 
@@ -974,12 +1193,18 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
         onClose={handleCancelClose}
         title="Patient Consultation"
         subtitle={
-          recordMode === "new" ? "New consultation record" : patientName
+          recordMode === "new"
+            ? "New consultation record"
+            : patientName
         }
         size="xl"
-        closeOnOverlay={!isSaving}
+        closeOnOverlay={
+          !isSaving &&
+          !isSavingChanges
+        }
       >
         <div className="max-h-[72vh] space-y-5 overflow-y-auto pr-1">
+
           {/* PATIENT SUMMARY */}
 
           <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
@@ -987,6 +1212,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
             <div className="p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
                 <div className="flex min-w-0 items-center gap-4">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
                     <UserRound size={25} />
@@ -1002,11 +1228,18 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                     </h3>
 
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-text-muted">
-                      <span>{patientAge} years old</span>
+                      <span>
+                        {patientAge} years old
+                      </span>
 
-                      <span>{patientSex}</span>
+                      <span>
+                        {patientSex}
+                      </span>
 
-                      <span>{patient?.department || "General"}</span>
+                      <span>
+                        {patient?.department ||
+                          "General"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1037,22 +1270,36 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
               <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <PatientInfoItem
                   label="Initial Complaint"
-                  value={patient?.initComplaint || "Not provided"}
+                  value={
+                    patient?.initComplaint ||
+                    "Not provided"
+                  }
                 />
 
                 <PatientInfoItem
                   label="Department"
-                  value={patient?.department || "General"}
+                  value={
+                    patient?.department ||
+                    "General"
+                  }
                 />
 
                 <PatientInfoItem
                   label="Allergies"
-                  value={patient?.generalInfo?.allergies || "None recorded"}
+                  value={
+                    patient?.generalInfo
+                      ?.allergies ||
+                    "None recorded"
+                  }
                 />
 
                 <PatientInfoItem
                   label="Insurance"
-                  value={patient?.generalInfo?.insurance || "Not provided"}
+                  value={
+                    patient?.generalInfo
+                      ?.insurance ||
+                    "Not provided"
+                  }
                 />
               </div>
             </div>
@@ -1061,10 +1308,13 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
           {/* NAVIGATION */}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
             <div className="inline-flex w-full rounded-xl bg-slate-100 p-1 sm:w-auto">
               <button
                 type="button"
-                onClick={() => setActiveTab("current")}
+                onClick={() =>
+                  setActiveTab("current")
+                }
                 className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition sm:flex-none ${
                   activeTab === "current"
                     ? "bg-surface text-primary-800 shadow-sm"
@@ -1077,7 +1327,9 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
               <button
                 type="button"
-                onClick={() => setActiveTab("history")}
+                onClick={() =>
+                  setActiveTab("history")
+                }
                 className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition sm:flex-none ${
                   activeTab === "history"
                     ? "bg-surface text-primary-800 shadow-sm"
@@ -1086,9 +1338,13 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
               >
                 <History size={16} />
                 History
+
                 {hasHistory && (
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px]">
-                    {patient.doctorSheets.length}
+                    {
+                      patient.doctorSheets
+                        .length
+                    }
                   </span>
                 )}
               </button>
@@ -1097,7 +1353,10 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
             <button
               type="button"
               onClick={handleNewRecord}
-              disabled={isSaving}
+              disabled={
+                isSaving ||
+                isSavingChanges
+              }
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-bold text-primary-700 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus size={16} />
@@ -1109,83 +1368,149 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
           {activeTab === "current" && (
             <div className="space-y-5">
+
               {/* COMPLAINT */}
 
               <SectionCard
-                icon={<ClipboardList size={18} />}
+                icon={
+                  <ClipboardList size={18} />
+                }
                 eyebrow="Consultation"
                 title="Patient Complaint"
                 description="Record the primary complaint for this consultation."
               >
                 <div className="space-y-4">
                   <div>
-                    <label className={labelClass}>Current Complaint</label>
+                    <label
+                      className={
+                        labelClass
+                      }
+                    >
+                      Current Complaint
+                    </label>
 
                     <textarea
                       rows={4}
-                      value={newComplaint || doctorSheet.initComplaint || ""}
+                      value={
+                        newComplaint ||
+                        doctorSheet.initComplaint ||
+                        ""
+                      }
                       onChange={(event) => {
-                        setNewComplaint(event.target.value);
+                        setNewComplaint(
+                          event.target.value
+                        );
 
-                        updateDoctorSheet("initComplaint", event.target.value);
+                        updateDoctorSheet(
+                          "initComplaint",
+                          event.target.value
+                        );
                       }}
                       placeholder="Describe the patient's current complaint..."
-                      className={textAreaClass}
+                      className={
+                        textAreaClass
+                      }
                     />
                   </div>
 
-                  {recordMode === "existing" && latestRecord?.initComplaint && (
-                    <div className="rounded-xl border border-border-soft bg-slate-50 p-4">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
-                        Previous Complaint
-                      </p>
+                  {recordMode ===
+                    "existing" &&
+                    latestRecord?.initComplaint && (
+                      <div className="rounded-xl border border-border-soft bg-slate-50 p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
+                          Previous Complaint
+                        </p>
 
-                      <p className="mt-2 text-sm leading-6 text-slate-700">
-                        {latestRecord.initComplaint}
-                      </p>
-                    </div>
-                  )}
+                        <p className="mt-2 text-sm leading-6 text-slate-700">
+                          {
+                            latestRecord.initComplaint
+                          }
+                        </p>
+                      </div>
+                    )}
                 </div>
               </SectionCard>
 
               {/* EXAMINATION */}
 
               <SectionCard
-                icon={<Stethoscope size={18} />}
+                icon={
+                  <Stethoscope size={18} />
+                }
                 eyebrow="Clinical Assessment"
                 title="Physical Examination"
                 description="Document relevant examination findings."
               >
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {examinationFields.map((field) => (
-                    <div key={field.key}>
-                      <label className={labelClass}>{field.label}</label>
+                  {examinationFields.map(
+                    (field) => (
+                      <div
+                        key={field.key}
+                      >
+                        <label
+                          className={
+                            labelClass
+                          }
+                        >
+                          {field.label}
+                        </label>
 
-                      <textarea
-                        rows={4}
-                        value={doctorSheet.examination?.[field.key] || ""}
-                        onChange={(event) =>
-                          updateExamination(field.key, event.target.value)
-                        }
-                        placeholder={field.placeholder}
-                        className={textAreaClass}
-                      />
-                    </div>
-                  ))}
+                        <textarea
+                          rows={4}
+                          value={
+                            doctorSheet
+                              .examination?.[
+                              field.key
+                            ] || ""
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            updateExamination(
+                              field.key,
+                              event.target
+                                .value
+                            )
+                          }
+                          placeholder={
+                            field.placeholder
+                          }
+                          className={
+                            textAreaClass
+                          }
+                        />
+                      </div>
+                    )
+                  )}
 
                   <div className="lg:col-span-2">
-                    <label className={labelClass}>
+                    <label
+                      className={
+                        labelClass
+                      }
+                    >
                       Additional Checkup Notes
                     </label>
 
                     <textarea
                       rows={4}
-                      value={doctorSheet.examination?.checkupPanel || ""}
+                      value={
+                        doctorSheet
+                          .examination
+                          ?.checkupPanel ||
+                        ""
+                      }
                       onChange={(event) =>
-                        updateExamination("checkupPanel", event.target.value)
+                        updateExamination(
+                          "checkupPanel",
+                          event.target
+                            .value
+                        )
                       }
                       placeholder="Enter additional clinical observations..."
-                      className={textAreaClass}
+                      className={
+                        textAreaClass
+                      }
                     />
                   </div>
                 </div>
@@ -1194,38 +1519,58 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
               {/* DIAGNOSIS */}
 
               <SectionCard
-                icon={<ClipboardList size={18} />}
+                icon={
+                  <ClipboardList size={18} />
+                }
                 eyebrow="Clinical Impression"
                 title="Diagnosis"
                 description="Record the diagnosis or clinical assessment."
               >
                 <textarea
                   rows={5}
-                  value={doctorSheet.diagnosis || ""}
+                  value={
+                    doctorSheet.diagnosis ||
+                    ""
+                  }
                   onChange={(event) =>
-                    updateDoctorSheet("diagnosis", event.target.value)
+                    updateDoctorSheet(
+                      "diagnosis",
+                      event.target.value
+                    )
                   }
                   placeholder="Enter diagnosis..."
-                  className={textAreaClass}
+                  className={
+                    textAreaClass
+                  }
                 />
               </SectionCard>
 
               {/* TREATMENT */}
 
               <SectionCard
-                icon={<CheckCircle2 size={18} />}
+                icon={
+                  <CheckCircle2 size={18} />
+                }
                 eyebrow="Care Plan"
                 title="Treatment"
                 description="Document treatment, procedures, or medical advice."
               >
                 <textarea
                   rows={5}
-                  value={doctorSheet.treatment || ""}
+                  value={
+                    doctorSheet.treatment ||
+                    ""
+                  }
                   onChange={(event) =>
-                    updateDoctorSheet("treatment", event.target.value)
+                    updateDoctorSheet(
+                      "treatment",
+                      event.target.value
+                    )
                   }
                   placeholder="Enter treatment plan..."
-                  className={textAreaClass}
+                  className={
+                    textAreaClass
+                  }
                 />
               </SectionCard>
 
@@ -1239,12 +1584,20 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
               >
                 <textarea
                   rows={4}
-                  value={doctorSheet.medication || ""}
+                  value={
+                    doctorSheet.medication ||
+                    ""
+                  }
                   onChange={(event) =>
-                    updateDoctorSheet("medication", event.target.value)
+                    updateDoctorSheet(
+                      "medication",
+                      event.target.value
+                    )
                   }
                   placeholder="Enter general medication notes..."
-                  className={textAreaClass}
+                  className={
+                    textAreaClass
+                  }
                 />
               </SectionCard>
 
@@ -1257,175 +1610,283 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                 description="Search medicines and create prescription records."
               >
                 <div className="space-y-4">
-                  {prescriptionItems.map((item, index) => (
-                    <div
-                      key={index}
-                      className="rounded-2xl border border-border bg-slate-50 p-4"
-                    >
-                      <div className="mb-4 flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-bold text-text-primary">
-                            Prescription {index + 1}
-                          </p>
 
-                          <p className="mt-0.5 text-xs text-text-muted">
-                            Add medicine and instructions.
-                          </p>
-                        </div>
+                  {prescriptionItems.map(
+                    (item, index) => (
+                      <div
+                        key={index}
+                        className="rounded-2xl border border-border bg-slate-50 p-4"
+                      >
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-bold text-text-primary">
+                              Prescription{" "}
+                              {index + 1}
+                            </p>
 
-                        <button
-                          type="button"
-                          onClick={() => removePrescriptionItem(index)}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                          aria-label="Remove prescription"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                            <p className="mt-0.5 text-xs text-text-muted">
+                              Add medicine and instructions.
+                            </p>
+                          </div>
 
-                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                        <div className="relative lg:col-span-1">
-                          <label className={labelClass}>Medicine</label>
-
-                          <input
-                            value={medicineSearch[index] ?? item.medicine}
-                            onFocus={() => setActiveDropdown(index)}
-                            onChange={(event) => {
-                              const value = event.target.value;
-
-                              setMedicineSearch((previous) => ({
-                                ...previous,
-                                [index]: value,
-                              }));
-
-                              updatePrescriptionItem(index, "medicine", value);
-
-                              setActiveDropdown(index);
-                            }}
-                            placeholder="Search medicine..."
-                            className={inputClass}
-                          />
-
-                          {activeDropdown === index && (
-                            <div className="absolute z-30 mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-xl">
-                              {filteredMedicines(index).length > 0 ? (
-                                filteredMedicines(index).map((medicine) => {
-                                  const name = getMedicineName(medicine);
-
-                                  return (
-                                    <button
-                                      key={
-                                        medicine._id ||
-                                        medicine.id ||
-                                        `${name}-${index}`
-                                      }
-                                      type="button"
-                                      onClick={() => {
-                                        updatePrescriptionItem(
-                                          index,
-                                          "medicine",
-                                          name,
-                                        );
-
-                                        updatePrescriptionItem(
-                                          index,
-                                          "medicineId",
-                                          medicine._id || medicine.id,
-                                        );
-
-                                        setMedicineSearch((previous) => ({
-                                          ...previous,
-                                          [index]: name,
-                                        }));
-
-                                        setActiveDropdown(null);
-                                      }}
-                                      className="flex w-full items-start justify-between gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-slate-50"
-                                    >
-                                      <div>
-                                        <p className="text-sm font-semibold text-text-primary">
-                                          {name}
-                                        </p>
-
-                                        {medicine?.quantity !== undefined && (
-                                          <p className="mt-1 text-xs text-text-muted">
-                                            Available: {medicine.quantity}
-                                          </p>
-                                        )}
-                                      </div>
-
-                                      <ChevronRight
-                                        size={16}
-                                        className="mt-0.5 shrink-0 text-text-subtle"
-                                      />
-                                    </button>
-                                  );
-                                })
-                              ) : (
-                                <div className="px-3 py-6 text-center text-sm text-text-muted">
-                                  No medicine found.
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Quantity</label>
-
-                          <input
-                            value={item.quantity}
-                            onChange={(event) =>
-                              updatePrescriptionItem(
-                                index,
-                                "quantity",
-                                event.target.value,
+                          <button
+                            type="button"
+                            onClick={() =>
+                              removePrescriptionItem(
+                                index
                               )
                             }
-                            placeholder="e.g. 10"
-                            className={inputClass}
-                          />
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                            aria-label="Remove prescription"
+                          >
+                            <Trash2
+                              size={16}
+                            />
+                          </button>
                         </div>
 
-                        <div>
-                          <label className={labelClass}>Directions</label>
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
 
-                          <input
-                            value={item.directions}
-                            onChange={(event) =>
-                              updatePrescriptionItem(
-                                index,
-                                "directions",
-                                event.target.value,
-                              )
-                            }
-                            placeholder="e.g. 1 tablet twice daily"
-                            className={inputClass}
-                          />
+                          <div className="relative lg:col-span-1">
+                            <label
+                              className={
+                                labelClass
+                              }
+                            >
+                              Medicine
+                            </label>
+
+                            <input
+                              value={
+                                medicineSearch[
+                                  index
+                                ] ??
+                                item.medicine
+                              }
+                              onFocus={() =>
+                                setActiveDropdown(
+                                  index
+                                )
+                              }
+                              onChange={(
+                                event
+                              ) => {
+                                const value =
+                                  event.target
+                                    .value;
+
+                                setMedicineSearch(
+                                  (
+                                    previous
+                                  ) => ({
+                                    ...previous,
+                                    [index]:
+                                      value,
+                                  })
+                                );
+
+                                updatePrescriptionItem(
+                                  index,
+                                  "medicine",
+                                  value
+                                );
+
+                                updatePrescriptionItem(
+                                  index,
+                                  "medicineId",
+                                  ""
+                                );
+
+                                setActiveDropdown(
+                                  index
+                                );
+                              }}
+                              placeholder="Search medicine..."
+                              className={
+                                inputClass
+                              }
+                            />
+
+                            {activeDropdown ===
+                              index && (
+                              <div className="absolute z-30 mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-xl">
+                                {filteredMedicines(
+                                  index
+                                ).length >
+                                0 ? (
+                                  filteredMedicines(
+                                    index
+                                  ).map(
+                                    (
+                                      medicine
+                                    ) => {
+                                      const name =
+                                        getMedicineName(
+                                          medicine
+                                        );
+
+                                      return (
+                                        <button
+                                          key={
+                                            medicine._id ||
+                                            medicine.id ||
+                                            `${name}-${index}`
+                                          }
+                                          type="button"
+                                          onClick={() => {
+                                            updatePrescriptionItem(
+                                              index,
+                                              "medicine",
+                                              name
+                                            );
+
+                                            updatePrescriptionItem(
+                                              index,
+                                              "medicineId",
+                                              medicine._id ||
+                                                medicine.id
+                                            );
+
+                                            setMedicineSearch(
+                                              (
+                                                previous
+                                              ) => ({
+                                                ...previous,
+                                                [index]:
+                                                  name,
+                                              })
+                                            );
+
+                                            setActiveDropdown(
+                                              null
+                                            );
+                                          }}
+                                          className="flex w-full items-start justify-between gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-slate-50"
+                                        >
+                                          <div>
+                                            <p className="text-sm font-semibold text-text-primary">
+                                              {name}
+                                            </p>
+
+                                            {medicine?.quantity !==
+                                              undefined && (
+                                              <p className="mt-1 text-xs text-text-muted">
+                                                Available:{" "}
+                                                {
+                                                  medicine.quantity
+                                                }
+                                              </p>
+                                            )}
+                                          </div>
+
+                                          <ChevronRight
+                                            size={16}
+                                            className="mt-0.5 shrink-0 text-text-subtle"
+                                          />
+                                        </button>
+                                      );
+                                    }
+                                  )
+                                ) : (
+                                  <div className="px-3 py-6 text-center text-sm text-text-muted">
+                                    No medicine found.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <label
+                              className={
+                                labelClass
+                              }
+                            >
+                              Quantity
+                            </label>
+
+                            <input
+                              value={
+                                item.quantity
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                updatePrescriptionItem(
+                                  index,
+                                  "quantity",
+                                  event.target
+                                    .value
+                                )
+                              }
+                              placeholder="e.g. 10"
+                              className={
+                                inputClass
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <label
+                              className={
+                                labelClass
+                              }
+                            >
+                              Directions
+                            </label>
+
+                            <input
+                              value={
+                                item.directions
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                updatePrescriptionItem(
+                                  index,
+                                  "directions",
+                                  event.target
+                                    .value
+                                )
+                              }
+                              placeholder="e.g. 1 tablet twice daily"
+                              className={
+                                inputClass
+                              }
+                            />
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          type="button"
-                          disabled={isSaving}
-                          onClick={() => handleSavePrescription(index)}
-                          className="inline-flex items-center gap-2 rounded-xl bg-primary-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          <Pill size={16} />
-                          Save Prescription
-                        </button>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  )}
 
                   <button
                     type="button"
-                    onClick={addPrescriptionItem}
-                    className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary-300 bg-primary-50 px-4 py-3 text-sm font-bold text-primary-700 transition hover:bg-primary-100"
+                    onClick={
+                      addPrescriptionItem
+                    }
+                    disabled={
+                      isSaving ||
+                      isSavingChanges
+                    }
+                    className="inline-flex items-center gap-2 rounded-xl border border-dashed border-primary-300 bg-primary-50 px-4 py-3 text-sm font-bold text-primary-700 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Plus size={17} />
                     Add Another Medicine
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSavePrescriptions}
+                    disabled={
+                      isSaving ||
+                      isSavingChanges
+                    }
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Save size={17} />
+                    Save Prescriptions
                   </button>
 
                   {/* SAVED PRESCRIPTIONS */}
@@ -1439,8 +1900,11 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                           </p>
 
                           <p className="mt-1 text-xs text-text-muted">
-                            {activePrescriptions.length} prescription
-                            {activePrescriptions.length !== 1 ? "s" : ""}{" "}
+                            {activePrescriptions.length}{" "}
+                            prescription
+                            {activePrescriptions.length !== 1
+                              ? "s"
+                              : ""}{" "}
                             recorded
                           </p>
                         </div>
@@ -1450,45 +1914,125 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                         {activePrescriptions.map((prescription) => {
                           const isGiven = Boolean(
                             prescription?.given ||
-                            prescription?.isGiven ||
-                            prescription?.status === "given",
+                              prescription?.isGiven ||
+                              prescription?.status === "given" ||
+                              prescription?.status === "Completed"
                           );
+
+                          const prescriptionItemsFromApi =
+                            Array.isArray(prescription?.items) &&
+                            prescription.items.length > 0
+                              ? prescription.items
+                              : [
+                                  {
+                                    medicine:
+                                      prescription?.medicine,
+                                    quantity:
+                                      prescription?.quantity,
+                                    directions:
+                                      prescription?.directions,
+                                  },
+                                ];
 
                           return (
                             <div
-                              key={prescription._id || prescription.id}
+                              key={
+                                prescription?._id ||
+                                prescription?.id
+                              }
                               className="rounded-xl border border-border bg-surface p-4"
                             >
-                              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold text-text-primary">
-                                    {prescription.medicine}
-                                  </p>
+                              <div className="space-y-3">
+                                {prescriptionItemsFromApi.map(
+                                  (item, itemIndex) => {
+                                    const medicine =
+                                      item?.medicine;
 
-                                  <p className="mt-1 text-xs leading-5 text-text-muted">
-                                    Qty: {prescription.quantity || "--"}
-                                    {" · "}
-                                    {prescription.directions || "No directions"}
-                                  </p>
-                                </div>
+                                    const medicineName =
+                                      Array.isArray(
+                                        medicine?.names
+                                      )
+                                        ? medicine.names.join(", ")
+                                        : typeof medicine === "string"
+                                          ? medicine
+                                          : medicine?.name ||
+                                            medicine?.genericName ||
+                                            medicine?.medicineName ||
+                                            item?.medicineName ||
+                                            prescription?.medicineName ||
+                                            "Unknown Medicine";
 
-                                {isGiven ? (
-                                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                                    <CheckCircle2 size={14} />
-                                    Medicine Given
-                                  </span>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleMarkMedicineGiven(prescription)
-                                    }
-                                    disabled={isSaving}
-                                    className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-xs font-bold text-primary-700 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                  >
-                                    <PackageCheck size={15} />
-                                    Mark as Given
-                                  </button>
+                                    const dosage =
+                                      medicine?.dosage ||
+                                      item?.dosage ||
+                                      "";
+
+                                    const quantity =
+                                      item?.quantity ??
+                                      prescription?.quantity ??
+                                      "--";
+
+                                    const directions =
+                                      item?.directions ||
+                                      prescription?.directions ||
+                                      "No directions";
+
+                                    return (
+                                      <div
+                                        key={
+                                          item?._id ||
+                                          item?.id ||
+                                          `${prescription?._id || prescription?.id}-${itemIndex}`
+                                        }
+                                        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                                      >
+                                        <div className="min-w-0">
+                                          <p className="text-sm font-bold text-text-primary">
+                                            {medicineName}
+                                            {dosage
+                                              ? ` (${dosage})`
+                                              : ""}
+                                          </p>
+
+                                          <p className="mt-1 text-xs leading-5 text-text-muted">
+                                            Qty: {quantity}
+                                            {" · "}
+                                            {directions}
+                                          </p>
+                                        </div>
+
+                                        {itemIndex === 0 && (
+                                          isGiven ? (
+                                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                                              <CheckCircle2
+                                                size={14}
+                                              />
+                                              Medicine Given
+                                            </span>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleMarkMedicineGiven(
+                                                  prescription
+                                                )
+                                              }
+                                              disabled={
+                                                isSaving ||
+                                                isSavingChanges
+                                              }
+                                              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-xs font-bold text-primary-700 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                              <PackageCheck
+                                                size={15}
+                                              />
+                                              Mark as Given
+                                            </button>
+                                          )
+                                        )}
+                                      </div>
+                                    );
+                                  }
                                 )}
                               </div>
                             </div>
@@ -1509,6 +2053,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                 description="Refer the patient to another department when necessary."
               >
                 <div className="space-y-4">
+
                   <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-slate-50 p-4">
                     <div>
                       <p className="text-sm font-bold text-text-primary">
@@ -1523,15 +2068,23 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                     <button
                       type="button"
                       role="switch"
-                      aria-checked={showReferral}
-                      onClick={handleReferralToggle}
+                      aria-checked={
+                        showReferral
+                      }
+                      onClick={
+                        handleReferralToggle
+                      }
                       className={`relative h-7 w-12 shrink-0 rounded-full transition ${
-                        showReferral ? "bg-primary-700" : "bg-slate-300"
+                        showReferral
+                          ? "bg-primary-700"
+                          : "bg-slate-300"
                       }`}
                     >
                       <span
                         className={`absolute top-1 h-5 w-5 rounded-full bg-surface shadow-sm transition ${
-                          showReferral ? "left-6" : "left-1"
+                          showReferral
+                            ? "left-6"
+                            : "left-1"
                         }`}
                       />
                     </button>
@@ -1539,39 +2092,71 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
                   {showReferral && (
                     <div className="grid grid-cols-1 gap-4 rounded-xl border border-primary-100 bg-primary-50 p-4 lg:grid-cols-2">
+
                       <div>
-                        <label className={labelClass}>
+                        <label
+                          className={
+                            labelClass
+                          }
+                        >
                           Referral Department
                         </label>
 
-                        <select
-                          value={referralDept}
-                          onChange={(event) =>
-                            setReferralDept(event.target.value)
-                          }
-                          className={inputClass}
-                        >
-                          <option value="">Select department</option>
-
-                          {DEPARTMENTS.map((department) => (
-                            <option key={department} value={department}>
-                              {department}
+                        <div className="relative">
+                          <select
+                            value={referralDept}
+                            onChange={(event) =>
+                              setReferralDept(event.target.value)
+                            }
+                            className={`${inputClass} appearance-none pr-10`}
+                          >
+                            <option value="">
+                              Select department
                             </option>
-                          ))}
-                        </select>
+
+                            {DEPARTMENTS.map((department) => (
+                              <option
+                                key={department}
+                                value={department}
+                              >
+                                {department}
+                              </option>
+                            ))}
+                          </select>
+
+                          <ChevronDown
+                            size={17}
+                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted"
+                          />
+                        </div>
                       </div>
 
                       <div>
-                        <label className={labelClass}>Referral Reason</label>
+                        <label
+                          className={
+                            labelClass
+                          }
+                        >
+                          Referral Reason
+                        </label>
 
                         <textarea
                           rows={3}
-                          value={referralReason}
-                          onChange={(event) =>
-                            setReferralReason(event.target.value)
+                          value={
+                            referralReason
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            setReferralReason(
+                              event.target
+                                .value
+                            )
                           }
                           placeholder="Explain the reason for referral..."
-                          className={textAreaClass}
+                          className={
+                            textAreaClass
+                          }
                         />
                       </div>
                     </div>
@@ -1586,151 +2171,198 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                   <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
                     Consultation Outcome
                   </p>
-
                   <h3 className="mt-1 text-lg font-bold text-text-primary">
                     Choose Patient Destination
                   </h3>
-
                   <p className="mt-1 text-sm text-text-muted">
                     Select what should happen after this consultation.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={handleSelectForPharmacy}
-                    className={`rounded-2xl border p-4 text-left transition ${
-                      nextPatientStatus === "forPharmacy"
-                        ? "border-primary-300 bg-primary-50 ring-2 ring-primary-500/10"
-                        : "border-border bg-surface hover:border-primary-200 hover:bg-slate-50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                          nextPatientStatus === "forPharmacy"
-                            ? "bg-primary-700 text-white"
-                            : "bg-primary-50 text-primary-700"
-                        }`}
-                      >
-                        <Pill size={18} />
-                      </div>
-
-                      <div>
-                        <p className="font-bold text-text-primary">
-                          Send to Pharmacy
-                        </p>
-
-                        <p className="mt-1 text-xs leading-5 text-text-muted">
-                          Patient will proceed to the pharmacy queue for
-                          prescribed medicines.
-                        </p>
+                {showReferral && referralDept ? (
+                  <>
+                    <div className="rounded-2xl border border-primary-200 bg-primary-50 p-4 ring-2 ring-primary-500/10">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white">
+                          <Send size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-text-primary">
+                            Send to Department
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-text-muted">
+                            Patient will be placed back in the waiting queue for the selected department.
+                          </p>
+                          <span className="mt-3 inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-bold text-primary-700 ring-1 ring-inset ring-primary-200">
+                            {referralDept}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </button>
 
-                  <button
-                    type="button"
-                    onClick={handleSelectReleased}
-                    className={`rounded-2xl border p-4 text-left transition ${
-                      nextPatientStatus === "released"
-                        ? "border-emerald-300 bg-emerald-50 ring-2 ring-emerald-500/10"
-                        : "border-border bg-surface hover:border-emerald-200 hover:bg-slate-50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                          nextPatientStatus === "released"
-                            ? "bg-emerald-600 text-white"
-                            : "bg-emerald-50 text-emerald-700"
-                        }`}
+                    <div className="mt-5 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={handleCancelClose}
+                        disabled={isSaving || isSavingChanges}
+                        className="rounded-xl border border-border bg-surface px-5 py-3 text-sm font-bold text-text-secondary transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <CheckCircle2 size={18} />
-                      </div>
-
-                      <div>
-                        <p className="font-bold text-text-primary">
-                          Release Patient
-                        </p>
-
-                        <p className="mt-1 text-xs leading-5 text-text-muted">
-                          Consultation is complete and no pharmacy processing is
-                          required.
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-
-                {/* ACTION BUTTONS */}
-
-                <div className="mt-5 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
-                  {/* CANCEL */}
-
-                  <button
-                    type="button"
-                    onClick={handleCancelClose}
-                    disabled={isSaving}
-                    className="rounded-xl border border-border bg-surface px-5 py-3 text-sm font-bold text-text-secondary transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Cancel
-                  </button>
-
-                  {/* SAVE CHANGES */}
-
-                  <button
-                    type="button"
-                    onClick={saveChanges}
-                    disabled={isSaving}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-5 py-3 text-sm font-bold text-primary-700 shadow-sm transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isSaving ? (
-                      <>
-                        <RotateCcw size={17} className="animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardList size={17} />
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-
-                  {/* FINALIZE */}
-
-                  <button
-                    type="button"
-                    onClick={finalizeConsultation}
-                    disabled={isSaving}
-                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                      nextPatientStatus === "released"
-                        ? "bg-emerald-600 hover:bg-emerald-700"
-                        : "bg-primary-700 hover:bg-primary-800"
-                    }`}
-                  >
-                    {isSaving ? (
-                      <>
-                        <RotateCcw size={17} className="animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        {nextPatientStatus === "released" ? (
-                          <CheckCircle2 size={17} />
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveChanges}
+                        disabled={isSaving || isSavingChanges}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-5 py-3 text-sm font-bold text-primary-700 shadow-sm transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSavingChanges ? (
+                          <>
+                            <RotateCcw size={17} className="animate-spin" />
+                            Saving...
+                          </>
                         ) : (
-                          <Send size={17} />
+                          <>
+                            <Save size={17} />
+                            Save Changes
+                          </>
                         )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSendToDepartment}
+                        disabled={isSaving || isSavingChanges}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSaving ? (
+                          <>
+                            <RotateCcw size={17} className="animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send size={17} />
+                            Send to {referralDept}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectForPharmacy}
+                        disabled={isSaving || isSavingChanges}
+                        className={`rounded-2xl border p-4 text-left transition ${
+                          nextPatientStatus === "forPharmacy"
+                            ? "border-primary-300 bg-primary-50 ring-2 ring-primary-500/10"
+                            : "border-border bg-surface hover:border-primary-200 hover:bg-slate-50"
+                        } disabled:cursor-not-allowed disabled:opacity-60`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                            nextPatientStatus === "forPharmacy"
+                              ? "bg-primary-700 text-white"
+                              : "bg-primary-50 text-primary-700"
+                          }`}>
+                            <Pill size={18} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-text-primary">Send to Pharmacy</p>
+                            <p className="mt-1 text-xs leading-5 text-text-muted">
+                              Patient will proceed to the pharmacy queue for prescribed medicines.
+                            </p>
+                          </div>
+                        </div>
+                      </button>
 
-                        {nextPatientStatus === "released"
-                          ? "Complete & Release"
-                          : "Complete & Send to Pharmacy"}
-                      </>
-                    )}
-                  </button>
-                </div>
+                      <button
+                        type="button"
+                        onClick={handleSelectReleased}
+                        disabled={isSaving || isSavingChanges}
+                        className={`rounded-2xl border p-4 text-left transition ${
+                          nextPatientStatus === "released"
+                            ? "border-emerald-300 bg-emerald-50 ring-2 ring-emerald-500/10"
+                            : "border-border bg-surface hover:border-emerald-200 hover:bg-slate-50"
+                        } disabled:cursor-not-allowed disabled:opacity-60`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                            nextPatientStatus === "released"
+                              ? "bg-emerald-600 text-white"
+                              : "bg-emerald-50 text-emerald-700"
+                          }`}>
+                            <CheckCircle2 size={18} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-text-primary">Release Patient</p>
+                            <p className="mt-1 text-xs leading-5 text-text-muted">
+                              Consultation is complete and no pharmacy processing is required.
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+
+                    <div className="mt-5 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={handleCancelClose}
+                        disabled={isSaving || isSavingChanges}
+                        className="rounded-xl border border-border bg-surface px-5 py-3 text-sm font-bold text-text-secondary transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveChanges}
+                        disabled={isSaving || isSavingChanges}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-5 py-3 text-sm font-bold text-primary-700 shadow-sm transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSavingChanges ? (
+                          <>
+                            <RotateCcw size={17} className="animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save size={17} />
+                            Save Changes
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={finalizeConsultation}
+                        disabled={isSaving || isSavingChanges}
+                        className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          nextPatientStatus === "released"
+                            ? "bg-emerald-600 hover:bg-emerald-700"
+                            : "bg-primary-700 hover:bg-primary-800"
+                        }`}
+                      >
+                        {isSaving ? (
+                          <>
+                            <RotateCcw size={17} className="animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            {nextPatientStatus === "released" ? (
+                              <CheckCircle2 size={17} />
+                            ) : (
+                              <Send size={17} />
+                            )}
+                            {nextPatientStatus === "released"
+                              ? "Complete & Release"
+                              : "Complete & Send to Pharmacy"}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
               </section>
             </div>
           )}
@@ -1740,6 +2372,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
           {activeTab === "history" && (
             <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
               <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-primary-600">
                     Patient Records
@@ -1756,15 +2389,25 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
                 {hasHistory && (
                   <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-text-secondary">
-                    {patient.doctorSheets.length} record
-                    {patient.doctorSheets.length !== 1 ? "s" : ""}
+                    {
+                      patient.doctorSheets
+                        .length
+                    }{" "}
+                    record
+                    {patient.doctorSheets
+                      .length !== 1
+                      ? "s"
+                      : ""}
                   </span>
                 )}
               </div>
 
               {!hasHistory ? (
                 <div className="rounded-2xl border border-dashed border-border-strong bg-slate-50 px-5 py-12 text-center">
-                  <History size={34} className="mx-auto text-text-subtle" />
+                  <History
+                    size={34}
+                    className="mx-auto text-text-subtle"
+                  />
 
                   <p className="mt-4 text-sm font-bold text-text-primary">
                     No consultation history
@@ -1776,16 +2419,36 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {[...patient.doctorSheets].reverse().map((record, index) => (
-                    <HistoryRecord
-                      key={record._id || record.id || index}
-                      record={record}
-                      index={index}
-                      onDelete={() =>
-                        handleDeleteRecord(record._id || record.id)
-                      }
-                    />
-                  ))}
+                  {[
+                    ...patient.doctorSheets,
+                  ]
+                    .reverse()
+                    .map(
+                      (
+                        record,
+                        index
+                      ) => (
+                        <HistoryRecord
+                          key={
+                            record._id ||
+                            record.id ||
+                            index
+                          }
+                          record={
+                            record
+                          }
+                          index={
+                            index
+                          }
+                          onDelete={() =>
+                            handleDeleteRecord(
+                              record._id ||
+                                record.id
+                            )
+                          }
+                        />
+                      )
+                    )}
                 </div>
               )}
             </section>
@@ -1795,36 +2458,37 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
 
       {alertMessage && (
         <AlertModal
-          open={Boolean(alertMessage)}
-          message={alertMessage}
-          onClose={() => setAlertMessage("")}
+          open={Boolean(
+            alertMessage
+          )}
+          message={
+            alertMessage
+          }
+          onClose={() =>
+            setAlertMessage("")
+          }
         />
       )}
 
       {confirmState && (
         <ConfirmModal
-          open={Boolean(confirmState)}
-          message={confirmState.message}
-          onConfirm={confirmState.onConfirm}
-          onCancel={() => setConfirmState(null)}
-          onClose={() => setConfirmState(null)}
+          open={Boolean(
+            confirmState
+          )}
+          message={
+            confirmState.message
+          }
+          onConfirm={
+            confirmState.onConfirm
+          }
+          onCancel={() =>
+            setConfirmState(null)
+          }
+          onClose={() =>
+            setConfirmState(null)
+          }
         />
       )}
-
-      <ConflictManager
-        conflict={activeConflict}
-        patient={patient}
-        onClose={() => {
-          if (isResolvingConflict) {
-            return;
-          }
-
-          setActiveConflict(null);
-        }}
-        onKeepServer={handleKeepServerVersion}
-        onKeepLocal={handleKeepLocalVersion}
-        isResolving={isResolvingConflict}
-      />
     </>
   );
 }
@@ -1835,7 +2499,10 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
  * =========================================================
  */
 
-function PatientInfoItem({ label, value }) {
+function PatientInfoItem({
+  label,
+  value,
+}) {
   return (
     <div className="min-w-0 rounded-xl border border-border bg-slate-50 p-3">
       <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
@@ -1849,10 +2516,17 @@ function PatientInfoItem({ label, value }) {
   );
 }
 
-function SectionCard({ icon, eyebrow, title, description, children }) {
+function SectionCard({
+  icon,
+  eyebrow,
+  title,
+  description,
+  children,
+}) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
       <div className="mb-5 flex gap-3">
+
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
           {icon}
         </div>
@@ -1867,7 +2541,9 @@ function SectionCard({ icon, eyebrow, title, description, children }) {
           </h3>
 
           {description && (
-            <p className="mt-1 text-sm text-text-muted">{description}</p>
+            <p className="mt-1 text-sm text-text-muted">
+              {description}
+            </p>
           )}
         </div>
       </div>
@@ -1877,34 +2553,78 @@ function SectionCard({ icon, eyebrow, title, description, children }) {
   );
 }
 
-function HistoryRecord({ record, index, onDelete }) {
-  const examination = record?.examination || {};
+function HistoryRecord({
+  record,
+  index,
+  onDelete,
+}) {
+  const examination =
+    record?.examination || {};
 
-  const recordDate = record?.createdAt || record?.date;
+  const recordDate =
+    record?.createdAt ||
+    record?.date;
 
-  const formattedDate = recordDate
-    ? new Date(recordDate).toLocaleString()
-    : "Date unavailable";
+  const formattedDate =
+    recordDate
+      ? new Date(
+          recordDate
+        ).toLocaleString()
+      : "Date unavailable";
 
   const examinationEntries = [
-    ["General Appearance", examination.generalAppearance],
-    ["HEENT", examination.heent],
-    ["Pulmonary", examination.pulmonary],
-    ["Cardiovascular", examination.cardiovascular],
-    ["Gastrointestinal", examination.gastrointestinal],
-    ["Musculoskeletal", examination.musculoskeletal],
-    ["Genitourinary", examination.genitourinary],
-    ["Neurological / Psychological", examination.neuroPsych],
-    ["Additional Notes", examination.checkupPanel],
-  ].filter(([, value]) => value && String(value).trim());
+    [
+      "General Appearance",
+      examination.generalAppearance,
+    ],
+    [
+      "HEENT",
+      examination.heent,
+    ],
+    [
+      "Pulmonary",
+      examination.pulmonary,
+    ],
+    [
+      "Cardiovascular",
+      examination.cardiovascular,
+    ],
+    [
+      "Gastrointestinal",
+      examination.gastrointestinal,
+    ],
+    [
+      "Musculoskeletal",
+      examination.musculoskeletal,
+    ],
+    [
+      "Genitourinary",
+      examination.genitourinary,
+    ],
+    [
+      "Neurological / Psychological",
+      examination.neuroPsych,
+    ],
+    [
+      "Additional Notes",
+      examination.checkupPanel,
+    ],
+  ].filter(
+    ([, value]) =>
+      value &&
+      String(value).trim()
+  );
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-surface">
+
       <div className="border-b border-border bg-slate-50 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary-600">
-              Record {index + 1}
+              Record{" "}
+              {index + 1}
             </p>
 
             <p className="mt-1 text-sm font-bold text-text-primary">
@@ -1919,7 +2639,8 @@ function HistoryRecord({ record, index, onDelete }) {
               </span>
             )}
 
-            {record?._id || record?.id ? (
+            {record?._id ||
+            record?.id ? (
               <button
                 type="button"
                 onClick={onDelete}
@@ -1934,13 +2655,34 @@ function HistoryRecord({ record, index, onDelete }) {
       </div>
 
       <div className="space-y-5 p-4">
-        <HistoryBlock title="Complaint" value={record?.initComplaint} />
 
-        <HistoryBlock title="Diagnosis" value={record?.diagnosis} />
+        <HistoryBlock
+          title="Complaint"
+          value={
+            record?.initComplaint
+          }
+        />
 
-        <HistoryBlock title="Treatment" value={record?.treatment} />
+        <HistoryBlock
+          title="Diagnosis"
+          value={
+            record?.diagnosis
+          }
+        />
 
-        <HistoryBlock title="Medication" value={record?.medication} />
+        <HistoryBlock
+          title="Treatment"
+          value={
+            record?.treatment
+          }
+        />
+
+        <HistoryBlock
+          title="Medication"
+          value={
+            record?.medication
+          }
+        />
 
         {record?.referral && (
           <div className="rounded-xl border border-primary-100 bg-primary-50 p-4">
@@ -1949,38 +2691,51 @@ function HistoryRecord({ record, index, onDelete }) {
             </p>
 
             <p className="mt-2 text-sm font-bold text-primary-900">
-              {record.referral.department}
+              {
+                record.referral
+                  .department
+              }
             </p>
 
-            {record.referral.reason && (
+            {record.referral
+              .reason && (
               <p className="mt-2 text-sm leading-6 text-primary-800">
-                {record.referral.reason}
+                {
+                  record.referral
+                    .reason
+                }
               </p>
             )}
           </div>
         )}
 
-        {examinationEntries.length > 0 && (
+        {examinationEntries.length >
+          0 && (
           <div>
             <p className="mb-3 text-xs font-bold uppercase tracking-wide text-text-subtle">
               Examination Findings
             </p>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {examinationEntries.map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-xl border border-border bg-slate-50 p-3"
-                >
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
-                    {label}
-                  </p>
+              {examinationEntries.map(
+                ([
+                  label,
+                  value,
+                ]) => (
+                  <div
+                    key={label}
+                    className="rounded-xl border border-border bg-slate-50 p-3"
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-text-subtle">
+                      {label}
+                    </p>
 
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {value}
-                  </p>
-                </div>
-              ))}
+                    <p className="mt-2 text-sm leading-6 text-slate-700">
+                      {value}
+                    </p>
+                  </div>
+                )
+              )}
             </div>
           </div>
         )}
@@ -1989,8 +2744,14 @@ function HistoryRecord({ record, index, onDelete }) {
   );
 }
 
-function HistoryBlock({ title, value }) {
-  if (!value || !String(value).trim()) {
+function HistoryBlock({
+  title,
+  value,
+}) {
+  if (
+    !value ||
+    !String(value).trim()
+  ) {
     return null;
   }
 

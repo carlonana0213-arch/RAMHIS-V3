@@ -13,7 +13,10 @@ import DoctorQueue from "./components/DoctorQueue";
 import PatientCard from "./components/PatientCard";
 import PatientDoctorView from "./components/PatientDoctorView";
 
-import { getDoctorQueue } from "../../../Services/doctorService";
+import {
+  getDoctorQueue,
+  updatePatientStatus,
+} from "../../../Services/doctorService";
 import { getPendingOfflineConflicts } from "../../../Services/offlineRepository";
 import ConflictManager from "../../../Components/common/ConflictManager";
 import {
@@ -221,7 +224,19 @@ export default function Doctor() {
         return;
       }
 
-      setSelectedPatient(fullPatient);
+      // Opening a consultation marks the patient as being seen.
+      // Do this only after conflict checking so a conflicted patient
+      // is not moved in the queue before the conflict is resolved.
+      if (patientId) {
+        await updatePatientStatus(patientId, {
+          status: "beingSeen",
+        });
+      }
+
+      setSelectedPatient({
+        ...fullPatient,
+        status: "beingSeen",
+      });
     } catch (error) {
       console.error("Failed to open patient:", error);
 
@@ -235,8 +250,37 @@ export default function Doctor() {
   // ---------------------------------------------------------
   // CLOSE CONSULTATION
   // ---------------------------------------------------------
-  const handleCloseConsultation = () => {
+  const handleCloseConsultation = async (result) => {
+    const patientId =
+      selectedPatient?._id ||
+      selectedPatient?.id ||
+      selectedPatient?.serverId;
+
     setSelectedPatient(null);
+
+    // A finalized consultation already has its final status
+    // (released, forPharmacy, or waiting after referral).
+    if (result?.finalized) {
+      await loadQueue(false);
+      return;
+    }
+
+    // Closing/canceling an active consultation returns the
+    // patient to the waiting queue.
+    if (patientId) {
+      try {
+        await updatePatientStatus(patientId, {
+          status: "waiting",
+        });
+      } catch (error) {
+        console.error(
+          "Failed to restore patient status to waiting:",
+          error
+        );
+      }
+    }
+
+    await loadQueue(false);
   };
 
   // ---------------------------------------------------------

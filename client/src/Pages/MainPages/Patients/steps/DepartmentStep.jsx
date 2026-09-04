@@ -7,6 +7,14 @@ import {
   FaStethoscope,
   FaCheck,
   FaExclamationTriangle,
+  FaBrain,
+  FaMicroscope,
+  FaCut,
+  FaSyringe,
+  FaWalking,
+  FaUserMd,
+  FaChild,
+  FaAllergies,
 } from "react-icons/fa";
 
 const departments = [
@@ -16,6 +24,15 @@ const departments = [
   "Dental",
   "Cardio",
   "General",
+  "Neurology",
+  "Pathology",
+  "Circumcision",
+  "Surgery",
+  "PT & Rehabilitation",
+  "OB-Gyn",
+  "Ophthalmology",
+  "Dermatology",
+  "Adult Medicine",
 ];
 
 const departmentConfig = {
@@ -53,6 +70,60 @@ const departmentConfig = {
     icon: FaStethoscope,
     iconBg: "bg-slate-100",
     iconColor: "text-text-secondary",
+  },
+
+  Neurology: {
+    icon: FaBrain,
+    iconBg: "bg-violet-50",
+    iconColor: "text-violet-700",
+  },
+
+  Pathology: {
+    icon: FaMicroscope,
+    iconBg: "bg-purple-50",
+    iconColor: "text-purple-700",
+  },
+
+  Circumcision: {
+    icon: FaCut,
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-700",
+  },
+
+  Surgery: {
+    icon: FaSyringe,
+    iconBg: "bg-rose-50",
+    iconColor: "text-rose-700",
+  },
+
+  "PT & Rehabilitation": {
+    icon: FaWalking,
+    iconBg: "bg-teal-50",
+    iconColor: "text-teal-700",
+  },
+
+  "OB-Gyn": {
+    icon: FaChild,
+    iconBg: "bg-pink-50",
+    iconColor: "text-pink-700",
+  },
+
+  Ophthalmology: {
+    icon: FaEye,
+    iconBg: "bg-cyan-50",
+    iconColor: "text-cyan-700",
+  },
+
+  Dermatology: {
+    icon: FaAllergies,
+    iconBg: "bg-orange-50",
+    iconColor: "text-orange-700",
+  },
+
+  "Adult Medicine": {
+    icon: FaUserMd,
+    iconBg: "bg-blue-50",
+    iconColor: "text-blue-700",
   },
 };
 
@@ -283,28 +354,28 @@ const DepartmentStep = ({ form, setForm }) => {
 
           </div>
 
-{/* SWITCH */}
-<button
-  type="button"
-  role="switch"
-  aria-checked={form.isPriority || false}
-  onClick={togglePriority}
-  className={[
-    "relative h-8 w-14 shrink-0 rounded-full transition-all duration-200 focus:outline-none focus:ring-4",
-    form.isPriority
-      ? "bg-red-600 focus:ring-red-600/20"
-      : "bg-slate-300 focus:ring-slate-200",
-  ].join(" ")}
->
-  <span
-    className={[
-      "absolute top-1 h-6 w-6 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-all duration-200",
-      form.isPriority
-        ? "left-7"
-        : "left-1",
-    ].join(" ")}
-  />
-</button> 
+          {/* SWITCH */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.isPriority || false}
+            onClick={togglePriority}
+            className={[
+              "relative h-8 w-14 shrink-0 rounded-full transition-all duration-200 focus:outline-none focus:ring-4",
+              form.isPriority
+                ? "bg-red-600 focus:ring-red-600/20"
+                : "bg-slate-300 focus:ring-slate-200",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "absolute top-1 h-6 w-6 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-all duration-200",
+                form.isPriority
+                  ? "left-7"
+                  : "left-1",
+              ].join(" ")}
+            />
+          </button>
 
         </div>
 
