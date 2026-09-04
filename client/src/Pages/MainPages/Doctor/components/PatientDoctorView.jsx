@@ -78,11 +78,11 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
     "Pathology",
     "Circumcision",
     "Surgery",
-    "PT & Rehabilitation",
+    "PT",
     "OBGyn",
     "Ophthalmology",
     "Dermatology",
-    "Adult Medicine",
+    "AdultMed",
   ];
 
   const [doctorSheet, setDoctorSheet] = useState(createEmptyDoctorSheet(""));
@@ -580,10 +580,32 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
    * =========================================================
    */
 
-  const handleMarkMedicineGiven = (prescription) => {
-    const prescriptionId = prescription?._id || prescription?.id;
+  const handleMarkMedicineGiven = (prescription, item) => {
+    const prescriptionId =
+      prescription?._id ||
+      prescription?.id ||
+      prescription?.prescriptionId ||
+      prescription?.prescription?._id ||
+      prescription?.prescription?.id;
 
-    if (!prescriptionId) {
+    const itemId =
+      item?._id || item?.id || item?.itemId || prescription?.itemId;
+
+    if (!prescriptionId || !itemId) {
+      console.error(
+        "Cannot mark medicine as given: missing prescription or item ID.",
+        {
+          prescription,
+          item,
+          prescriptionId,
+          itemId,
+        },
+      );
+
+      setAlertMessage(
+        "Unable to mark this medicine as given because its prescription information is incomplete.",
+      );
+
       return;
     }
 
@@ -594,7 +616,12 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
         try {
           setIsSaving(true);
 
-          await markMedicineGiven(prescriptionId);
+          console.info("[Doctor] Marking medicine as given:", {
+            prescriptionId,
+            itemId,
+          });
+
+          await markMedicineGiven(prescriptionId, itemId);
 
           setConfirmState(null);
 
@@ -1506,6 +1533,7 @@ function PatientDoctorView({ patient, onClose, refreshQueue }) {
                                               onClick={() =>
                                                 handleMarkMedicineGiven(
                                                   prescription,
+                                                  item,
                                                 )
                                               }
                                               disabled={
