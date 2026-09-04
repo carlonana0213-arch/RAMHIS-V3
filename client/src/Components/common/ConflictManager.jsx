@@ -286,18 +286,35 @@ export default function ConflictManager({
   // -------------------------------------------------------
   // Candidate selection
   // -------------------------------------------------------
-
   const handleSelectCandidate = async (candidate) => {
-    if (isResolving || !candidate?.operationId || !onResolveCandidate) {
+    if (
+      isResolving ||
+      !candidate?.operationId ||
+      !onResolveCandidate ||
+      !activeConflict?._id
+    ) {
+      console.error("[Conflict UI] Cannot resolve candidate:", {
+        hasConflictId: Boolean(activeConflict?._id),
+        operationId: candidate?.operationId,
+      });
+
       return;
     }
 
     try {
       setSelectedCandidateId(candidate.operationId);
 
-      console.info("[Conflict UI] Selecting candidate:", candidate.operationId);
+      console.info("[Conflict UI] Selecting candidate:", {
+        conflictId: activeConflict._id,
+        operationId: candidate.operationId,
+        source: candidate.source,
+      });
 
-      await onResolveCandidate(candidate.operationId, candidate.data);
+      await onResolveCandidate(
+        activeConflict._id,
+        candidate.operationId,
+        candidate.data,
+      );
     } catch (error) {
       console.error("[Conflict UI] Candidate resolution failed:", error);
 

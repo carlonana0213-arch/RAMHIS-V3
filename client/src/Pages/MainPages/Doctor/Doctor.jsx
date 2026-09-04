@@ -278,39 +278,43 @@ export default function Doctor() {
   };
 
   const handleConflictResolution = async (
+    conflictId,
     selectedOperationId,
     resolvedData,
   ) => {
-    if (!patientConflict?._id) {
-      throw new Error("Conflict ID is missing.");
+    if (!conflictId) {
+      throw new Error("Backend conflict ID is missing.");
+    }
+
+    if (!selectedOperationId) {
+      throw new Error("Conflict candidate operation ID is missing.");
     }
 
     try {
       setCheckingConflict(true);
 
-      console.info(
-        "[Conflict UI] Resolving conflict:",
-        patientConflict._id,
-        "using candidate:",
+      console.info("[Conflict UI] Resolving conflict:", {
+        conflictId,
         selectedOperationId,
-      );
+      });
 
-      await resolveConflict(
-        patientConflict._id,
-        selectedOperationId,
-        resolvedData,
-      );
+      await resolveConflict(conflictId, selectedOperationId, resolvedData);
 
-      // Clean up the local conflict record associated
-      // with this browser/device.
-      if (patientConflict.conflictId) {
+      // -------------------------------------------------------
+      // Clean up the local conflict record associated with
+      // this browser/device.
+      //
+      // IMPORTANT:
+      // conflictId above is the BACKEND MongoDB conflict ID.
+      // patientConflict.conflictId is the LOCAL IndexedDB
+      // conflict identifier.
+      // -------------------------------------------------------
+
+      if (patientConflict?.conflictId) {
         await markLocalConflictResolved(patientConflict.conflictId);
       }
 
-      console.info(
-        "[Conflict UI] Conflict resolved successfully:",
-        patientConflict._id,
-      );
+      console.info("[Conflict UI] Conflict resolved successfully:", conflictId);
 
       setPatientConflict(null);
       setConflictPatient(null);
@@ -434,8 +438,16 @@ export default function Doctor() {
               setPatientConflict(null);
               setConflictPatient(null);
             }}
-            onResolveCandidate={async (selectedOperationId, resolvedData) => {
-              await handleConflictResolution(selectedOperationId, resolvedData);
+            onResolveCandidate={async (
+              conflictId,
+              selectedOperationId,
+              resolvedData,
+            ) => {
+              await handleConflictResolution(
+                conflictId,
+                selectedOperationId,
+                resolvedData,
+              );
             }}
             isResolving={checkingConflict}
           />
