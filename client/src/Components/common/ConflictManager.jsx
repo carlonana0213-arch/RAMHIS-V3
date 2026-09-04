@@ -194,6 +194,7 @@ export default function ConflictManager({
   const [loadingConflicts, setLoadingConflicts] = useState(false);
   const [conflictError, setConflictError] = useState(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
+  const [candidateToConfirm, setCandidateToConfirm] = useState(null);
 
   // -------------------------------------------------------
   // Patient name
@@ -286,14 +287,14 @@ export default function ConflictManager({
   // -------------------------------------------------------
   // Candidate selection
   // -------------------------------------------------------
-  const handleSelectCandidate = async (candidate) => {
+  const handleSelectCandidate = (candidate) => {
     if (
       isResolving ||
       !candidate?.operationId ||
       !onResolveCandidate ||
       !activeConflict?._id
     ) {
-      console.error("[Conflict UI] Cannot resolve candidate:", {
+      console.error("[Conflict UI] Cannot select candidate:", {
         hasConflictId: Boolean(activeConflict?._id),
         operationId: candidate?.operationId,
       });
@@ -301,20 +302,40 @@ export default function ConflictManager({
       return;
     }
 
-    try {
-      setSelectedCandidateId(candidate.operationId);
+    console.info("[Conflict UI] Candidate selected for confirmation:", {
+      conflictId: activeConflict._id,
+      operationId: candidate.operationId,
+      source: candidate.source,
+    });
 
-      console.info("[Conflict UI] Selecting candidate:", {
+    setCandidateToConfirm(candidate);
+  };
+  const confirmCandidateSelection = async () => {
+    if (
+      !candidateToConfirm ||
+      !activeConflict?._id ||
+      !candidateToConfirm.operationId ||
+      !onResolveCandidate
+    ) {
+      return;
+    }
+
+    try {
+      setSelectedCandidateId(candidateToConfirm.operationId);
+
+      console.info("[Conflict UI] Confirming candidate:", {
         conflictId: activeConflict._id,
-        operationId: candidate.operationId,
-        source: candidate.source,
+        operationId: candidateToConfirm.operationId,
+        source: candidateToConfirm.source,
       });
 
       await onResolveCandidate(
         activeConflict._id,
-        candidate.operationId,
-        candidate.data,
+        candidateToConfirm.operationId,
+        candidateToConfirm.data,
       );
+
+      setCandidateToConfirm(null);
     } catch (error) {
       console.error("[Conflict UI] Candidate resolution failed:", error);
 
@@ -631,6 +652,111 @@ export default function ConflictManager({
           </button>
         </div>
       </div>
+      {candidateToConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4">
+          <div
+            className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-conflict-title"
+          >
+            {/* -------------------------------------------
+                TITLE
+            -------------------------------------------- */}
+
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                !
+              </div>
+
+              <div>
+                <h3
+                  id="confirm-conflict-title"
+                  className="text-lg font-bold text-slate-900"
+                >
+                  Confirm this version
+                </h3>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  You are about to make this version the final saved version for
+                  this patient.
+                </p>
+              </div>
+            </div>
+
+            {/* -------------------------------------------
+                SELECTED VERSION
+            -------------------------------------------- */}
+
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Version selected
+              </p>
+
+              <p className="mt-1 text-base font-bold text-slate-900">
+                {candidateToConfirm.source === "server"
+                  ? "Server Version"
+                  : `Offline Version ${
+                      offlineCandidates.indexOf(candidateToConfirm) + 1
+                    }`}
+              </p>
+
+              <p className="mt-2 text-sm text-slate-600">
+                {candidateToConfirm.source === "server"
+                  ? "The current server data will become the final version."
+                  : `Changes submitted by ${getOwnerName(
+                      candidateToConfirm.ownerKey,
+                    )} will become the final version.`}
+              </p>
+
+              <p className="mt-2 text-xs text-slate-500">
+                Date & Time:{" "}
+                {formatDateTime(
+                  candidateToConfirm.createdAt ||
+                    candidateToConfirm.updatedAt ||
+                    candidateToConfirm.baseUpdatedAt,
+                )}
+              </p>
+            </div>
+
+            {/* -------------------------------------------
+                WARNING
+            -------------------------------------------- */}
+
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm leading-5 text-amber-900">
+                This action will resolve the conflict and save the selected
+                version as the final patient record. The other versions will no
+                longer be the active version.
+              </p>
+            </div>
+
+            {/* -------------------------------------------
+                ACTIONS
+            -------------------------------------------- */}
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setCandidateToConfirm(null)}
+                disabled={isResolving}
+                className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmCandidateSelection}
+                disabled={isResolving}
+                className="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isResolving ? "Saving Version..." : "Yes, Save This Version"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
