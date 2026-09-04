@@ -35,16 +35,28 @@ import EditUserModal from "../../../Components/admin/EditUserModal";
 
 function UserManagement() {
   const getFileUrl = (filePath) => {
-    if (!filePath) return "";
+  if (!filePath) return "";
 
-    if (/^https?:\/\//i.test(filePath)) {
-      return filePath;
-    }
+  // If the backend already returned a complete URL,
+  // use it exactly as provided.
+  if (/^https?:\/\//i.test(filePath)) {
+    return filePath;
+  }
 
-    return `${API_BASE_URL}${
-      filePath.startsWith("/") ? filePath : `/${filePath}`
-    }`;
-  };
+  // Uploaded files are stored on the deployed RAMHIS server.
+  // Keep the API itself local, but load existing uploaded
+  // verification/profile files from the deployed server.
+  const normalizedPath = filePath.startsWith("/")
+    ? filePath
+    : `/${filePath}`;
+
+  if (normalizedPath.startsWith("/uploads/")) {
+    return `https://ramhis-v2-1.onrender.com${normalizedPath}`;
+  }
+
+  // Everything else continues using the local backend.
+  return `${API_BASE_URL}${normalizedPath}`;
+};
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
