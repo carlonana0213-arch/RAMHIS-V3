@@ -37,22 +37,17 @@ function UserManagement() {
   const getFileUrl = (filePath) => {
   if (!filePath) return "";
 
-  // If the backend already returned a complete URL,
-  // use it exactly as provided.
+  // If backend already returned a complete URL, use it directly.
   if (/^https?:\/\//i.test(filePath)) {
     return filePath;
   }
 
-  // Uploaded files are stored on the deployed RAMHIS server.
-  // Keep the API itself local, but load existing uploaded
-  // verification/profile files from the deployed server.
+  // Always load uploaded files from the deployed Render backend.
   const normalizedPath = filePath.startsWith("/")
     ? filePath
     : `/${filePath}`;
 
-  const backendBaseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
-
-  return `${backendBaseUrl}${normalizedPath}`;
+  return `https://ramhis-v2-1.onrender.com${normalizedPath}`;
 };
 
   const [users, setUsers] = useState([]);
