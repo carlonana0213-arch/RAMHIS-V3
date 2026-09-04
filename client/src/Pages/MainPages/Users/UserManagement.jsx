@@ -50,12 +50,9 @@ function UserManagement() {
     ? filePath
     : `/${filePath}`;
 
-  if (normalizedPath.startsWith("/uploads/")) {
-    return `https://ramhis-v2-1.onrender.com${normalizedPath}`;
-  }
+  const backendBaseUrl = API_BASE_URL.replace(/\/api\/?$/, "");
 
-  // Everything else continues using the local backend.
-  return `${API_BASE_URL}${normalizedPath}`;
+  return `${backendBaseUrl}${normalizedPath}`;
 };
 
   const [users, setUsers] = useState([]);
@@ -616,33 +613,44 @@ function UserManagement() {
                         {/* License / Valid ID */}
 
                         <td className="px-5 py-4">
-                          {user.role === "Doctor" &&
-                          user.doctorInfo?.proofOfLicense ? (
-                            <a
-                              href={getFileUrl(user.doctorInfo.proofOfLicense)}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
-                            >
-                              <FileCheck2 size={15} />
-                              View
-                            </a>
-                          ) : user.validIdUrl ? (
-                            <a
-                              href={getFileUrl(user.validIdUrl)}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
-                            >
-                              <FileCheck2 size={15} />
-                              View
-                            </a>
-                          ) : (
-                            <span className="text-text-subtle">
-                              —
-                            </span>
-                          )}
-                        </td>
+  {user.role === "Doctor" &&
+  user.doctorInfo?.proofOfLicense ? (
+    <a
+      href={getFileUrl(user.doctorInfo.proofOfLicense)}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
+    >
+      <FileCheck2 size={15} />
+      View
+    </a>
+  ) : user.role === "Volunteer" &&
+    user.volunteerInfo?.proofOfId ? (
+    <a
+      href={getFileUrl(user.volunteerInfo.proofOfId)}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
+    >
+      <FileCheck2 size={15} />
+      View
+    </a>
+  ) : user.validIdUrl ? (
+    <a
+      href={getFileUrl(user.validIdUrl)}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-600 transition hover:text-primary-800"
+    >
+      <FileCheck2 size={15} />
+      View
+    </a>
+  ) : (
+    <span className="text-text-subtle">
+      —
+    </span>
+  )}
+</td>
 
                         {/* Doctorate */}
 

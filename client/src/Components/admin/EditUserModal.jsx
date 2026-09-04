@@ -10,9 +10,10 @@ function EditUserModal({ user, onClose, onSuccess }) {
   const [isEditing, setIsEditing] = useState(false);
 
   const [form, setForm] = useState({
-    ...user,
-    doctorInfo: user?.doctorInfo || {},
-  });
+  ...user,
+  doctorInfo: user?.doctorInfo || {},
+  volunteerInfo: user?.volunteerInfo || {},
+});
 
   const [alertMessage, setAlertMessage] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
@@ -27,9 +28,10 @@ function EditUserModal({ user, onClose, onSuccess }) {
    */
   useEffect(() => {
     setForm({
-      ...user,
-      doctorInfo: user?.doctorInfo || {},
-    });
+  ...user,
+  doctorInfo: user?.doctorInfo || {},
+  volunteerInfo: user?.volunteerInfo || {},
+});
 
     setIsEditing(false);
   }, [user]);
@@ -126,9 +128,20 @@ function EditUserModal({ user, onClose, onSuccess }) {
        * when the selected role is Volunteer.
        */
       if (form.role === "Volunteer") {
-        dataToSend.volunteerType =
-          form.volunteerType?.trim() || "";
-      }
+  dataToSend.volunteerType =
+    form.volunteerType?.trim() || "";
+
+  dataToSend.volunteerInfo = {
+    organization:
+      form.volunteerInfo?.organization?.trim() || "",
+
+    skills:
+      form.volunteerInfo?.skills?.trim() || "",
+
+    proofOfId:
+      form.volunteerInfo?.proofOfId || "",
+  };
+}
 
       /*
        * Only send Doctor data
@@ -622,41 +635,102 @@ function EditUserModal({ user, onClose, onSuccess }) {
               </h3>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">
-                  Volunteer Type
-                </label>
+  <label className="text-sm font-semibold text-slate-700">
+    Organization
+  </label>
 
-                <input
-                  type="text"
-                  value={
-                    form.volunteerType || ""
-                  }
-                  disabled={!isEditing}
-                  onChange={(e) =>
-                    handleChange(
-                      "volunteerType",
-                      e.target.value
-                    )
-                  }
-                  className="
-                    w-full
-                    rounded-xl
-                    border
-                    border-slate-200
-                    px-4
-                    py-3
-                    text-sm
-                    outline-none
-                    transition
-                    focus:border-blue-500
-                    focus:ring-4
-                    focus:ring-blue-500/10
-                    disabled:cursor-not-allowed
-                    disabled:bg-slate-50
-                    disabled:text-slate-500
-                  "
-                />
-              </div>
+  <input
+    type="text"
+    value={form.volunteerInfo?.organization || ""}
+    disabled={!isEditing}
+    onChange={(e) =>
+      setForm((prev) => ({
+        ...prev,
+        volunteerInfo: {
+          ...(prev.volunteerInfo || {}),
+          organization: e.target.value,
+        },
+      }))
+    }
+    className="
+      w-full
+      rounded-xl
+      border
+      border-slate-200
+      px-4
+      py-3
+      text-sm
+      outline-none
+      transition
+      focus:border-blue-500
+      focus:ring-4
+      focus:ring-blue-500/10
+      disabled:cursor-not-allowed
+      disabled:bg-slate-50
+      disabled:text-slate-500
+    "
+  />
+</div>
+
+<div className="space-y-2">
+  <label className="text-sm font-semibold text-slate-700">
+    Skills
+  </label>
+
+  <input
+    type="text"
+    value={form.volunteerInfo?.skills || ""}
+    disabled={!isEditing}
+    onChange={(e) =>
+      setForm((prev) => ({
+        ...prev,
+        volunteerInfo: {
+          ...(prev.volunteerInfo || {}),
+          skills: e.target.value,
+        },
+      }))
+    }
+    className="
+      w-full
+      rounded-xl
+      border
+      border-slate-200
+      px-4
+      py-3
+      text-sm
+      outline-none
+      transition
+      focus:border-blue-500
+      focus:ring-4
+      focus:ring-blue-500/10
+      disabled:cursor-not-allowed
+      disabled:bg-slate-50
+      disabled:text-slate-500
+    "
+  />
+</div>
+
+<div className="space-y-2">
+  <label className="text-sm font-semibold text-slate-700">
+    Valid ID
+  </label>
+
+  {form.volunteerInfo?.proofOfId ? (
+    <a
+      href={form.volunteerInfo.proofOfId}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm font-bold text-primary-700 hover:bg-primary-100"
+    >
+      <FileCheck2 size={16} />
+      View Valid ID
+    </a>
+  ) : (
+    <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-400">
+      No Valid ID uploaded.
+    </p>
+  )}
+</div>
             </section>
           )}
 
