@@ -28,11 +28,11 @@ const departments = [
   "Pathology",
   "Circumcision",
   "Surgery",
-  "PT & Rehabilitation",
+  "PT",
   "OBGyn",
   "Ophthalmology",
   "Dermatology",
-  "Adult Medicine",
+  "AdultMed",
 ];
 
 const departmentConfig = {
@@ -96,7 +96,7 @@ const departmentConfig = {
     iconColor: "text-rose-700",
   },
 
-  "PT & Rehabilitation": {
+  PT: {
     icon: FaWalking,
     iconBg: "bg-teal-50",
     iconColor: "text-teal-700",
@@ -120,7 +120,7 @@ const departmentConfig = {
     iconColor: "text-orange-700",
   },
 
-  "Adult Medicine": {
+  AdultMed: {
     icon: FaUserMd,
     iconBg: "bg-blue-50",
     iconColor: "text-blue-700",

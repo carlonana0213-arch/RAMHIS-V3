@@ -36,11 +36,11 @@ export default function Patients() {
     Pathology: 0,
     Circumcision: 0,
     Surgery: 0,
-    "PT & Rehabilitation": 0,
+    PT: 0,
     OBGyn: 0,
     Ophthalmology: 0,
     Dermatology: 0,
-    "Adult Medicine": 0,
+    AdultMed: 0,
   });
 
   const hasLoadedOnce = useRef(false);
@@ -289,11 +289,11 @@ export default function Patients() {
         Pathology: 0,
         Circumcision: 0,
         Surgery: 0,
-        "PT & Rehabilitation": 0,
+        PT: 0,
         OBGyn: 0,
         Ophthalmology: 0,
         Dermatology: 0,
-        "Adult Medicine": 0,
+        AdultMed: 0,
       });
     } finally {
       setSummaryLoading(false);

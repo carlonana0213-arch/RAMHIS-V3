@@ -21,11 +21,11 @@ const departments = [
   "Pathology",
   "Circumcision",
   "Surgery",
-  "PT & Rehabilitation",
+  "PT",
   "OBGyn",
   "Ophthalmology",
   "Dermatology",
-  "Adult Medicine",
+  "AdultMed",
 ];
 
 const statusConfig = {
