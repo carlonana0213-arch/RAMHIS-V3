@@ -1,6 +1,181 @@
 import { useEffect, useState } from "react";
 import { getPatientConflicts } from "../../Services/syncConflictService";
 
+// ---------------------------------------------------------
+// Helper: Format date/time
+// ---------------------------------------------------------
+function formatDateTime(dateValue) {
+  if (!dateValue) {
+    return "Unknown date";
+  }
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown date";
+  }
+
+  return date.toLocaleString([], {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+// ---------------------------------------------------------
+// Helper: Get the owner's display name
+// ---------------------------------------------------------
+function getOwnerName(ownerKey) {
+  if (!ownerKey) {
+    return "Unknown user";
+  }
+
+  // Populated User document
+  if (typeof ownerKey === "object") {
+    return (
+      ownerKey.name ||
+      ownerKey.full_name ||
+      ownerKey.username ||
+      ownerKey.email ||
+      "Unknown user"
+    );
+  }
+
+  // Fallback if backend did not populate ownerKey
+  return String(ownerKey);
+}
+
+// ---------------------------------------------------------
+// Helper: Convert field names into readable labels
+// ---------------------------------------------------------
+function formatFieldName(fieldName) {
+  if (!fieldName) {
+    return "";
+  }
+
+  return fieldName
+    .replace(/([A-Z])/g, " $1")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (character) => character.toUpperCase());
+}
+
+// ---------------------------------------------------------
+// Helper: Display nested values without showing raw schema
+// ---------------------------------------------------------
+function FieldValue({ value }) {
+  if (value === null || value === undefined || value === "") {
+    return (
+      <span className="text-slate-400 italic">No information provided</span>
+    );
+  }
+
+  if (typeof value === "boolean") {
+    return <span>{value ? "Yes" : "No"}</span>;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return <span className="text-slate-400 italic">None</span>;
+    }
+
+    return (
+      <div className="space-y-2">
+        {value.map((item, index) => (
+          <div
+            key={index}
+            className="rounded-lg border border-slate-200 bg-slate-50 p-2"
+          >
+            <FieldValue value={item} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (typeof value === "object") {
+    const entries = Object.entries(value);
+
+    if (entries.length === 0) {
+      return (
+        <span className="text-slate-400 italic">No information provided</span>
+      );
+    }
+
+    return (
+      <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+        {entries.map(([key, nestedValue]) => (
+          <div key={key}>
+            <p className="mb-1 text-xs font-semibold text-slate-500">
+              {formatFieldName(key)}
+            </p>
+
+            <div className="text-sm text-slate-800">
+              <FieldValue value={nestedValue} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <span className="whitespace-pre-wrap break-words">{String(value)}</span>
+  );
+}
+
+// ---------------------------------------------------------
+// Render the candidate's actual fields
+// ---------------------------------------------------------
+function CandidateFields({ data }) {
+  if (!data || typeof data !== "object") {
+    return (
+      <div className="rounded-xl bg-white p-4 text-sm text-slate-500">
+        No field data available.
+      </div>
+    );
+  }
+
+  const excludedFields = new Set(["_id", "__v", "createdAt", "updatedAt"]);
+
+  const fields = Object.entries(data).filter(
+    ([key]) => !excludedFields.has(key),
+  );
+
+  if (fields.length === 0) {
+    return (
+      <div className="rounded-xl bg-white p-4 text-sm text-slate-500">
+        No editable fields available.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3">
+      {fields.map(([key, value]) => (
+        <div
+          key={key}
+          className="rounded-xl border border-slate-200 bg-white p-3"
+        >
+          <p className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+            {formatFieldName(key)}
+          </p>
+
+          <div className="text-sm leading-6 text-slate-800">
+            <FieldValue value={value} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------
+// Main component
+// ---------------------------------------------------------
 export default function ConflictManager({
   conflict,
   patient,
@@ -11,17 +186,18 @@ export default function ConflictManager({
   onResolveCandidate,
   isResolving = false,
 }) {
-  // ---------------------------------------------------------
+  // -------------------------------------------------------
   // State
-  // ---------------------------------------------------------
+  // -------------------------------------------------------
 
   const [conflicts, setConflicts] = useState([]);
   const [loadingConflicts, setLoadingConflicts] = useState(false);
   const [conflictError, setConflictError] = useState(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState(null);
 
-  // ---------------------------------------------------------
+  // -------------------------------------------------------
   // Patient name
-  // ---------------------------------------------------------
+  // -------------------------------------------------------
 
   const patientName =
     patient?.generalInfo?.name ||
@@ -29,26 +205,15 @@ export default function ConflictManager({
     patient?.fullName ||
     "Selected Patient";
 
-  // ---------------------------------------------------------
-  // Existing local conflict data
-  // ---------------------------------------------------------
-
-  const localData = conflict?.localData || {};
-  const serverData = conflict?.serverData || {};
-
-  // ---------------------------------------------------------
-  // Load all server-side conflict candidates
-  //
-  // This is important for the multi-user conflict system.
-  // Doctor.jsx detects that a conflict exists locally, while
-  // this component retrieves ALL candidates stored by the
-  // backend.
-  // ---------------------------------------------------------
+  // -------------------------------------------------------
+  // Load all conflict candidates from backend
+  // -------------------------------------------------------
 
   useEffect(() => {
     if (!conflict || !patientId) {
       setConflicts([]);
       setConflictError(null);
+      setSelectedCandidateId(null);
       return;
     }
 
@@ -90,29 +255,25 @@ export default function ConflictManager({
     };
   }, [conflict, patientId]);
 
-  // ---------------------------------------------------------
-  // IMPORTANT:
-  // Hooks must run before this conditional return.
-  // ---------------------------------------------------------
+  // -------------------------------------------------------
+  // Hooks must finish before conditional return
+  // -------------------------------------------------------
 
   if (!conflict) {
     return null;
   }
 
-  // ---------------------------------------------------------
-  // Get the first pending conflict group.
-  //
-  // At this stage we are only displaying the information.
-  // Actual candidate selection/resolution comes next.
-  // ---------------------------------------------------------
+  // -------------------------------------------------------
+  // Determine active conflict group
+  // -------------------------------------------------------
 
   const activeConflict = conflicts.length > 0 ? conflicts[0] : null;
 
   const candidates = activeConflict?.candidates || [];
 
-  // ---------------------------------------------------------
-  // Identify candidate types
-  // ---------------------------------------------------------
+  // -------------------------------------------------------
+  // Separate server/offline versions
+  // -------------------------------------------------------
 
   const serverCandidates = candidates.filter(
     (candidate) => candidate.source === "server",
@@ -122,14 +283,36 @@ export default function ConflictManager({
     (candidate) => candidate.source === "offline",
   );
 
+  // -------------------------------------------------------
+  // Candidate selection
+  // -------------------------------------------------------
+
+  const handleSelectCandidate = async (candidate) => {
+    if (isResolving || !candidate?.operationId || !onResolveCandidate) {
+      return;
+    }
+
+    try {
+      setSelectedCandidateId(candidate.operationId);
+
+      console.info("[Conflict UI] Selecting candidate:", candidate.operationId);
+
+      await onResolveCandidate(candidate.operationId, candidate.data);
+    } catch (error) {
+      console.error("[Conflict UI] Candidate resolution failed:", error);
+
+      setSelectedCandidateId(null);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
-        {/* =====================================================
+      <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+        {/* =================================================
             HEADER
-        ====================================================== */}
+        ================================================== */}
 
-        <div className="flex items-start justify-between gap-4 border-b border-border-soft px-6 py-5">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border-soft bg-white px-6 py-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-amber-600">
               Sync Conflict
@@ -153,37 +336,37 @@ export default function ConflictManager({
           </button>
         </div>
 
-        {/* =====================================================
+        {/* =================================================
             WARNING
-        ====================================================== */}
+        ================================================== */}
 
         <div className="px-6 pt-5">
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-sm leading-6 text-amber-900">
-              This patient was changed after an offline change was made. Review
-              the available versions before deciding which information should be
-              kept.
+              This patient was changed after an offline change was made.
+              Multiple versions have been preserved. Review each version before
+              deciding which information should become the final patient record.
             </p>
           </div>
         </div>
 
-        {/* =====================================================
+        {/* =================================================
             LOADING
-        ====================================================== */}
+        ================================================== */}
 
         {loadingConflicts && (
           <div className="px-6 pt-5">
             <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
               <p className="text-sm font-medium text-blue-800">
-                Checking for synchronization conflicts...
+                Loading conflict versions...
               </p>
             </div>
           </div>
         )}
 
-        {/* =====================================================
+        {/* =================================================
             ERROR
-        ====================================================== */}
+        ================================================== */}
 
         {conflictError && (
           <div className="px-6 pt-5">
@@ -195,17 +378,17 @@ export default function ConflictManager({
           </div>
         )}
 
-        {/* =====================================================
-            DEBUG / STATUS
-        ====================================================== */}
+        {/* =================================================
+            CONFLICT SUMMARY
+        ================================================== */}
 
-        {!loadingConflicts && !conflictError && (
+        {!loadingConflicts && !conflictError && activeConflict && (
           <div className="px-6 pt-5">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">
-                    Pending conflict groups: {conflicts.length}
+                  <p className="text-sm font-semibold text-slate-800">
+                    Pending conflict group
                   </p>
 
                   <p className="mt-1 text-xs text-slate-500">
@@ -213,20 +396,18 @@ export default function ConflictManager({
                   </p>
                 </div>
 
-                {activeConflict && (
-                  <div className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                    {candidates.length} version
-                    {candidates.length !== 1 ? "s" : ""} found
-                  </div>
-                )}
+                <div className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-700">
+                  {candidates.length} version
+                  {candidates.length !== 1 ? "s" : ""} found
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* =====================================================
-            MULTI-USER CANDIDATE SUMMARY
-        ====================================================== */}
+        {/* =================================================
+            VERSION SUMMARY
+        ================================================== */}
 
         {activeConflict && candidates.length > 0 && (
           <div className="px-6 pt-5">
@@ -236,122 +417,193 @@ export default function ConflictManager({
               </p>
 
               <p className="mt-1 text-sm text-indigo-700">
-                The server currently has{" "}
-                <strong>{serverCandidates.length}</strong> server version
+                The system has <strong>{serverCandidates.length}</strong> server
+                version
                 {serverCandidates.length !== 1 ? "s" : ""} and{" "}
                 <strong>{offlineCandidates.length}</strong> offline version
                 {offlineCandidates.length !== 1 ? "s" : ""}.
               </p>
 
-              <p className="mt-2 text-xs text-indigo-600">
-                All offline submissions are preserved so they can be reviewed
-                before a final version is chosen.
+              <p className="mt-2 text-xs leading-5 text-indigo-600">
+                Every offline submission is preserved. Selecting one version
+                will make it the final version saved for this patient.
               </p>
             </div>
           </div>
         )}
 
-        {/* =====================================================
-            ALL BACKEND CANDIDATES
-        ====================================================== */}
+        {/* =================================================
+            CANDIDATE LIST
+        ================================================== */}
 
         {activeConflict && candidates.length > 0 && (
-          <div className="px-6 pb-6">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="mb-4">
-                <h3 className="font-bold text-slate-900">
-                  Stored Conflict Versions
-                </h3>
+          <div className="px-6 py-6">
+            <div className="mb-5">
+              <h3 className="text-lg font-bold text-slate-900">
+                Choose the version to keep
+              </h3>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  These are all versions currently preserved by the
-                  synchronization system.
-                </p>
-              </div>
+              <p className="mt-1 text-sm text-slate-500">
+                Review the fields, user, and time of each submission before
+                making the final decision.
+              </p>
+            </div>
 
-              <div className="space-y-4">
-                {candidates.map((candidate, index) => {
-                  const isServer = candidate.source === "server";
+            <div className="space-y-5">
+              {candidates.map((candidate, index) => {
+                const isServer = candidate.source === "server";
 
-                  const owner = candidate.ownerKey || "Unknown user";
+                const ownerName = getOwnerName(candidate.ownerKey);
 
-                  const operation =
-                    candidate.operationId || `Candidate ${index + 1}`;
-                  <button
-                    type="button"
-                    disabled={isResolving}
-                    onClick={() => {
-                      onResolveCandidate(candidate.operationId, candidate.data);
-                    }}
-                    className={`mt-4 w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                      isServer
-                        ? "bg-purple-600 text-white hover:bg-purple-700"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
-                  >
-                    {isResolving ? "Resolving..." : "Use This Version"}
-                  </button>;
-                  return (
-                    <div
-                      key={
-                        candidate.operationId || `${candidate.source}-${index}`
-                      }
-                      className={`rounded-2xl border p-4 ${
-                        isServer
+                const candidateDate =
+                  candidate.createdAt ||
+                  candidate.updatedAt ||
+                  candidate.baseUpdatedAt;
+
+                const isSelected =
+                  selectedCandidateId === candidate.operationId;
+
+                return (
+                  <div
+                    key={
+                      candidate.operationId || `${candidate.source}-${index}`
+                    }
+                    className={`rounded-2xl border p-5 transition ${
+                      isSelected
+                        ? "border-primary-500 ring-2 ring-primary-100"
+                        : isServer
                           ? "border-purple-200 bg-purple-50"
                           : "border-blue-200 bg-blue-50"
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p
-                            className={`text-sm font-bold ${
+                    }`}
+                  >
+                    {/* ---------------------------------------
+                        CANDIDATE HEADER
+                    ---------------------------------------- */}
+
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`h-2.5 w-2.5 rounded-full ${
+                              isServer ? "bg-purple-500" : "bg-blue-500"
+                            }`}
+                          />
+
+                          <h4
+                            className={`text-base font-bold ${
                               isServer ? "text-purple-900" : "text-blue-900"
                             }`}
                           >
                             {isServer
                               ? "Server Version"
-                              : `Offline Version ${index}`}
-                          </p>
-
-                          {!isServer && (
-                            <p className="mt-1 text-xs text-blue-700">
-                              User: {owner}
-                            </p>
-                          )}
-
-                          <p className="mt-1 text-xs text-slate-500">
-                            Operation: {operation}
-                          </p>
+                              : `Offline Version ${
+                                  offlineCandidates.indexOf(candidate) + 1
+                                }`}
+                          </h4>
                         </div>
 
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            isServer
-                              ? "bg-purple-100 text-purple-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {isServer ? "Server" : "Offline"}
-                        </span>
+                        {/* User */}
+
+                        <div className="mt-3 grid gap-1 text-xs text-slate-600">
+                          <p>
+                            <span className="font-semibold">User:</span>{" "}
+                            {isServer ? "Current Server Data" : ownerName}
+                          </p>
+
+                          {/* Date */}
+
+                          <p>
+                            <span className="font-semibold">Date & Time:</span>{" "}
+                            {formatDateTime(candidateDate)}
+                          </p>
+
+                          {/* Base version */}
+
+                          {candidate.baseUpdatedAt && (
+                            <p>
+                              <span className="font-semibold">Based on:</span>{" "}
+                              {formatDateTime(candidate.baseUpdatedAt)}
+                            </p>
+                          )}
+                        </div>
                       </div>
 
-                      <pre className="mt-4 max-h-64 overflow-auto rounded-xl bg-white p-4 text-xs leading-5 text-slate-800">
-                        {JSON.stringify(candidate.data || {}, null, 2)}
-                      </pre>
+                      <span
+                        className={`self-start rounded-full px-3 py-1 text-xs font-semibold ${
+                          isServer
+                            ? "bg-purple-100 text-purple-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        {isServer ? "Server" : "Offline"}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
+
+                    {/* ---------------------------------------
+                        DATA FIELDS
+                    ---------------------------------------- */}
+
+                    <div className="mt-5">
+                      <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">
+                        Patient Data
+                      </p>
+
+                      <CandidateFields data={candidate.data} />
+                    </div>
+
+                    {/* ---------------------------------------
+                        SELECT BUTTON
+                    ---------------------------------------- */}
+
+                    <button
+                      type="button"
+                      disabled={isResolving || !candidate.operationId}
+                      onClick={() => handleSelectCandidate(candidate)}
+                      className={`mt-5 w-full rounded-xl px-4 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                        isServer
+                          ? "bg-purple-600 text-white hover:bg-purple-700"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
+                    >
+                      {isSelected && isResolving
+                        ? "Saving this version..."
+                        : "Use This Version"}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* =====================================================
-            ACTIONS
-        ====================================================== */}
+        {/* =================================================
+            NO CONFLICT DATA
+        ================================================== */}
 
-        <div className="flex flex-wrap justify-end gap-3 border-t border-border-soft px-6 py-5">
+        {!loadingConflicts && !conflictError && !activeConflict && (
+          <div className="px-6 py-10">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center">
+              <p className="font-semibold text-slate-700">
+                No pending conflict versions were found.
+              </p>
+
+              <p className="mt-1 text-sm text-slate-500">
+                The conflict may already have been resolved.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* =================================================
+            FOOTER
+        ================================================== */}
+
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border-soft px-6 py-5">
+          <p className="text-xs leading-5 text-text-muted">
+            Nothing is selected automatically. The version you choose will be
+            sent to the server as the final resolution.
+          </p>
+
           <button
             type="button"
             onClick={onClose}
@@ -360,17 +612,6 @@ export default function ConflictManager({
           >
             Review Later
           </button>
-        </div>
-
-        {/* =====================================================
-            FOOTER
-        ====================================================== */}
-
-        <div className="px-6 pb-6">
-          <p className="text-center text-xs text-text-muted">
-            No changes are automatically selected at this stage. The available
-            versions are preserved until a final resolution is chosen.
-          </p>
         </div>
       </div>
     </div>
