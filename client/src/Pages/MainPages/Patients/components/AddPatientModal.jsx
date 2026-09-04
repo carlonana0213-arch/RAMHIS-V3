@@ -37,46 +37,43 @@ import DuplicatePatientModal from "./DuplicatePatientModal";
 |--------------------------------------------------------------------------
 */
 
-const createEmptyForm =
-  () => ({
-    generalInfo: {
-      name: "",
-      age: "",
-      birthdate: "",
-      sex: "",
-      insurance: "",
-      tobacco: "",
-      alcohol: "",
-      allergies: "",
-      vaccine: "",
-    },
+const createEmptyForm = () => ({
+  generalInfo: {
+    name: "",
+    age: "",
+    birthdate: "",
+    sex: "",
+    insurance: "",
+    tobacco: "",
+    alcohol: "",
+    allergies: "",
+    vaccine: "",
+  },
 
-    medicalHistory: [],
-    familyHistory: [],
+  medicalHistory: [],
+  familyHistory: [],
 
-    medicalOther: "",
-    familyOther: "",
+  medicalOther: "",
+  familyOther: "",
 
-    examination: {
-      bp: "",
-      temp: "",
-      height: "",
-      weight: "",
-      bmi: "",
-    },
+  examination: {
+    bp: "",
+    temp: "",
+    height: "",
+    weight: "",
+    bmi: "",
+  },
 
-    obstetricHistory: {},
-    perinatalHistory: {},
+  obstetricHistory: {},
+  perinatalHistory: {},
 
-    department: "",
-    initComplaint: "",
+  department: "",
+  initComplaint: "",
 
-    isPriority: false,
-  });
+  isPriority: false,
+});
 
-const getSteps = (
-  form
-) => {
+const getSteps = (form) => {
   const steps = [
     "General",
     "History",
@@ -99,7 +96,6 @@ const getSteps = (
 
   return steps;
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -135,6 +131,18 @@ const AddPatientModal = ({
     alertMessage,
     setAlertMessage,
   ] = useState("");
+
+  /*
+   * Determines whether closing the alert should also
+   * close the Add Patient modal.
+   *
+   * false = validation/error alert
+   * true  = successful save alert
+   */
+  const [
+    closeAfterAlert,
+    setCloseAfterAlert,
+  ] = useState(false);
 
   const [
     confirmState,
@@ -254,9 +262,8 @@ const AddPatientModal = ({
         );
 
         /*
-         * Don't block registration
-         * when the duplicate search
-         * itself fails.
+         * Don't block registration if the
+         * duplicate search itself fails.
          */
         return false;
       }
@@ -269,80 +276,91 @@ const AddPatientModal = ({
   */
 
   const buildPayload = () => {
-  const medicalHistory = Array.isArray(
-    form.medicalHistory
-  )
-    ? form.medicalHistory.map((item) =>
-        item === "Other"
-          ? form.medicalOther || "Other"
-          : item
+    const medicalHistory =
+      Array.isArray(
+        form.medicalHistory
       )
-    : [];
+        ? form.medicalHistory.map(
+            (item) =>
+              item === "Other"
+                ? form.medicalOther ||
+                  "Other"
+                : item
+          )
+        : [];
 
-  const familyHistory = Array.isArray(
-    form.familyHistory
-  )
-    ? form.familyHistory.map((item) =>
-        item === "Other"
-          ? form.familyOther || "Other"
-          : item
+    const familyHistory =
+      Array.isArray(
+        form.familyHistory
       )
-    : [];
+        ? form.familyHistory.map(
+            (item) =>
+              item === "Other"
+                ? form.familyOther ||
+                  "Other"
+                : item
+          )
+        : [];
 
-  return {
-    generalInfo: {
-      ...form.generalInfo,
+    return {
+      generalInfo: {
+        ...form.generalInfo,
 
-      name:
-        form.generalInfo?.name || "",
+        name:
+          form.generalInfo?.name ||
+          "",
 
-      age:
-        form.generalInfo?.age === ""
-          ? null
-          : Number(
-              form.generalInfo?.age
-            ),
-    },
+        age:
+          form.generalInfo?.age ===
+          ""
+            ? null
+            : Number(
+                form.generalInfo?.age
+              ),
+      },
 
-    examination: {
-      ...form.examination,
-    },
+      examination: {
+        ...form.examination,
+      },
 
-    medicalHistory,
+      medicalHistory,
 
-    familyHistory,
+      familyHistory,
 
-    obstetricHistory:
-      form.obstetricHistory || {},
+      obstetricHistory:
+        form.obstetricHistory ||
+        {},
 
-    perinatalHistory:
-      form.perinatalHistory || {},
+      perinatalHistory:
+        form.perinatalHistory ||
+        {},
 
-    department:
-      form.department || "",
+      department:
+        form.department || "",
 
-    initComplaint:
-      form.initComplaint || "",
+      initComplaint:
+        form.initComplaint || "",
 
-    isPriority:
-      Boolean(form.isPriority),
+      isPriority:
+        Boolean(form.isPriority),
 
-    location:
-      ongoingEvent?.location || "",
+      location:
+        ongoingEvent?.location ||
+        "",
 
-    missionDate:
-      ongoingEvent?.date ||
-      new Date(),
+      missionDate:
+        ongoingEvent?.date ||
+        new Date(),
 
-    eventId:
-      ongoingEvent?._id || "",
+      eventId:
+        ongoingEvent?._id || "",
 
-    eventTitle:
-      ongoingEvent?.title || "",
+      eventTitle:
+        ongoingEvent?.title || "",
 
-    status: "waiting",
+      status: "waiting",
+    };
   };
-};
 
   /*
   |--------------------------------------------------------------------------
@@ -350,124 +368,229 @@ const AddPatientModal = ({
   |--------------------------------------------------------------------------
   */
 
-const handleSubmit = async () => {
+  const handleSubmit =
+    async () => {
+      const missingFields = [];
 
-  const missingFields = [];
+      const name =
+        form.generalInfo?.name?.trim();
 
-  const name = form.generalInfo?.name?.trim();
-  const sex = form.generalInfo?.sex?.trim();
-  const birthdate = form.generalInfo?.birthdate?.trim();
-  const department = form.department?.trim();
+      const sex =
+        form.generalInfo?.sex?.trim();
 
-  if (!name) {
-    missingFields.push("Step 1 — Name is required.");
-  }
+      const birthdate =
+        form.generalInfo?.birthdate?.trim();
 
-  if (!sex) {
-    missingFields.push("Step 1 — Gender is required.");
-  }
+      const department =
+        form.department?.trim();
 
-  if (!birthdate) {
-    missingFields.push("Step 1 — Birthday is required.");
-  }
+      if (!name) {
+        missingFields.push({
+          step: "Step 1",
+          message:
+            "Name is required.",
+        });
+      }
 
-  if (!department) {
-    missingFields.push("Step 4 — Department is required.");
-  }
+      if (!sex) {
+        missingFields.push({
+          step: "Step 1",
+          message:
+            "Gender is required.",
+        });
+      }
 
-  /*
-  |--------------------------------------------------------------------------
-  | STOP SUBMISSION IF REQUIRED FIELDS ARE MISSING
-  |--------------------------------------------------------------------------
-  */
+      if (!birthdate) {
+        missingFields.push({
+          step: "Step 1",
+          message:
+            "Birthday is required.",
+        });
+      }
 
-  if (missingFields.length > 0) {
-    setAlertMessage(
-      `Required Fields Missing:\n\n${missingFields.join("\n")}\n\nPlease complete the required fields before submitting the patient.`
-    );
+      if (!department) {
+        missingFields.push({
+          step: "Step 4",
+          message:
+            "Department is required.",
+        });
+      }
 
-    return;
-  }
+      /*
+      |--------------------------------------------------------------------------
+      | STOP SUBMISSION IF REQUIRED FIELDS ARE MISSING
+      |--------------------------------------------------------------------------
+      */
 
-  /*
-  |--------------------------------------------------------------------------
-  | DUPLICATE PATIENT CHECK
-  |--------------------------------------------------------------------------
-  */
+      if (
+        missingFields.length > 0
+      ) {
+        const step1Fields =
+          missingFields
+            .filter(
+              (field) =>
+                field.step ===
+                "Step 1"
+            )
+            .map(
+              (field) =>
+                `- ${field.message}`
+            )
+            .join("\n");
 
-  if (!editingExistingPatient && !duplicateChecked) {
-    const duplicateFound =
-      await checkDuplicatePatient();
+        const step4Fields =
+          missingFields
+            .filter(
+              (field) =>
+                field.step ===
+                "Step 4"
+            )
+            .map(
+              (field) =>
+                `- ${field.message}`
+            )
+            .join("\n");
 
-    /*
-     * STOP if duplicate patient was found.
-     * The duplicate modal will handle the next action.
-     */
-    if (duplicateFound) {
-      return;
-    }
+        const sections = [];
 
-    /*
-     * No duplicate found.
-     * Allow the actual submission.
-     */
-    setDuplicateChecked(true);
-  }
+        if (step1Fields) {
+          sections.push(
+            `Step 1\n\n${step1Fields}`
+          );
+        }
 
-  /*
-  |--------------------------------------------------------------------------
-  | SAVE PATIENT
-  |--------------------------------------------------------------------------
-  */
+        if (step4Fields) {
+          sections.push(
+            `Step 4\n\n${step4Fields}`
+          );
+        }
 
-  try {
-    const payload = buildPayload();
+        /*
+         * IMPORTANT:
+         * This is only a validation alert.
+         * Closing it must NOT close the
+         * Add Patient modal.
+         */
+        setCloseAfterAlert(false);
 
-    if (
-      editingExistingPatient &&
-      matchedPatient?._id
-    ) {
-      await updatePatient(
-        matchedPatient._id,
-        payload
-      );
+        setAlertMessage(
+          `Required Fields Missing:\n\n${sections.join(
+            "\n\n"
+          )}\n\nPlease complete the required fields before submitting the patient.`
+        );
 
-      setAlertMessage(
-        "Patient record updated and queued successfully."
-      );
-    } else {
-      console.log(
-        "🚨 addPatient is being called",
-        payload
-      );
+        return;
+      }
 
-      await addPatient(payload);
+      /*
+      |--------------------------------------------------------------------------
+      | DUPLICATE PATIENT CHECK
+      |--------------------------------------------------------------------------
+      */
 
-      setAlertMessage(
-        "Patient added to the queue successfully."
-      );
-    }
+      if (
+        !editingExistingPatient &&
+        !duplicateChecked
+      ) {
+        const duplicateFound =
+          await checkDuplicatePatient();
 
-    /*
-     * Reset duplicate-flow state after successful save.
-     */
-    setDuplicateChecked(false);
-    setEditingExistingPatient(false);
+        /*
+         * Stop here if duplicate was found.
+         * DuplicatePatientModal handles the next action.
+         */
+        if (duplicateFound) {
+          return;
+        }
 
-  } catch (error) {
-    console.error(
-      "Failed to save patient:",
-      error
-    );
+        /*
+         * No duplicate found.
+         * Allow actual submission.
+         */
+        setDuplicateChecked(true);
+      }
 
-    setDuplicateChecked(false);
+      /*
+      |--------------------------------------------------------------------------
+      | SAVE PATIENT
+      |--------------------------------------------------------------------------
+      */
 
-    setAlertMessage(
-      error?.message ||
-        "Failed to save patient."
-    );
-  }
-};
+      try {
+        const payload =
+          buildPayload();
+
+        if (
+          editingExistingPatient &&
+          matchedPatient?._id
+        ) {
+          await updatePatient(
+            matchedPatient._id,
+            payload
+          );
+
+          /*
+           * Successful save:
+           * Alert can close the parent modal.
+           */
+          setCloseAfterAlert(true);
+
+          setAlertMessage(
+            "Patient record updated and queued successfully."
+          );
+        } else {
+          console.log(
+            "🚨 addPatient is being called",
+            payload
+          );
+
+          await addPatient(
+            payload
+          );
+
+          /*
+           * Successful save:
+           * Alert can close the parent modal.
+           */
+          setCloseAfterAlert(true);
+
+          setAlertMessage(
+            "Patient added to the queue successfully."
+          );
+        }
+
+        /*
+         * Reset duplicate-flow state.
+         */
+        setDuplicateChecked(
+          false
+        );
+
+        setEditingExistingPatient(
+          false
+        );
+      } catch (error) {
+        console.error(
+          "Failed to save patient:",
+          error
+        );
+
+        /*
+         * Error alert must keep the
+         * Add Patient modal open.
+         */
+        setCloseAfterAlert(false);
+
+        setDuplicateChecked(
+          false
+        );
+
+        setAlertMessage(
+          error?.message ||
+            "Failed to save patient."
+        );
+      }
+    };
 
   /*
   |--------------------------------------------------------------------------
@@ -534,6 +657,11 @@ const handleSubmit = async () => {
           false
         );
 
+        /*
+         * Reusing the patient was successful.
+         */
+        setCloseAfterAlert(true);
+
         setAlertMessage(
           "Existing patient record added to the current queue."
         );
@@ -542,6 +670,12 @@ const handleSubmit = async () => {
           "Failed to reuse patient:",
           error
         );
+
+        /*
+         * Error must keep the
+         * Add Patient modal open.
+         */
+        setCloseAfterAlert(false);
 
         setAlertMessage(
           error?.message ||
@@ -556,20 +690,31 @@ const handleSubmit = async () => {
   |--------------------------------------------------------------------------
   */
 
-  const updateExistingPatientInfo = () => {
-  if (!matchedPatient?._id) {
-    return;
-  }
+  const updateExistingPatientInfo =
+    () => {
+      if (
+        !matchedPatient?._id
+      ) {
+        return;
+      }
 
-  console.log(
-    "✏️ UPDATING EXISTING PATIENT ID:",
-    matchedPatient._id
-  );
+      console.log(
+        "✏️ UPDATING EXISTING PATIENT ID:",
+        matchedPatient._id
+      );
 
-  setEditingExistingPatient(true);
-  setDuplicateChecked(true);
-  setShowDuplicateModal(false);
-};
+      setEditingExistingPatient(
+        true
+      );
+
+      setDuplicateChecked(
+        true
+      );
+
+      setShowDuplicateModal(
+        false
+      );
+    };
 
   /*
   |--------------------------------------------------------------------------
@@ -605,19 +750,34 @@ const handleSubmit = async () => {
       );
 
       setStep(0);
+
       setShowConsent(true);
+
       setShowDuplicateModal(
         false
       );
-      setMatchedPatient(null);
+
+      setMatchedPatient(
+        null
+      );
+
       setDuplicateChecked(
         false
       );
+
       setEditingExistingPatient(
         false
       );
-      setConfirmState(null);
+
+      setConfirmState(
+        null
+      );
+
       setAlertMessage("");
+
+      setCloseAfterAlert(
+        false
+      );
 
       onClose?.();
     };
@@ -700,422 +860,542 @@ const handleSubmit = async () => {
   */
 
   return (
-  <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-4">
 
-    {/* =====================================================
-        CONSENT SCREEN
-    ====================================================== */}
-    {showConsent ? (
-      <div className="w-full max-w-3xl overflow-hidden rounded-[24px] border border-border-soft bg-surface shadow-2xl">
+      {/* =====================================================
+          CONSENT SCREEN
+      ====================================================== */}
 
-        {/* CONSENT HEADER */}
-        <div className="border-b border-border-soft bg-primary-50/60 px-6 py-6 sm:px-8">
-          <div className="flex items-start gap-4">
+      {showConsent ? (
+        <div className="w-full max-w-3xl overflow-hidden rounded-[24px] border border-border-soft bg-surface shadow-2xl">
 
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-700 text-xl text-white shadow-lg shadow-primary-700/20">
-              <FiActivity />
-            </div>
+          {/* CONSENT HEADER */}
 
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary-700">
-                Patient Registration
-              </span>
+          <div className="border-b border-border-soft bg-primary-50/60 px-6 py-6 sm:px-8">
+            <div className="flex items-start gap-4">
 
-              <h3 className="mt-1 text-xl font-bold tracking-tight text-primary-900">
-                Patient Consent
-              </h3>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-700 text-xl text-white shadow-lg shadow-primary-700/20">
+                <FiActivity />
+              </div>
 
-              <p className="mt-1 text-sm text-text-muted">
-                Please read the following consent information before continuing.
-              </p>
-            </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary-700">
+                  Patient Registration
+                </span>
 
-          </div>
-        </div>
+                <h3 className="mt-1 text-xl font-bold tracking-tight text-primary-900">
+                  Patient Consent
+                </h3>
 
-        {/* CONSENT CONTENT */}
-        <div className="max-h-[62vh] overflow-y-auto px-6 py-6 sm:px-8">
-
-          <div className="rounded-2xl border border-border-soft bg-surface-muted/50 p-5 sm:p-6">
-
-            <div className="space-y-5 text-sm leading-7 text-text-secondary">
-
-              <p>
-                Ang mga boluntaryo ng RAM
-                (doktor, dentista, siruhano,
-                therapist atbp) ay maaring
-                hindi makapagbigay sa akin ng
-                lahat ng mga serbisyo na
-                kailangan ko.
-              </p>
-
-              <p>
-                <strong className="font-bold text-text-primary">
-                  PERO
-                </strong>{" "}
-                nais ko pa ring kumunsulta sa
-                RAM volunteer team at
-                tumanggap ng uri ng paggamot
-                na inaalok ngayon.
-              </p>
-
-              <p>
-                <strong className="font-bold text-text-primary">
-                  PINALALAYA
-                </strong>{" "}
-                at inilabas ko ang RAM
-                Philippines o sinumang tao o
-                mga organisasyon na kumikilos
-                para sa kanila o nag-sponsor o
-                nagboluntaryo sa klinika na
-                ito...
-              </p>
-
-              <p>
-                Ibinibigay ko sa RAM at mga
-                ahente nito ang karapatang
-                gamitin ang aking mga larawan,
-                boses, at iba pa para sa
-                advertising or publishing ng
-                mga serbisyo ng RAM.
-              </p>
+                <p className="mt-1 text-sm text-text-muted">
+                  Please read the following consent information before continuing.
+                </p>
+              </div>
 
             </div>
           </div>
 
-          {/* PRIVACY NOTICE */}
-          <div className="mt-4 flex gap-3 rounded-2xl border border-primary-100 bg-primary-50/60 p-4">
+          {/* CONSENT CONTENT */}
 
-            <FiLock className="mt-0.5 shrink-0 text-primary-700" />
+          <div className="max-h-[62vh] overflow-y-auto px-6 py-6 sm:px-8">
 
-            <div>
-              <p className="text-xs font-bold text-primary-900">
-                Patient Information
-              </p>
+            <div className="rounded-2xl border border-border-soft bg-surface-muted/50 p-5 sm:p-6">
 
-              <p className="mt-1 text-xs leading-5 text-primary-700">
-                Patient information entered in this form will be used for
-                medical record management and healthcare services.
-              </p>
+              <div className="space-y-5 text-sm leading-7 text-text-secondary">
+
+                <p>
+                  Ang mga boluntaryo ng RAM
+                  (doktor, dentista, siruhano,
+                  therapist atbp) ay maaring
+                  hindi makapagbigay sa akin ng
+                  lahat ng mga serbisyo na
+                  kailangan ko.
+                </p>
+
+                <p>
+                  <strong className="font-bold text-text-primary">
+                    PERO
+                  </strong>{" "}
+                  nais ko pa ring kumunsulta sa
+                  RAM volunteer team at
+                  tumanggap ng uri ng paggamot
+                  na inaalok ngayon.
+                </p>
+
+                <p>
+                  <strong className="font-bold text-text-primary">
+                    PINALALAYA
+                  </strong>{" "}
+                  at inilabas ko ang RAM
+                  Philippines o sinumang tao o
+                  mga organisasyon na kumikilos
+                  para sa kanila o nag-sponsor o
+                  nagboluntaryo sa klinika na
+                  ito...
+                </p>
+
+                <p>
+                  Ibinibigay ko sa RAM at mga
+                  ahente nito ang karapatang
+                  gamitin ang aking mga larawan,
+                  boses, at iba pa para sa
+                  advertising or publishing ng
+                  mga serbisyo ng RAM.
+                </p>
+
+              </div>
             </div>
 
+            {/* PRIVACY NOTICE */}
+
+            <div className="mt-4 flex gap-3 rounded-2xl border border-primary-100 bg-primary-50/60 p-4">
+
+              <FiLock className="mt-0.5 shrink-0 text-primary-700" />
+
+              <div>
+                <p className="text-xs font-bold text-primary-900">
+                  Patient Information
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-primary-700">
+                  Patient information entered in this form will be used for
+                  medical record management and healthcare services.
+                </p>
+              </div>
+
+            </div>
           </div>
-        </div>
 
-        {/* CONSENT ACTIONS */}
-        <div className="flex flex-col-reverse gap-3 border-t border-border-soft bg-surface px-6 py-5 sm:flex-row sm:items-center sm:justify-end sm:px-8">
+          {/* CONSENT ACTIONS */}
 
-          <button
-            type="button"
-            onClick={resetAndClose}
-            className="rounded-xl border border-border-soft bg-surface px-5 py-2.5 text-sm font-semibold text-text-secondary transition hover:bg-surface-muted"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowConsent(false)}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-700/20 transition hover:bg-primary-800"
-          >
-            <FiCheck />
-            I Understand, Continue
-          </button>
-
-        </div>
-      </div>
-    ) : (
-
-      /* =====================================================
-          REGISTRATION MODAL
-      ====================================================== */
-      <div className="flex h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[24px] border border-border-soft bg-surface shadow-2xl">
-
-  {/* =================================================
-      MODAL HEADER
-  ================================================= */}
-  <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border-soft bg-surface px-5 py-4 sm:px-6">
-
-    <div className="flex min-w-0 items-center gap-3">
-
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-        <FiClipboard size={19} />
-      </div>
-
-      <div className="min-w-0">
-
-        <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-          Patient Registration
-        </span>
-
-        <h2 className="truncate text-base font-bold tracking-tight text-primary-900 sm:text-lg">
-          {editingExistingPatient
-            ? "Update Patient Record"
-            : "Register Patient"}
-        </h2>
-
-        <p className="mt-0.5 text-xs text-text-muted">
-          Step {step + 1} of {steps.length}
-          <span className="mx-1.5 text-border-strong">
-            ·
-          </span>
-          {currentStep}
-        </p>
-
-      </div>
-    </div>
-
-    <button
-      type="button"
-      aria-label="Close patient registration"
-      onClick={() =>
-        setConfirmState({
-          message:
-            "Close patient registration? Unsaved changes will be lost.",
-          onConfirm:
-            resetAndClose,
-        })
-      }
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-transparent text-text-muted transition-all hover:border-border-soft hover:bg-surface-muted hover:text-status-critical-text"
-    >
-      <FiX size={19} />
-    </button>
-
-  </div>
-
-  {/* =================================================
-      PROGRESS STEPS
-  ================================================= */}
-  <div className="shrink-0 border-b border-border-soft bg-surface-muted/30 px-5 py-4 sm:px-6">
-
-    <div className="flex w-full items-start gap-0 overflow-x-auto pb-1">
-
-      {steps.map((label, index) => {
-        const isCompleted = index < step;
-        const isActive = index === step;
-
-        return (
-          <div
-            key={label}
-            className="flex min-w-[115px] flex-1 items-start last:flex-none"
-          >
+          <div className="flex flex-col-reverse gap-3 border-t border-border-soft bg-surface px-6 py-5 sm:flex-row sm:items-center sm:justify-end sm:px-8">
 
             <button
               type="button"
-              onClick={() => setStep(index)}
-              className="group flex w-full flex-col items-start text-left"
+              onClick={
+                resetAndClose
+              }
+              className="rounded-xl border border-border-soft bg-surface px-5 py-2.5 text-sm font-semibold text-text-secondary transition hover:bg-surface-muted"
             >
+              Cancel
+            </button>
 
-              <div className="flex w-full items-center">
+            <button
+              type="button"
+              onClick={() =>
+                setShowConsent(false)
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-700/20 transition hover:bg-primary-800"
+            >
+              <FiCheck />
 
-                {/* STEP NUMBER */}
-                <div
-                  className={[
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all duration-200",
-                    isCompleted
-                      ? "bg-primary-700 text-white"
-                      : isActive
-                      ? "bg-primary-700 text-white ring-4 ring-primary-100"
-                      : "border border-border-strong bg-surface text-text-muted group-hover:border-primary-300 group-hover:text-primary-700",
-                  ].join(" ")}
-                >
-                  {isCompleted ? (
-                    <FiCheck size={15} />
-                  ) : (
-                    index + 1
-                  )}
-                </div>
-
-                {/* CONNECTOR */}
-                {index < steps.length - 1 && (
-                  <div
-                    className={[
-                      "mx-2 hidden h-px flex-1 sm:block",
-                      isCompleted
-                        ? "bg-primary-400"
-                        : "bg-border-soft",
-                    ].join(" ")}
-                  />
-                )}
-
-              </div>
-
-              <span
-                className={[
-                  "mt-2 max-w-[110px] text-[10px] font-semibold leading-tight sm:text-[11px]",
-                  isActive
-                    ? "text-primary-700"
-                    : isCompleted
-                    ? "text-text-primary"
-                    : "text-text-muted",
-                ].join(" ")}
-              >
-                {label}
-              </span>
-
+              I Understand, Continue
             </button>
 
           </div>
-        );
-      })}
-
-    </div>
-  </div>
-
-  {/* =================================================
-      FORM CONTENT
-  ================================================= */}
-  <div className="min-h-0 flex-1 overflow-y-auto bg-surface-muted/20">
-
-    <div className="mx-auto w-full max-w-5xl px-5 py-6 sm:px-6 sm:py-8">
-
-      {currentStep === "General" && (
-        <GeneralStep
-          form={form}
-          setForm={setForm}
-        />
-      )}
-
-      {currentStep === "History" && (
-        <HistoryStep
-          form={form}
-          setForm={setForm}
-        />
-      )}
-
-      {currentStep === "Examination" && (
-        <ExaminationStep
-          form={form}
-          setForm={setForm}
-        />
-      )}
-
-      {currentStep === "Perinatal & OB" && (
-        <PerinatalStep
-          form={form}
-          setForm={setForm}
-          handleEnterKey={handleEnterKey}
-        />
-      )}
-
-      {currentStep === "Department" && (
-        <DepartmentStep
-          form={form}
-          setForm={setForm}
-        />
-      )}
-
-      {currentStep === "Summary" && (
-        <SummaryStep
-          form={form}
-        />
-      )}
-
-    </div>
-  </div>
-
-  {/* =================================================
-      FOOTER ACTIONS
-  ================================================= */}
-  <div className="flex shrink-0 items-center justify-between gap-4 border-t border-border-soft bg-surface px-5 py-4 sm:px-6">
-
-    <div className="min-w-0">
-      {step > 0 && (
-        <button
-          type="button"
-          onClick={prev}
-          className="inline-flex items-center gap-2 rounded-xl border border-border-soft bg-surface px-4 py-2.5 text-sm font-semibold text-text-secondary transition-all hover:bg-surface-muted"
-        >
-          <FiArrowLeft />
-          <span className="hidden sm:inline">
-            Back
-          </span>
-        </button>
-      )}
-    </div>
-
-    <div className="flex items-center gap-3">
-
-      {step < steps.length - 1 ? (
-        <button
-          type="button"
-          className="next-btn inline-flex items-center gap-2 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-700/20 transition-all hover:bg-primary-800 hover:shadow-primary-700/30"
-          onClick={next}
-        >
-          Continue
-          <FiArrowRight />
-        </button>
+        </div>
       ) : (
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-700/20 transition-all hover:bg-primary-800 hover:shadow-primary-700/30"
-        >
-          <FiUserPlus />
 
-          {editingExistingPatient
-            ? "Update & Queue"
-            : "Submit Patient"}
-        </button>
+        /* =====================================================
+            REGISTRATION MODAL
+        ====================================================== */
+
+        <div className="flex h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[24px] border border-border-soft bg-surface shadow-2xl">
+
+          {/* =================================================
+              MODAL HEADER
+          ================================================= */}
+
+          <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border-soft bg-surface px-5 py-4 sm:px-6">
+
+            <div className="flex min-w-0 items-center gap-3">
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+                <FiClipboard size={19} />
+              </div>
+
+              <div className="min-w-0">
+
+                <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                  Patient Registration
+                </span>
+
+                <h2 className="truncate text-base font-bold tracking-tight text-primary-900 sm:text-lg">
+                  {editingExistingPatient
+                    ? "Update Patient Record"
+                    : "Register Patient"}
+                </h2>
+
+                <p className="mt-0.5 text-xs text-text-muted">
+                  Step {step + 1} of{" "}
+                  {steps.length}
+
+                  <span className="mx-1.5 text-border-strong">
+                    ·
+                  </span>
+
+                  {currentStep}
+                </p>
+
+              </div>
+            </div>
+
+            <button
+              type="button"
+              aria-label="Close patient registration"
+              onClick={() =>
+                setConfirmState({
+                  message:
+                    "Close patient registration? Unsaved changes will be lost.",
+                  onConfirm:
+                    resetAndClose,
+                })
+              }
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-transparent text-text-muted transition-all hover:border-border-soft hover:bg-surface-muted hover:text-status-critical-text"
+            >
+              <FiX size={19} />
+            </button>
+
+          </div>
+
+          {/* =================================================
+              PROGRESS STEPS
+          ================================================= */}
+
+          <div className="shrink-0 border-b border-border-soft bg-surface-muted/30 px-5 py-4 sm:px-6">
+
+            <div className="flex w-full items-start gap-0 overflow-x-auto pb-1">
+
+              {steps.map(
+                (
+                  label,
+                  index
+                ) => {
+                  const isCompleted =
+                    index < step;
+
+                  const isActive =
+                    index === step;
+
+                  return (
+                    <div
+                      key={label}
+                      className="flex min-w-[115px] flex-1 items-start last:flex-none"
+                    >
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStep(index)
+                        }
+                        className="group flex w-full flex-col items-start text-left"
+                      >
+
+                        <div className="flex w-full items-center">
+
+                          {/* STEP NUMBER */}
+
+                          <div
+                            className={[
+                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all duration-200",
+
+                              isCompleted
+                                ? "bg-primary-700 text-white"
+                                : isActive
+                                ? "bg-primary-700 text-white ring-4 ring-primary-100"
+                                : "border border-border-strong bg-surface text-text-muted group-hover:border-primary-300 group-hover:text-primary-700",
+                            ].join(
+                              " "
+                            )}
+                          >
+                            {isCompleted ? (
+                              <FiCheck
+                                size={
+                                  15
+                                }
+                              />
+                            ) : (
+                              index + 1
+                            )}
+                          </div>
+
+                          {/* CONNECTOR */}
+
+                          {index <
+                            steps.length -
+                              1 && (
+                            <div
+                              className={[
+                                "mx-2 hidden h-px flex-1 sm:block",
+
+                                isCompleted
+                                  ? "bg-primary-400"
+                                  : "bg-border-soft",
+                              ].join(
+                                " "
+                              )}
+                            />
+                          )}
+
+                        </div>
+
+                        <span
+                          className={[
+                            "mt-2 max-w-[110px] text-[10px] font-semibold leading-tight sm:text-[11px]",
+
+                            isActive
+                              ? "text-primary-700"
+                              : isCompleted
+                              ? "text-text-primary"
+                              : "text-text-muted",
+                          ].join(
+                            " "
+                          )}
+                        >
+                          {label}
+                        </span>
+
+                      </button>
+
+                    </div>
+                  );
+                }
+              )}
+
+            </div>
+          </div>
+
+          {/* =================================================
+              FORM CONTENT
+          ================================================= */}
+
+          <div className="min-h-0 flex-1 overflow-y-auto bg-surface-muted/20">
+
+            <div className="mx-auto w-full max-w-5xl px-5 py-6 sm:px-6 sm:py-8">
+
+              {currentStep ===
+                "General" && (
+                <GeneralStep
+                  form={form}
+                  setForm={
+                    setForm
+                  }
+                />
+              )}
+
+              {currentStep ===
+                "History" && (
+                <HistoryStep
+                  form={form}
+                  setForm={
+                    setForm
+                  }
+                />
+              )}
+
+              {currentStep ===
+                "Examination" && (
+                <ExaminationStep
+                  form={form}
+                  setForm={
+                    setForm
+                  }
+                />
+              )}
+
+              {currentStep ===
+                "Perinatal & OB" && (
+                <PerinatalStep
+                  form={form}
+                  setForm={
+                    setForm
+                  }
+                  handleEnterKey={
+                    handleEnterKey
+                  }
+                />
+              )}
+
+              {currentStep ===
+                "Department" && (
+                <DepartmentStep
+                  form={form}
+                  setForm={
+                    setForm
+                  }
+                />
+              )}
+
+              {currentStep ===
+                "Summary" && (
+                <SummaryStep
+                  form={form}
+                />
+              )}
+
+            </div>
+          </div>
+
+          {/* =================================================
+              FOOTER ACTIONS
+          ================================================= */}
+
+          <div className="flex shrink-0 items-center justify-between gap-4 border-t border-border-soft bg-surface px-5 py-4 sm:px-6">
+
+            <div className="min-w-0">
+
+              {step > 0 && (
+                <button
+                  type="button"
+                  onClick={prev}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border-soft bg-surface px-4 py-2.5 text-sm font-semibold text-text-secondary transition-all hover:bg-surface-muted"
+                >
+                  <FiArrowLeft />
+
+                  <span className="hidden sm:inline">
+                    Back
+                  </span>
+                </button>
+              )}
+
+            </div>
+
+            <div className="flex items-center gap-3">
+
+              {step <
+              steps.length - 1 ? (
+                <button
+                  type="button"
+                  className="next-btn inline-flex items-center gap-2 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-700/20 transition-all hover:bg-primary-800 hover:shadow-primary-700/30"
+                  onClick={next}
+                >
+                  Continue
+
+                  <FiArrowRight />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={
+                    handleSubmit
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-700/20 transition-all hover:bg-primary-800 hover:shadow-primary-700/30"
+                >
+                  <FiUserPlus />
+
+                  {editingExistingPatient
+                    ? "Update & Queue"
+                    : "Submit Patient"}
+                </button>
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* =====================================================
+          DUPLICATE PATIENT MODAL
+      ====================================================== */}
+
+      {showDuplicateModal &&
+        matchedPatient && (
+          <DuplicatePatientModal
+            patient={
+              matchedPatient
+            }
+
+            onReuse={() =>
+              setConfirmState({
+                message:
+                  "Reuse this patient record and add them to the current medical mission queue?",
+
+                onConfirm:
+                  async () => {
+                    setConfirmState(
+                      null
+                    );
+
+                    await reusePatientRecord();
+                  },
+              })
+            }
+
+            onUpdate={
+              updateExistingPatientInfo
+            }
+
+            onCreateNew={
+              createNewPatientAnyway
+            }
+
+            onCancel={() => {
+              resetAndClose();
+            }}
+          />
+        )}
+
+      {/* =====================================================
+          CONFIRM MODAL
+      ====================================================== */}
+
+      {confirmState && (
+        <ConfirmModal
+          message={
+            confirmState.message
+          }
+
+          onConfirm={
+            confirmState.onConfirm
+          }
+
+          onCancel={
+            resetAndClose
+          }
+        />
+      )}
+
+      {/* =====================================================
+          ALERT MODAL
+      ====================================================== */}
+
+      {alertMessage && (
+        <AlertModal
+          message={
+            alertMessage
+          }
+
+          onClose={() => {
+            const shouldClose =
+              closeAfterAlert;
+
+            /*
+             * Always remove the alert first.
+             */
+            setAlertMessage("");
+
+            setCloseAfterAlert(
+              false
+            );
+
+            /*
+             * ONLY successful operations
+             * close the Add Patient modal.
+             *
+             * Validation/error alerts simply
+             * disappear and leave the form open.
+             */
+            if (shouldClose) {
+              resetAndClose();
+            }
+          }}
+        />
       )}
 
     </div>
-
-  </div>
-</div>
-    )}
-
-    {/* =====================================================
-        DUPLICATE PATIENT MODAL
-    ====================================================== */}
-    {showDuplicateModal && matchedPatient && (
-      <DuplicatePatientModal
-        patient={matchedPatient}
-        onReuse={() =>
-          setConfirmState({
-            message:
-              "Reuse this patient record and add them to the current medical mission queue?",
-
-            onConfirm: async () => {
-              setConfirmState(null);
-              await reusePatientRecord();
-            },
-          })
-        }
-        onUpdate={updateExistingPatientInfo}
-        onCreateNew={createNewPatientAnyway}
-        onCancel={() => {
-          resetAndClose();
-        }}
-      />
-    )}
-
-    {/* =====================================================
-        CONFIRM MODAL
-    ====================================================== */}
-    {confirmState && (
-      <ConfirmModal
-        message={confirmState.message}
-        onConfirm={confirmState.onConfirm}
-        onCancel={resetAndClose}
-      />
-    )}
-
-    {/* =====================================================
-        ALERT MODAL
-    ====================================================== */}
-    {alertMessage && (
-      <AlertModal
-        message={alertMessage}
-        onClose={() => {
-          setAlertMessage("");
-          resetAndClose();
-        }}
-      />
-    )}
-
-  </div>
-);
+  );
 };
 
 export default AddPatientModal;

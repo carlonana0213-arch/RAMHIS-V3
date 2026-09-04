@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   FaCalendarAlt,
-  FaEye,
   FaMapMarkerAlt,
   FaPlus,
   FaUsers,
@@ -39,6 +38,14 @@ const TABS = [
   "Completed",
   "Cancelled",
 ];
+
+const TAB_WIDTHS = {
+  All: "w-[64px]",
+  Upcoming: "w-[92px]",
+  Ongoing: "w-[82px]",
+  Completed: "w-[96px]",
+  Cancelled: "w-[92px]",
+};
 
 const EventManagement = () => {
   const [events, setEvents] = useState([]);
@@ -239,7 +246,10 @@ const EventManagement = () => {
         await fetchEvents();
 
       if (response?.data) {
-        setSelectedEvent(response.data);
+        setSelectedEvent(
+          response.data
+        );
+
         return;
       }
 
@@ -334,42 +344,64 @@ const EventManagement = () => {
     }
   };
 
-return (
-<main className="min-h-full w-full bg-slate-50 px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+  return (
+    <main className="min-h-[calc(100vh+1px)] bg-slate-50 px-4 py-5 sm:px-6 lg:px-8">
 
-<div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
+      <div className="mx-auto max-w-[1600px] space-y-5">
 
-{/* PAGE HEADER */}
-<div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-  <div className="flex items-center gap-3">
-    <div className="mt-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-      <FaCalendarAlt size={21} />
-    </div>
+        {/* ======================================================
+            PAGE HEADER
+        ====================================================== */}
 
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-        Mission Management
-      </p>
+        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
 
-      <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
-        Event Management
-      </h1>
+          <div className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
 
-      <p className="mt-1 text-sm text-text-muted">
-        Create, manage, and monitor community health missions.
-      </p>
-    </div>
-  </div>
+            <div>
 
-  <button
-    type="button"
-    onClick={handleCreateEvent}
-    className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl bg-primary-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 sm:self-auto"
-  >
-    <FaPlus size={14} />
-    Create New Event
-  </button>
-</div>
+              <div className="mb-2 flex items-center gap-2">
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
+
+                  <FaCalendarAlt
+                    size={18}
+                  />
+
+                </div>
+
+                <span className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary-700">
+                  Mission Management
+                </span>
+
+              </div>
+
+              <h1 className="text-2xl font-extrabold tracking-tight text-text-primary sm:text-3xl">
+                Event Management
+              </h1>
+
+              <p className="mt-1 text-sm font-medium text-text-muted">
+                Create, manage, and monitor community health missions.
+              </p>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={
+                handleCreateEvent
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-400/20 active:scale-[0.98]"
+            >
+
+              <FaPlus size={14} />
+
+              Create New Event
+
+            </button>
+
+          </div>
+
+        </section>
 
         {/* ======================================================
             STATISTICS
@@ -379,29 +411,53 @@ return (
 
           <StatCard
             label="Total Events"
-            value={statistics.total}
-            icon={<FaCalendarAlt size={18} />}
+            value={
+              statistics.total
+            }
+            icon={
+              <FaCalendarAlt
+                size={18}
+              />
+            }
             iconClass="bg-primary-50 text-primary-700"
           />
 
           <StatCard
             label="Upcoming"
-            value={statistics.upcoming}
-            icon={<FaCalendarAlt size={18} />}
+            value={
+              statistics.upcoming
+            }
+            icon={
+              <FaCalendarAlt
+                size={18}
+              />
+            }
             iconClass="bg-indigo-50 text-indigo-700"
           />
 
           <StatCard
             label="Ongoing"
-            value={statistics.ongoing}
-            icon={<FaUsers size={18} />}
+            value={
+              statistics.ongoing
+            }
+            icon={
+              <FaUsers
+                size={18}
+              />
+            }
             iconClass="bg-status-stable-bg text-status-stable-text"
           />
 
           <StatCard
             label="Completed"
-            value={statistics.completed}
-            icon={<FaMapMarkerAlt size={18} />}
+            value={
+              statistics.completed
+            }
+            icon={
+              <FaMapMarkerAlt
+                size={18}
+              />
+            }
             iconClass="bg-slate-100 text-slate-700"
           />
 
@@ -413,171 +469,176 @@ return (
 
         <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
 
-          {/* TABLE HEADER */}
+          {/* ====================================================
+              TABLE HEADER
+          ==================================================== */}
 
           <div className="flex flex-col gap-4 border-b border-border p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
 
-            <div>
+            <div className="min-w-0">
 
               <h2 className="text-lg font-extrabold text-text-primary">
-
                 Events
-
               </h2>
 
               <p className="mt-1 text-sm text-text-muted">
-
                 Manage your health missions and events.
-
               </p>
 
             </div>
 
-            {/* STATUS TABS */}
+            {/* ==================================================
+                FILTERS
+            ================================================== */}
 
-            <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
+            <div className="flex w-full items-center justify-end gap-2 lg:w-auto lg:shrink-0">
 
-              {TABS.map((tab) => (
-
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() =>
-                    setActiveTab(tab)
-                  }
-                  className={`shrink-0 rounded-xl px-4 py-2 text-xs font-bold transition ${
-                    activeTab === tab
-                      ? "bg-blue-950 text-white shadow-sm"
-                      : "border border-border bg-surface text-text-secondary hover:bg-slate-50"
-                  }`}
-                >
-
-                  {tab}
-
-                </button>
-
-              ))}
+              {TABS.map(
+                (tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() =>
+                      setActiveTab(
+                        tab
+                      )
+                    }
+                    className={`${TAB_WIDTHS[tab]} inline-flex shrink-0 items-center justify-center rounded-xl border px-3 py-2.5 text-xs font-bold transition-all ${
+                      activeTab === tab
+                        ? "border-blue-950 bg-blue-950 text-white shadow-sm"
+                        : "border-border bg-surface text-text-secondary hover:border-primary-200 hover:bg-primary-50 hover:text-primary-700"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                )
+              )}
 
             </div>
 
           </div>
 
-          {/* ERROR */}
-
-          {error && (
-
-            <div className="border-b border-red-100 bg-status-critical-bg px-5 py-4 text-sm font-medium text-status-critical-text">
-
-              {error}
-
-            </div>
-
-          )}
-
-          {/* TABLE */}
+          {/* ====================================================
+              TABLE
+          ==================================================== */}
 
           <div className="overflow-x-auto">
 
-            <table className="w-full min-w-[1050px]">
+            <table className="w-full min-w-[1050px] table-fixed">
+
+              {/* ==================================================
+                  FIXED COLUMN WIDTHS
+              ================================================== */}
+
+              <colgroup>
+
+                <col className="w-[25%]" />
+
+                <col className="w-[12%]" />
+
+                <col className="w-[25%]" />
+
+                <col className="w-[14%]" />
+
+                <col className="w-[14%]" />
+
+                <col className="w-[10%]" />
+
+              </colgroup>
+
+              {/* ==================================================
+                  TABLE HEAD
+              ================================================== */}
 
               <thead className="border-b border-border bg-slate-50">
 
                 <tr>
 
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
-
+                  <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
                     Event
-
                   </th>
 
-                  <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
-
+                  <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
                     Date & Time
-
                   </th>
 
-                  <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
-
+                  <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
                     Location
-
                   </th>
 
-                  <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
-
+                  <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
                     Type
-
                   </th>
 
-                  <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
-
+                  <th className="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-text-muted">
                     Status
-
                   </th>
 
-                  <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wide text-text-muted">
-
+                  <th className="px-5 py-4 text-center text-xs font-bold uppercase tracking-wide text-text-muted">
                     Participants
-
-                  </th>
-
-                  <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wide text-text-muted">
-
-                    Action
-
                   </th>
 
                 </tr>
 
               </thead>
 
+              {/* ==================================================
+                  TABLE BODY
+              ================================================== */}
+
               <tbody className="divide-y divide-border-soft">
+
+                {/* ==================================================
+                    LOADING
+                ================================================== */}
 
                 {loading ? (
 
                   <tr>
 
                     <td
-                      colSpan={7}
-                      className="px-6 py-16 text-center"
+                      colSpan={6}
+                      className="px-5 py-16 text-center"
                     >
 
                       <div className="inline-flex items-center gap-3 text-sm font-medium text-text-muted">
-
                         Loading events...
-
                       </div>
 
                     </td>
 
                   </tr>
 
-                ) : filteredEvents.length === 0 ? (
+                ) : filteredEvents.length ===
+                  0 ? (
+
+                  /* ==================================================
+                     EMPTY STATE
+                  ================================================== */
 
                   <tr>
 
                     <td
-                      colSpan={7}
-                      className="px-6 py-16 text-center"
+                      colSpan={6}
+                      className="px-5 py-16 text-center"
                     >
 
                       <div className="mx-auto flex max-w-sm flex-col items-center">
 
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-text-subtle">
 
-                          <FaCalendarAlt size={20} />
+                          <FaCalendarAlt
+                            size={20}
+                          />
 
                         </div>
 
                         <p className="mt-4 text-sm font-bold text-slate-700">
-
                           No events found
-
                         </p>
 
                         <p className="mt-1 text-xs text-text-muted">
-
                           No events are available for this status.
-
                         </p>
 
                       </div>
@@ -588,28 +649,47 @@ return (
 
                 ) : (
 
+                  /* ==================================================
+                     EVENTS
+                  ================================================== */
+
                   filteredEvents.map(
                     (event) => (
 
                       <tr
-                        key={event._id}
-                        className="transition hover:bg-slate-50/80"
+                        key={
+                          event._id
+                        }
+                        onClick={() =>
+                          handleViewEvent(
+                            event
+                          )
+                        }
+                        className="cursor-pointer transition-colors hover:bg-slate-50/80"
                       >
 
-                        <td className="px-6 py-4">
+                        {/* ==================================================
+                            EVENT
+                        ================================================== */}
 
-                          <div className="max-w-[280px]">
+                        <td className="px-5 py-4">
+
+                          <div className="min-w-0">
 
                             <p className="truncate text-sm font-bold text-text-primary">
 
-                              {event.title}
+                              {
+                                event.title
+                              }
 
                             </p>
 
                             <p className="mt-1 truncate text-xs text-text-muted">
 
-                              {event.description ||
-                                "No description provided"}
+                              {
+                                event.description ||
+                                "No description provided"
+                              }
 
                             </p>
 
@@ -617,7 +697,11 @@ return (
 
                         </td>
 
-                        <td className="px-4 py-4">
+                        {/* ==================================================
+                            DATE & TIME
+                        ================================================== */}
+
+                        <td className="px-5 py-4">
 
                           <p className="text-sm font-medium text-slate-700">
 
@@ -631,8 +715,10 @@ return (
 
                           <p className="mt-1 text-xs text-text-muted">
 
-                            {event.startTime ||
-                              "--"}
+                            {
+                              event.startTime ||
+                              "--"
+                            }
 
                             {event.endTime
                               ? ` - ${event.endTime}`
@@ -642,32 +728,48 @@ return (
 
                         </td>
 
-                        <td className="px-4 py-4">
+                        {/* ==================================================
+                            LOCATION
+                        ================================================== */}
 
-                          <p className="max-w-[200px] truncate text-sm font-medium text-slate-700">
+                        <td className="px-5 py-4">
 
-                            {event.location ||
-                              "--"}
+                          <p className="truncate text-sm font-medium text-slate-700">
+
+                            {
+                              event.location ||
+                              "--"
+                            }
 
                           </p>
 
                         </td>
 
-                        <td className="px-4 py-4">
+                        {/* ==================================================
+                            TYPE
+                        ================================================== */}
 
-                          <span className="text-sm font-medium text-text-secondary">
+                        <td className="px-5 py-4">
 
-                            {event.type ||
-                              "--"}
+                          <p className="truncate text-sm font-medium text-slate-700">
 
-                          </span>
+                            {
+                              event.type ||
+                              "Medical Mission"
+                            }
+
+                          </p>
 
                         </td>
 
-                        <td className="px-4 py-4">
+                        {/* ==================================================
+                            STATUS
+                        ================================================== */}
+
+                        <td className="px-5 py-4">
 
                           <span
-                            className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${
+                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${
                               STATUS_STYLES[
                                 event.status
                               ] ||
@@ -676,39 +778,27 @@ return (
                           >
 
                             {event.status ||
-                              "Unknown"}
+                              "--"}
 
                           </span>
 
                         </td>
 
-                        <td className="px-4 py-4 text-center">
+                        {/* ==================================================
+                            PARTICIPANTS
+                        ================================================== */}
 
-                          <span className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700">
+                        <td className="px-5 py-4 text-center">
 
-                            {event.participants
-                              ?.length || 0}
+                          <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-slate-100 px-2 py-1.5 text-xs font-bold text-slate-700">
 
-                          </span>
-
-                        </td>
-
-                        <td className="px-6 py-4 text-center">
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleViewEvent(
-                                event
-                              )
+                            {
+                              event.participants
+                                ?.length ||
+                              0
                             }
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition hover:border-blue-200 hover:bg-primary-50 hover:text-primary-700"
-                            title="View event"
-                          >
 
-                            <FaEye size={14} />
-
-                          </button>
+                          </span>
 
                         </td>
 
@@ -729,32 +819,44 @@ return (
 
       </div>
 
-      {/* ======================================================
+      {/* ==========================================================
           VIEW EVENT MODAL
-      ====================================================== */}
+      ========================================================== */}
 
       {showViewModal &&
         selectedEvent && (
 
           <EventViewModal
-            event={selectedEvent}
-            onClose={() => {
-              setShowViewModal(false);
+            event={
+              selectedEvent
+            }
 
-              setSelectedEvent(null);
+            onClose={() => {
+              setShowViewModal(
+                false
+              );
+
+              setSelectedEvent(
+                null
+              );
             }}
+
             onParticipantAction={
               handleParticipantStatus
             }
+
             onDelete={
               handleDelete
             }
+
             onRefresh={
               fetchEvents
             }
+
             onEdit={
               handleEditEvent
             }
+
             onStatusChange={
               handleStatusChange
             }
@@ -762,22 +864,29 @@ return (
 
         )}
 
-      {/* ======================================================
+      {/* ==========================================================
           CREATE / EDIT EVENT MODAL
-      ====================================================== */}
+      ========================================================== */}
 
       {showModal && (
 
         <EventModal
           event={editEvent}
-          onClose={() => {
-            setShowModal(false);
 
-            setEditEvent(null);
+          onClose={() => {
+            setShowModal(
+              false
+            );
+
+            setEditEvent(
+              null
+            );
           }}
+
           refreshEvents={
             fetchEvents
           }
+
         />
 
       )}
@@ -785,6 +894,10 @@ return (
     </main>
   );
 };
+
+// ============================================================
+// STAT CARD
+// ============================================================
 
 function StatCard({
   label,
@@ -800,15 +913,11 @@ function StatCard({
         <div>
 
           <p className="text-sm font-medium text-text-muted">
-
             {label}
-
           </p>
 
           <p className="mt-2 text-3xl font-bold tracking-tight text-text-primary">
-
             {value}
-
           </p>
 
         </div>
@@ -816,9 +925,7 @@ function StatCard({
         <div
           className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconClass}`}
         >
-
           {icon}
-
         </div>
 
       </div>
