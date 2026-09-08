@@ -10,15 +10,14 @@ function EditUserModal({ user, onClose, onSuccess }) {
   const [isEditing, setIsEditing] = useState(false);
 
   const [form, setForm] = useState({
-  ...user,
-  doctorInfo: user?.doctorInfo || {},
-  volunteerInfo: user?.volunteerInfo || {},
-});
+    ...user,
+    doctorInfo: user?.doctorInfo || {},
+    volunteerInfo: user?.volunteerInfo || {},
+  });
 
   const [alertMessage, setAlertMessage] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] =
-    useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const [saveLoading, setSaveLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
@@ -28,10 +27,10 @@ function EditUserModal({ user, onClose, onSuccess }) {
    */
   useEffect(() => {
     setForm({
-  ...user,
-  doctorInfo: user?.doctorInfo || {},
-  volunteerInfo: user?.volunteerInfo || {},
-});
+      ...user,
+      doctorInfo: user?.doctorInfo || {},
+      volunteerInfo: user?.volunteerInfo || {},
+    });
 
     setIsEditing(false);
   }, [user]);
@@ -62,30 +61,26 @@ function EditUserModal({ user, onClose, onSuccess }) {
       return "Email address is required.";
     }
 
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(form.email.trim())) {
       return "Please enter a valid email address.";
     }
 
-    if (
-      form.role === "Volunteer" &&
-      !form.volunteerType?.trim()
-    ) {
+    if (form.role === "Volunteer" && !form.volunteerType?.trim()) {
       return "Volunteer type is required.";
     }
 
     if (form.role === "Doctor") {
-      if (
-        !form.doctorInfo?.specialization?.trim()
-      ) {
+      if (!form.department) {
+        return "Department is required for doctors.";
+      }
+
+      if (!form.doctorInfo?.specialization?.trim()) {
         return "Specialization is required for doctors.";
       }
 
-      if (
-        !form.doctorInfo?.licenseNumber?.trim()
-      ) {
+      if (!form.doctorInfo?.licenseNumber?.trim()) {
         return "License number is required for doctors.";
       }
     }
@@ -115,12 +110,8 @@ function EditUserModal({ user, onClose, onSuccess }) {
         role: form.role,
         age: form.age || "",
         birthday: form.birthday || "",
-        birthdate:
-          form.birthdate ||
-          form.birthday ||
-          "",
-        verificationStatus:
-          form.verificationStatus,
+        birthdate: form.birthdate || form.birthday || "",
+        verificationStatus: form.verificationStatus,
       };
 
       /*
@@ -128,42 +119,31 @@ function EditUserModal({ user, onClose, onSuccess }) {
        * when the selected role is Volunteer.
        */
       if (form.role === "Volunteer") {
-  dataToSend.volunteerType =
-    form.volunteerType?.trim() || "";
+        dataToSend.volunteerType = form.volunteerType?.trim() || "";
 
-  dataToSend.volunteerInfo = {
-    organization:
-      form.volunteerInfo?.organization?.trim() || "",
+        dataToSend.volunteerInfo = {
+          organization: form.volunteerInfo?.organization?.trim() || "",
 
-    skills:
-      form.volunteerInfo?.skills?.trim() || "",
+          skills: form.volunteerInfo?.skills?.trim() || "",
 
-    proofOfId:
-      form.volunteerInfo?.proofOfId || "",
-  };
-}
+          proofOfId: form.volunteerInfo?.proofOfId || "",
+        };
+      }
 
       /*
        * Only send Doctor data
        * when the selected role is Doctor.
        */
       if (form.role === "Doctor") {
+        dataToSend.department = form.department;
         dataToSend.doctorInfo = {
-          specialization:
-            form.doctorInfo?.specialization?.trim() ||
-            "",
+          specialization: form.doctorInfo?.specialization?.trim() || "",
 
-          licenseNumber:
-            form.doctorInfo?.licenseNumber?.trim() ||
-            "",
+          licenseNumber: form.doctorInfo?.licenseNumber?.trim() || "",
 
-          proofOfLicense:
-            form.doctorInfo?.proofOfLicense?.trim() ||
-            "",
+          proofOfLicense: form.doctorInfo?.proofOfLicense?.trim() || "",
 
-          proofOfDoctorate:
-            form.doctorInfo?.proofOfDoctorate?.trim() ||
-            "",
+          proofOfDoctorate: form.doctorInfo?.proofOfDoctorate?.trim() || "",
         };
       }
 
@@ -171,15 +151,12 @@ function EditUserModal({ user, onClose, onSuccess }) {
 
       setIsEditing(false);
 
-      setAlertMessage(
-        "User updated successfully."
-      );
+      setAlertMessage("User updated successfully.");
     } catch (err) {
       console.error(err);
 
       setAlertMessage(
-        err.message ||
-          "Failed to update user. Please try again."
+        err.message || "Failed to update user. Please try again.",
       );
     } finally {
       setSaveLoading(false);
@@ -190,8 +167,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
     try {
       setResetLoading(true);
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
       const res = await fetch(
         `${API_BASE_URL}/api/admin/reset-password/${form._id}`,
@@ -201,30 +177,23 @@ function EditUserModal({ user, onClose, onSuccess }) {
           headers: {
             "Content-Type": "application/json",
 
-            Authorization:
-              `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to send reset email."
-        );
+        throw new Error(data.message || "Failed to send reset email.");
       }
 
-      setAlertMessage(
-        `Password reset link sent to ${form.email}.`
-      );
+      setAlertMessage(`Password reset link sent to ${form.email}.`);
     } catch (err) {
       console.error(err);
 
       setAlertMessage(
-        err.message ||
-          "Failed to send reset email. Please try again."
+        err.message || "Failed to send reset email. Please try again.",
       );
     } finally {
       setResetLoading(false);
@@ -232,9 +201,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
   };
 
   const handleAlertClose = () => {
-    const isUpdateSuccess =
-      alertMessage ===
-      "User updated successfully.";
+    const isUpdateSuccess = alertMessage === "User updated successfully.";
 
     setAlertMessage("");
 
@@ -261,9 +228,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
             <button
               type="button"
               onClick={onClose}
-              disabled={
-                saveLoading || resetLoading
-              }
+              disabled={saveLoading || resetLoading}
               className="
                 rounded-xl
                 border
@@ -286,9 +251,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
             {!isEditing ? (
               <button
                 type="button"
-                onClick={() =>
-                  setIsEditing(true)
-                }
+                onClick={() => setIsEditing(true)}
                 disabled={resetLoading}
                 className="
                   rounded-xl
@@ -310,9 +273,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
               <>
                 <button
                   type="button"
-                  onClick={() =>
-                    setIsEditing(false)
-                  }
+                  onClick={() => setIsEditing(false)}
                   disabled={saveLoading}
                   className="
                     rounded-xl
@@ -351,9 +312,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
                     disabled:opacity-50
                   "
                 >
-                  {saveLoading
-                    ? "Saving..."
-                    : "Save Changes"}
+                  {saveLoading ? "Saving..." : "Save Changes"}
                 </button>
               </>
             )}
@@ -369,7 +328,6 @@ function EditUserModal({ user, onClose, onSuccess }) {
             </h3>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-
               {/* FULL NAME */}
 
               <div className="space-y-2">
@@ -381,12 +339,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
                   type="text"
                   value={form.name || ""}
                   disabled={!isEditing}
-                  onChange={(e) =>
-                    handleChange(
-                      "name",
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => handleChange("name", e.target.value)}
                   className="
                     w-full
                     rounded-xl
@@ -418,12 +371,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
                   type="email"
                   value={form.email || ""}
                   disabled={!isEditing}
-                  onChange={(e) =>
-                    handleChange(
-                      "email",
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => handleChange("email", e.target.value)}
                   className="
                     w-full
                     rounded-xl
@@ -454,12 +402,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
                 <select
                   disabled={!isEditing}
                   value={form.role || ""}
-                  onChange={(e) =>
-                    handleChange(
-                      "role",
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => handleChange("role", e.target.value)}
                   className="
                     w-full
                     rounded-xl
@@ -479,17 +422,11 @@ function EditUserModal({ user, onClose, onSuccess }) {
                     disabled:text-slate-500
                   "
                 >
-                  <option value="Doctor">
-                    Doctor
-                  </option>
+                  <option value="Doctor">Doctor</option>
 
-                  <option value="Volunteer">
-                    Volunteer
-                  </option>
+                  <option value="Volunteer">Volunteer</option>
 
-                  <option value="Admin">
-                    Admin
-                  </option>
+                  <option value="Admin">Admin</option>
                 </select>
               </div>
 
@@ -502,15 +439,9 @@ function EditUserModal({ user, onClose, onSuccess }) {
 
                 <select
                   disabled={!isEditing}
-                  value={
-                    form.verificationStatus ||
-                    "Pending"
-                  }
+                  value={form.verificationStatus || "Pending"}
                   onChange={(e) =>
-                    handleChange(
-                      "verificationStatus",
-                      e.target.value
-                    )
+                    handleChange("verificationStatus", e.target.value)
                   }
                   className="
                     w-full
@@ -531,17 +462,11 @@ function EditUserModal({ user, onClose, onSuccess }) {
                     disabled:text-slate-500
                   "
                 >
-                  <option value="Pending">
-                    Pending
-                  </option>
+                  <option value="Pending">Pending</option>
 
-                  <option value="Approved">
-                    Approved
-                  </option>
+                  <option value="Approved">Approved</option>
 
-                  <option value="Deactivated">
-                    Deactivated
-                  </option>
+                  <option value="Deactivated">Deactivated</option>
                 </select>
               </div>
 
@@ -557,12 +482,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
                   min="0"
                   value={form.age || ""}
                   disabled={!isEditing}
-                  onChange={(e) =>
-                    handleChange(
-                      "age",
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => handleChange("age", e.target.value)}
                   className="
                     w-full
                     rounded-xl
@@ -592,18 +512,9 @@ function EditUserModal({ user, onClose, onSuccess }) {
 
                 <input
                   type="date"
-                  value={
-                    form.birthdate ||
-                    form.birthday ||
-                    ""
-                  }
+                  value={form.birthdate || form.birthday || ""}
                   disabled={!isEditing}
-                  onChange={(e) =>
-                    handleChange(
-                      "birthdate",
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => handleChange("birthdate", e.target.value)}
                   className="
                     w-full
                     rounded-xl
@@ -635,24 +546,24 @@ function EditUserModal({ user, onClose, onSuccess }) {
               </h3>
 
               <div className="space-y-2">
-  <label className="text-sm font-semibold text-slate-700">
-    Organization
-  </label>
+                <label className="text-sm font-semibold text-slate-700">
+                  Organization
+                </label>
 
-  <input
-    type="text"
-    value={form.volunteerInfo?.organization || ""}
-    disabled={!isEditing}
-    onChange={(e) =>
-      setForm((prev) => ({
-        ...prev,
-        volunteerInfo: {
-          ...(prev.volunteerInfo || {}),
-          organization: e.target.value,
-        },
-      }))
-    }
-    className="
+                <input
+                  type="text"
+                  value={form.volunteerInfo?.organization || ""}
+                  disabled={!isEditing}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      volunteerInfo: {
+                        ...(prev.volunteerInfo || {}),
+                        organization: e.target.value,
+                      },
+                    }))
+                  }
+                  className="
       w-full
       rounded-xl
       border
@@ -669,28 +580,28 @@ function EditUserModal({ user, onClose, onSuccess }) {
       disabled:bg-slate-50
       disabled:text-slate-500
     "
-  />
-</div>
+                />
+              </div>
 
-<div className="space-y-2">
-  <label className="text-sm font-semibold text-slate-700">
-    Skills
-  </label>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">
+                  Skills
+                </label>
 
-  <input
-    type="text"
-    value={form.volunteerInfo?.skills || ""}
-    disabled={!isEditing}
-    onChange={(e) =>
-      setForm((prev) => ({
-        ...prev,
-        volunteerInfo: {
-          ...(prev.volunteerInfo || {}),
-          skills: e.target.value,
-        },
-      }))
-    }
-    className="
+                <input
+                  type="text"
+                  value={form.volunteerInfo?.skills || ""}
+                  disabled={!isEditing}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      volunteerInfo: {
+                        ...(prev.volunteerInfo || {}),
+                        skills: e.target.value,
+                      },
+                    }))
+                  }
+                  className="
       w-full
       rounded-xl
       border
@@ -707,30 +618,30 @@ function EditUserModal({ user, onClose, onSuccess }) {
       disabled:bg-slate-50
       disabled:text-slate-500
     "
-  />
-</div>
+                />
+              </div>
 
-<div className="space-y-2">
-  <label className="text-sm font-semibold text-slate-700">
-    Valid ID
-  </label>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">
+                  Valid ID
+                </label>
 
-  {form.volunteerInfo?.proofOfId ? (
-    <a
-      href={form.volunteerInfo.proofOfId}
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm font-bold text-primary-700 hover:bg-primary-100"
-    >
-      <FileCheck2 size={16} />
-      View Valid ID
-    </a>
-  ) : (
-    <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-400">
-      No Valid ID uploaded.
-    </p>
-  )}
-</div>
+                {form.volunteerInfo?.proofOfId ? (
+                  <a
+                    href={form.volunteerInfo.proofOfId}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm font-bold text-primary-700 hover:bg-primary-100"
+                  >
+                    <FileCheck2 size={16} />
+                    View Valid ID
+                  </a>
+                ) : (
+                  <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-400">
+                    No Valid ID uploaded.
+                  </p>
+                )}
+              </div>
             </section>
           )}
 
@@ -743,7 +654,60 @@ function EditUserModal({ user, onClose, onSuccess }) {
               </h3>
 
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                {/* DEPARTMENT */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">
+                    Department
+                  </label>
 
+                  <select
+                    value={form.department || ""}
+                    disabled={!isEditing}
+                    onChange={(e) => handleChange("department", e.target.value)}
+                    className="
+            w-full
+            rounded-xl
+            border
+            border-slate-200
+            bg-white
+            px-4
+            py-3
+            text-sm
+            outline-none
+            transition
+            focus:border-blue-500
+            focus:ring-4
+            focus:ring-blue-500/10
+            disabled:cursor-not-allowed
+            disabled:bg-slate-50
+            disabled:text-slate-500
+          "
+                  >
+                    <option value="">Select Department</option>
+
+                    <option value="Pediatrics">Pediatrics</option>
+
+                    <option value="Neurology">Neurology</option>
+
+                    <option value="Pathology">Pathology</option>
+
+                    <option value="Circumcision">Circumcision</option>
+
+                    <option value="Surgery">Surgery</option>
+
+                    <option value="PT">Physical Therapy</option>
+
+                    <option value="OBGyn">Obstetrics and Gynecology</option>
+
+                    <option value="Dental">Dental</option>
+
+                    <option value="Ophthalmology">Ophthalmology</option>
+
+                    <option value="Dermatology">Dermatology</option>
+
+                    <option value="AdultMed">Adult Medicine</option>
+                  </select>
+                </div>
                 {/* SPECIALIZATION */}
 
                 <div className="space-y-2">
@@ -753,16 +717,10 @@ function EditUserModal({ user, onClose, onSuccess }) {
 
                   <input
                     type="text"
-                    value={
-                      form.doctorInfo
-                        ?.specialization || ""
-                    }
+                    value={form.doctorInfo?.specialization || ""}
                     disabled={!isEditing}
                     onChange={(e) =>
-                      handleDoctorChange(
-                        "specialization",
-                        e.target.value
-                      )
+                      handleDoctorChange("specialization", e.target.value)
                     }
                     className="
                       w-full
@@ -793,16 +751,10 @@ function EditUserModal({ user, onClose, onSuccess }) {
 
                   <input
                     type="text"
-                    value={
-                      form.doctorInfo
-                        ?.licenseNumber || ""
-                    }
+                    value={form.doctorInfo?.licenseNumber || ""}
                     disabled={!isEditing}
                     onChange={(e) =>
-                      handleDoctorChange(
-                        "licenseNumber",
-                        e.target.value
-                      )
+                      handleDoctorChange("licenseNumber", e.target.value)
                     }
                     className="
                       w-full
@@ -833,16 +785,10 @@ function EditUserModal({ user, onClose, onSuccess }) {
 
                   <input
                     type="url"
-                    value={
-                      form.doctorInfo
-                        ?.proofOfLicense || ""
-                    }
+                    value={form.doctorInfo?.proofOfLicense || ""}
                     disabled={!isEditing}
                     onChange={(e) =>
-                      handleDoctorChange(
-                        "proofOfLicense",
-                        e.target.value
-                      )
+                      handleDoctorChange("proofOfLicense", e.target.value)
                     }
                     className="
                       w-full
@@ -873,16 +819,10 @@ function EditUserModal({ user, onClose, onSuccess }) {
 
                   <input
                     type="url"
-                    value={
-                      form.doctorInfo
-                        ?.proofOfDoctorate || ""
-                    }
+                    value={form.doctorInfo?.proofOfDoctorate || ""}
                     disabled={!isEditing}
                     onChange={(e) =>
-                      handleDoctorChange(
-                        "proofOfDoctorate",
-                        e.target.value
-                      )
+                      handleDoctorChange("proofOfDoctorate", e.target.value)
                     }
                     className="
                       w-full
@@ -915,15 +855,12 @@ function EditUserModal({ user, onClose, onSuccess }) {
             </h3>
 
             <p className="mb-4 text-sm leading-6 text-slate-500">
-              Send a password reset link to the user's
-              registered email address.
+              Send a password reset link to the user's registered email address.
             </p>
 
             <button
               type="button"
-              onClick={() =>
-                setShowResetConfirm(true)
-              }
+              onClick={() => setShowResetConfirm(true)}
               disabled={resetLoading || saveLoading}
               className="
                 rounded-xl
@@ -941,9 +878,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
                 disabled:opacity-50
               "
             >
-              {resetLoading
-                ? "Sending Reset Link..."
-                : "Reset Password"}
+              {resetLoading ? "Sending Reset Link..." : "Reset Password"}
             </button>
           </section>
         </div>
@@ -959,9 +894,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
             setShowConfirm(false);
             await handleSave();
           }}
-          onCancel={() =>
-            setShowConfirm(false)
-          }
+          onCancel={() => setShowConfirm(false)}
         />
       )}
 
@@ -975,19 +908,14 @@ function EditUserModal({ user, onClose, onSuccess }) {
             setShowResetConfirm(false);
             await handleResetPassword();
           }}
-          onCancel={() =>
-            setShowResetConfirm(false)
-          }
+          onCancel={() => setShowResetConfirm(false)}
         />
       )}
 
       {/* ALERT */}
 
       {alertMessage && (
-        <AlertModal
-          message={alertMessage}
-          onClose={handleAlertClose}
-        />
+        <AlertModal message={alertMessage} onClose={handleAlertClose} />
       )}
     </>
   );

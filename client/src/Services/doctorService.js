@@ -35,7 +35,7 @@ export const getDoctorQueue = async ({
   limit = 1000,
   search = "",
   queueFilter = "all",
-  department = "General",
+  department = "",
   role = "doctor",
 } = {}) => {
   try {
@@ -106,27 +106,15 @@ export const getDoctorQueue = async ({
     // OFFLINE SEARCH
     // ---------------------------------------------------------
 
-    if (hasSearch) {
-      patients = patients.filter((patient) =>
-        matchesPatientSearch(patient, search),
+    if (department && department !== "all") {
+      patients = patients.filter(
+        (patient) => patient.department === department,
       );
     }
 
-    // ---------------------------------------------------------
-    // OFFLINE DEPARTMENT FILTER
-    // ---------------------------------------------------------
-    //
-    // Only apply the department filter to the Doctor-specific
-    // queue. Do NOT apply it to the shared patient cache when
-    // searching.
-    //
-    // This prevents valid cached patients from disappearing
-    // simply because their department isn't "General".
-    // ---------------------------------------------------------
-
-    if (!hasSearch && department && department !== "all") {
-      patients = patients.filter(
-        (patient) => patient.department === department,
+    if (hasSearch) {
+      patients = patients.filter((patient) =>
+        matchesPatientSearch(patient, search),
       );
     }
 
