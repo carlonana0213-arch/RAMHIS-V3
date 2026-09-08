@@ -40,7 +40,9 @@ export default function Doctor() {
 
   const [search, setSearch] = useState("");
   const [queueFilter, setQueueFilter] = useState("all");
+  const storedUser = JSON.parse(localStorage.getItem("user") || "null");
 
+  const doctorDepartment = storedUser?.department || "";
   // ---------------------------------------------------------
   // DEBOUNCED SEARCH
   // ---------------------------------------------------------
@@ -77,7 +79,7 @@ export default function Doctor() {
           limit: 1000,
           search: debouncedSearch,
           queueFilter,
-          department: "General",
+          department: doctorDepartment,
           role: "doctor",
         });
 
@@ -107,7 +109,7 @@ export default function Doctor() {
         }
       }
     },
-    [debouncedSearch, queueFilter],
+    [debouncedSearch, queueFilter, doctorDepartment],
   );
 
   // ---------------------------------------------------------

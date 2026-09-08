@@ -13,6 +13,7 @@ function AddUserModal({ onClose, onSuccess }) {
     email: "",
     role: "Doctor",
     volunteerType: "",
+    department: "",
     specialization: "",
     licenseNumber: "",
     proofOfLicense: "",
@@ -59,14 +60,14 @@ function AddUserModal({ onClose, onSuccess }) {
       return "Please enter a valid email address.";
     }
 
-    if (
-      form.role === "Volunteer" &&
-      !form.volunteerType.trim()
-    ) {
+    if (form.role === "Volunteer" && !form.volunteerType.trim()) {
       return "Volunteer type is required.";
     }
 
     if (form.role === "Doctor") {
+      if (!form.department) {
+        return "Department is required for doctors.";
+      }
       if (!form.specialization.trim()) {
         return "Specialization is required for doctors.";
       }
@@ -118,38 +119,30 @@ function AddUserModal({ onClose, onSuccess }) {
       };
 
       if (form.role === "Volunteer") {
-        dataToSend.volunteerType =
-          form.volunteerType.trim();
+        dataToSend.volunteerType = form.volunteerType.trim();
       }
 
       if (form.role === "Doctor") {
+        dataToSend.department = form.department;
+
         dataToSend.doctorInfo = {
-          specialization:
-            form.specialization.trim(),
+          specialization: form.specialization.trim(),
 
-          licenseNumber:
-            form.licenseNumber.trim(),
+          licenseNumber: form.licenseNumber.trim(),
 
-          proofOfLicense:
-            form.proofOfLicense.trim(),
+          proofOfLicense: form.proofOfLicense.trim(),
 
-          proofOfDoctorate:
-            form.proofOfDoctorate.trim(),
+          proofOfDoctorate: form.proofOfDoctorate.trim(),
         };
       }
 
       await registerUser(dataToSend);
 
-      setAlertMessage(
-        "User created successfully."
-      );
+      setAlertMessage("User created successfully.");
     } catch (err) {
       console.error(err);
 
-      setAlertMessage(
-        err.message ||
-          "User creation failed. Please try again."
-      );
+      setAlertMessage(err.message || "User creation failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -206,9 +199,7 @@ function AddUserModal({ onClose, onSuccess }) {
                 disabled:opacity-50
               "
             >
-              {loading
-                ? "Creating..."
-                : "Create User"}
+              {loading ? "Creating..." : "Create User"}
             </button>
           </>
         }
@@ -218,9 +209,7 @@ function AddUserModal({ onClose, onSuccess }) {
           <div className="space-y-2">
             <label className="text-sm font-semibold text-slate-700">
               First Name
-              <span className="text-red-500">
-                {" "}*
-              </span>
+              <span className="text-red-500"> *</span>
             </label>
 
             <input
@@ -282,9 +271,7 @@ function AddUserModal({ onClose, onSuccess }) {
           <div className="space-y-2">
             <label className="text-sm font-semibold text-slate-700">
               Last Name
-              <span className="text-red-500">
-                {" "}*
-              </span>
+              <span className="text-red-500"> *</span>
             </label>
 
             <input
@@ -314,20 +301,14 @@ function AddUserModal({ onClose, onSuccess }) {
           <div className="space-y-2">
             <label className="text-sm font-semibold text-slate-700">
               Birthday
-              <span className="text-red-500">
-                {" "}*
-              </span>
+              <span className="text-red-500"> *</span>
             </label>
 
             <input
               type="date"
               name="birthday"
               value={form.birthday}
-              max={
-                new Date()
-                  .toISOString()
-                  .split("T")[0]
-              }
+              max={new Date().toISOString().split("T")[0]}
               onChange={handleChange}
               className="
                 w-full
@@ -350,9 +331,7 @@ function AddUserModal({ onClose, onSuccess }) {
           <div className="space-y-2 sm:col-span-2">
             <label className="text-sm font-semibold text-slate-700">
               Email Address
-              <span className="text-red-500">
-                {" "}*
-              </span>
+              <span className="text-red-500"> *</span>
             </label>
 
             <input
@@ -380,9 +359,7 @@ function AddUserModal({ onClose, onSuccess }) {
 
           {/* ROLE */}
           <div className="space-y-2 sm:col-span-2">
-            <label className="text-sm font-semibold text-slate-700">
-              Role
-            </label>
+            <label className="text-sm font-semibold text-slate-700">Role</label>
 
             <select
               name="role"
@@ -404,17 +381,11 @@ function AddUserModal({ onClose, onSuccess }) {
                 focus:ring-blue-500/10
               "
             >
-              <option value="Doctor">
-                Doctor
-              </option>
+              <option value="Doctor">Doctor</option>
 
-              <option value="Volunteer">
-                Volunteer
-              </option>
+              <option value="Volunteer">Volunteer</option>
 
-              <option value="Admin">
-                Admin
-              </option>
+              <option value="Admin">Admin</option>
             </select>
           </div>
 
@@ -423,9 +394,7 @@ function AddUserModal({ onClose, onSuccess }) {
             <div className="space-y-2 sm:col-span-2">
               <label className="text-sm font-semibold text-slate-700">
                 Volunteer Type
-                <span className="text-red-500">
-                  {" "}*
-                </span>
+                <span className="text-red-500"> *</span>
               </label>
 
               <input
@@ -457,10 +426,58 @@ function AddUserModal({ onClose, onSuccess }) {
             <>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">
+                  Department
+                  <span className="text-red-500"> *</span>
+                </label>
+
+                <select
+                  name="department"
+                  value={form.department}
+                  onChange={handleChange}
+                  className="
+      w-full
+      rounded-xl
+      border
+      border-slate-200
+      bg-white
+      px-4
+      py-3
+      text-sm
+      outline-none
+      transition
+      focus:border-blue-500
+      focus:ring-4
+      focus:ring-blue-500/10
+    "
+                >
+                  <option value="">Select department</option>
+                  <option value="Pediatrics">Pediatrics</option>
+
+                  <option value="Neurology">Neurology</option>
+
+                  <option value="Pathology">Pathology</option>
+
+                  <option value="Circumcision">Circumcision</option>
+
+                  <option value="Surgery">Surgery</option>
+
+                  <option value="PT">Physical Therapy</option>
+
+                  <option value="OBGyn">Obstetrics and Gynecology</option>
+
+                  <option value="Dental">Dental</option>
+
+                  <option value="Ophthalmology">Ophthalmology</option>
+
+                  <option value="Dermatology">Dermatology</option>
+
+                  <option value="AdultMed">Adult Medicine</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">
                   Specialization
-                  <span className="text-red-500">
-                    {" "}*
-                  </span>
+                  <span className="text-red-500"> *</span>
                 </label>
 
                 <input
@@ -489,9 +506,7 @@ function AddUserModal({ onClose, onSuccess }) {
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">
                   License Number
-                  <span className="text-red-500">
-                    {" "}*
-                  </span>
+                  <span className="text-red-500"> *</span>
                 </label>
 
                 <input
@@ -520,9 +535,7 @@ function AddUserModal({ onClose, onSuccess }) {
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">
                   Proof of License
-                  <span className="text-red-500">
-                    {" "}*
-                  </span>
+                  <span className="text-red-500"> *</span>
                 </label>
 
                 <input
@@ -551,9 +564,7 @@ function AddUserModal({ onClose, onSuccess }) {
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">
                   Proof of Doctorate
-                  <span className="text-red-500">
-                    {" "}*
-                  </span>
+                  <span className="text-red-500"> *</span>
                 </label>
 
                 <input
@@ -592,9 +603,7 @@ function AddUserModal({ onClose, onSuccess }) {
             setShowConfirm(false);
             await handleSubmit();
           }}
-          onCancel={() =>
-            setShowConfirm(false)
-          }
+          onCancel={() => setShowConfirm(false)}
         />
       )}
 
@@ -603,9 +612,7 @@ function AddUserModal({ onClose, onSuccess }) {
         <AlertModal
           message={alertMessage}
           onClose={() => {
-            const isSuccess =
-              alertMessage ===
-              "User created successfully.";
+            const isSuccess = alertMessage === "User created successfully.";
 
             setAlertMessage("");
 
