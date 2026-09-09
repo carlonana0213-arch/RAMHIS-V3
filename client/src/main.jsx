@@ -10,6 +10,7 @@ import "./index.css";
 import { AuthProvider } from "./Context/AuthContext";
 import { registerSW } from "virtual:pwa-register";
 import { syncOfflineOutbox } from "./Services/offlineSync";
+import SessionExpiredModal from "./Components/common/SessionExpiredModal";
 let updateSW;
 
 updateSW = registerSW({
@@ -44,6 +45,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider>
       <App />
+      <SessionExpiredModal />
 
       <Toaster
         position="top-right"

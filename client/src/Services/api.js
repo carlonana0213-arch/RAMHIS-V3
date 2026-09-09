@@ -27,6 +27,22 @@ export const apiFetch = async (url, options = {}) => {
   }
 
   if (!res.ok) {
+    /*
+      ------------------------------------------------
+      SESSION EXPIRATION
+      ------------------------------------------------
+
+      If the backend explicitly tells us that the
+      JWT has expired, notify AuthContext.
+
+      We use a browser event because api.js is not
+      a React component and cannot use useAuth().
+    */
+
+    if (res.status === 401 && data?.code === "TOKEN_EXPIRED") {
+      window.dispatchEvent(new CustomEvent("ramhis:session-expired"));
+    }
+
     const error = new Error(
       data?.msg ||
         data?.message ||
@@ -34,14 +50,11 @@ export const apiFetch = async (url, options = {}) => {
         `Request failed with status ${res.status}`,
     );
 
-    // IMPORTANT:
     // Preserve the HTTP status so offlineSync.js
     // can detect 409 conflicts.
     error.status = res.status;
 
     // Preserve the complete backend response.
-    // This contains conflictId, candidates,
-    // serverData, etc. when the server returns 409.
     error.data = data;
 
     error.response = {
