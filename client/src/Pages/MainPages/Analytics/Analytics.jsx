@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import "./AnalyticsPrint.css";
+import { apiFetch } from "../../../Services/api";
 import { API_BASE_URL, FASTAPI_BASE_URL } from "../../../Services/apiConfig";
 
 import {
@@ -36,17 +39,351 @@ import {
 
 const Analytics = () => {
   const [analytics, setAnalytics] = useState(null);
+  const [savedReports, setSavedReports] = useState([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [nextMissionDate, setNextMissionDate] = useState("");
   const [missionDays, setMissionDays] = useState(1);
+  const downloadAnalyticsPDF = () => {
+    if (!analytics) {
+      alert("Please generate an analytics forecast first.");
+      return;
+    }
 
+    const doc = new jsPDF();
+
+    const location = selectedLocation || "Unknown Location";
+    const missionDate = formatDate(nextMissionDate);
+    const duration = Number(missionDays) || 1;
+
+    /*
+     * ============================================================
+     * TITLE
+     * ============================================================
+     */
+
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("RAMHIS Analytics Report", 14, 20);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      "Predictive analytics report for medical mission planning",
+      14,
+      27,
+    );
+
+    /*
+     * ============================================================
+     * MISSION INFORMATION
+     * ============================================================
+     */
+
+    autoTable(doc, {
+      startY: 35,
+
+      theme: "grid",
+
+      head: [["Mission Information", "Value"]],
+
+      body: [
+        ["Location", location],
+        ["Mission Date", missionDate],
+        ["Mission Duration", `${duration} day${duration === 1 ? "" : "s"}`],
+        ["Forecast Method", analytics?.modelsUsed?.[0] || "Unknown"],
+        ["Confidence", analytics?.confidence || "Unknown"],
+        ["Historical Missions", String(historicalMissionCount)],
+      ],
+
+      styles: {
+        fontSize: 9,
+      },
+
+      headStyles: {
+        fontStyle: "bold",
+      },
+    });
+
+    /*
+     * ============================================================
+     * PATIENT FORECAST
+     * ============================================================
+     */
+
+    let currentY = doc.lastAutoTable.finalY + 10;
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Patient Forecast", 14, currentY);
+
+    currentY += 6;
+
+    autoTable(doc, {
+      startY: currentY,
+
+      theme: "grid",
+
+      head: [["Forecasted Patients", "Minimum", "Maximum", "Confidence"]],
+
+      body: [
+        [
+          String(analytics?.predictedPatients || 0),
+          String(analytics?.confidenceRange?.min || 0),
+          String(analytics?.confidenceRange?.max || 0),
+          analytics?.confidence || "Unknown",
+        ],
+      ],
+
+      styles: {
+        fontSize: 9,
+      },
+
+      headStyles: {
+        fontStyle: "bold",
+      },
+    });
+
+    /*
+     * ============================================================
+     * DEPARTMENT FORECAST
+     * ============================================================
+     */
+
+    currentY = doc.lastAutoTable.finalY + 10;
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Department Forecast", 14, currentY);
+
+    currentY += 6;
+
+    const departmentRows = Object.entries(
+      analytics?.departmentPredictions || {},
+    ).map(([department, prediction]) => [department, String(prediction)]);
+
+    if (departmentRows.length > 0) {
+      autoTable(doc, {
+        startY: currentY,
+
+        theme: "grid",
+
+        head: [["Department", "Forecast Patients"]],
+
+        body: departmentRows,
+
+        styles: {
+          fontSize: 9,
+        },
+
+        headStyles: {
+          fontStyle: "bold",
+        },
+      });
+    } else {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text("No department forecast available.", 14, currentY);
+    }
+
+    /*
+     * ============================================================
+     * MEDICINE FORECAST
+     * ============================================================
+     */
+
+    currentY = doc.lastAutoTable
+      ? doc.lastAutoTable.finalY + 10
+      : currentY + 15;
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Medicine Forecast", 14, currentY);
+
+    currentY += 6;
+
+    const medicineRows = (analytics?.medicineForecast || []).map((medicine) => [
+      medicine.medicine || "Unknown",
+      String(medicine.estimatedNeed || 0),
+      medicine.risk || "UNKNOWN",
+    ]);
+
+    if (medicineRows.length > 0) {
+      autoTable(doc, {
+        startY: currentY,
+
+        theme: "grid",
+
+        head: [["Medicine", "Estimated Need", "Inventory Risk"]],
+
+        body: medicineRows,
+
+        styles: {
+          fontSize: 8,
+        },
+
+        headStyles: {
+          fontStyle: "bold",
+        },
+      });
+    } else {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text("No medicine forecast available.", 14, currentY);
+    }
+
+    /*
+     * ============================================================
+     * SUMMARY INSIGHTS
+     * ============================================================
+     */
+
+    currentY = doc.lastAutoTable
+      ? doc.lastAutoTable.finalY + 10
+      : currentY + 15;
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Summary Insights", 14, currentY);
+
+    currentY += 7;
+
+    const summaryInsights = analytics?.summaryInsights || [];
+
+    if (summaryInsights.length > 0) {
+      summaryInsights.forEach((insight, index) => {
+        const lines = doc.splitTextToSize(`${index + 1}. ${insight}`, 180);
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+
+        doc.text(lines, 14, currentY);
+
+        currentY += lines.length * 5 + 2;
+
+        if (currentY > 270) {
+          doc.addPage();
+          currentY = 20;
+        }
+      });
+    } else {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text("No summary insights available.", 14, currentY);
+    }
+
+    /*
+     * ============================================================
+     * SMART INSIGHTS
+     * ============================================================
+     */
+
+    currentY += 8;
+
+    if (currentY > 260) {
+      doc.addPage();
+      currentY = 20;
+    }
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Smart Insights", 14, currentY);
+
+    currentY += 7;
+
+    if (smartInsights.length > 0) {
+      smartInsights.forEach((insight, index) => {
+        const lines = doc.splitTextToSize(`${index + 1}. ${insight.text}`, 180);
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+
+        doc.text(lines, 14, currentY);
+
+        currentY += lines.length * 5 + 2;
+
+        if (currentY > 270) {
+          doc.addPage();
+          currentY = 20;
+        }
+      });
+    } else {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text("No additional planning risks were detected.", 14, currentY);
+    }
+
+    /*
+     * ============================================================
+     * DISCLAIMER
+     * ============================================================
+     */
+
+    currentY += 10;
+
+    if (currentY > 255) {
+      doc.addPage();
+      currentY = 20;
+    }
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("Analytics Support Notice", 14, currentY);
+
+    currentY += 5;
+
+    doc.setFont("helvetica", "normal");
+
+    const disclaimer =
+      "Predictive analytics are based on historical records and are intended to support mission planning, reporting, and administrative decisions. Forecast results should not be treated as medical diagnosis or clinical treatment recommendations.";
+
+    const disclaimerLines = doc.splitTextToSize(disclaimer, 180);
+
+    doc.text(disclaimerLines, 14, currentY);
+
+    /*
+     * ============================================================
+     * FOOTER
+     * ============================================================
+     */
+
+    const pageCount = doc.internal.getNumberOfPages();
+
+    for (let page = 1; page <= pageCount; page++) {
+      doc.setPage(page);
+
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+
+      doc.text(
+        `RAMHIS Analytics Report • Page ${page} of ${pageCount}`,
+        14,
+        290,
+      );
+    }
+
+    /*
+     * ============================================================
+     * DOWNLOAD
+     * ============================================================
+     */
+
+    const safeLocation = location
+      .replace(/[^a-z0-9]/gi, "_")
+      .replace(/_+/g, "_");
+
+    const datePart = nextMissionDate || "undated";
+
+    doc.save(`RAMHIS_Analytics_${safeLocation}_${datePart}.pdf`);
+  };
   const [historicalPatients, setHistoricalPatients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [chartMode, setChartMode] = useState("overall");
 
   useEffect(() => {
     fetchLocations();
+    fetchSavedReports();
   }, []);
 
   const fetchLocations = async () => {
@@ -56,6 +393,22 @@ const Analytics = () => {
       setLocations(res.data || []);
     } catch (error) {
       console.error("Failed to load locations:", error);
+    }
+  };
+
+  const fetchSavedReports = async () => {
+    try {
+      setReportsLoading(true);
+
+      const data = await apiFetch(`${API_BASE_URL}/api/analytics-reports`);
+
+      setSavedReports(data?.reports || []);
+    } catch (error) {
+      console.error("Failed to load analytics reports:", error);
+
+      setSavedReports([]);
+    } finally {
+      setReportsLoading(false);
     }
   };
 
@@ -103,6 +456,28 @@ const Analytics = () => {
       });
 
       setAnalytics(res.data);
+
+      /*
+       * Save a snapshot of the generated forecast.
+       *
+       * If saving fails, the generated forecast should
+       * still remain visible to the user.
+       */
+      try {
+        await apiFetch(`${API_BASE_URL}/api/analytics-reports`, {
+          method: "POST",
+          body: JSON.stringify({
+            location: selectedLocation,
+            nextMissionDate,
+            missionDays: Number(missionDays),
+            analytics: res.data,
+          }),
+        });
+
+        await fetchSavedReports();
+      } catch (reportError) {
+        console.error("Failed to save analytics report:", reportError);
+      }
 
       await fetchHistoricalPatients();
     } catch (error) {
@@ -402,7 +777,158 @@ const Analytics = () => {
             </span>
           </div>
         </section>
+        {/* =====================================================
+    GENERATED REPORTS
+====================================================== */}
 
+        <section className="mb-7 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="border-b border-border-soft px-5 py-5 sm:px-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
+                  Report History
+                </p>
+
+                <h2 className="mt-1 text-base font-extrabold text-text-primary">
+                  Generated Reports
+                </h2>
+
+                <p className="mt-1 text-xs text-text-muted">
+                  Previously generated analytics forecasts.
+                </p>
+              </div>
+
+              <FiDatabase
+                className="hidden text-primary-600 sm:block"
+                size={20}
+              />
+            </div>
+          </div>
+
+          <div className="divide-y divide-border-soft">
+            {reportsLoading ? (
+              <div className="px-5 py-8 text-center text-sm text-text-muted">
+                Loading generated reports...
+              </div>
+            ) : savedReports.length === 0 ? (
+              <div className="px-5 py-10 text-center">
+                <p className="text-sm font-semibold text-text-secondary">
+                  No generated reports yet.
+                </p>
+
+                <p className="mt-1 text-xs text-text-muted">
+                  Reports will appear here after you generate a forecast.
+                </p>
+              </div>
+            ) : (
+              savedReports.map((report) => (
+                <div
+                  key={report._id}
+                  className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-extrabold text-text-primary">
+                      {report.location}
+                    </p>
+
+                    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted">
+                      <span>Mission: {formatDate(report.nextMissionDate)}</span>
+
+                      <span>
+                        Duration: {report.missionDays} day
+                        {Number(report.missionDays) === 1 ? "" : "s"}
+                      </span>
+
+                      <span>
+                        Predicted: {report.predictedPatients || 0} patients
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-[11px] text-text-subtle">
+                      Generated {formatDate(report.createdAt)}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAnalytics(report.reportData);
+
+                        setSelectedLocation(report.location);
+
+                        setNextMissionDate(
+                          new Date(report.nextMissionDate)
+                            .toISOString()
+                            .split("T")[0],
+                        );
+
+                        setMissionDays(report.missionDays);
+
+                        window.scrollTo({
+                          top: 0,
+                          behavior: "smooth",
+                        });
+                      }}
+                      className="rounded-xl border border-border bg-surface px-3 py-2 text-xs font-bold text-text-secondary transition hover:bg-slate-50"
+                    >
+                      View
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const originalAnalytics = analytics;
+
+                        const originalLocation = selectedLocation;
+
+                        const originalDate = nextMissionDate;
+
+                        const originalDays = missionDays;
+
+                        setAnalytics(report.reportData);
+
+                        setSelectedLocation(report.location);
+
+                        setNextMissionDate(
+                          new Date(report.nextMissionDate)
+                            .toISOString()
+                            .split("T")[0],
+                        );
+
+                        setMissionDays(report.missionDays);
+
+                        setTimeout(() => {
+                          /*
+                           * The PDF generator reads the
+                           * current state. The timeout gives
+                           * React a chance to update it.
+                           */
+                          downloadAnalyticsPDF();
+
+                          /*
+                           * Restore the currently displayed
+                           * forecast after generating the PDF.
+                           */
+                          setAnalytics(originalAnalytics);
+
+                          setSelectedLocation(originalLocation);
+
+                          setNextMissionDate(originalDate);
+
+                          setMissionDays(originalDays);
+                        }, 100);
+                      }}
+                      className="rounded-xl bg-primary-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-primary-800"
+                    >
+                      PDF
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
         {/* =====================================================
             LOADING STATE
         ====================================================== */}
@@ -476,14 +1002,27 @@ const Analytics = () => {
             {/* SUMMARY CARDS */}
 
             <section>
-              <div className="mb-4">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
-                  Forecast Overview
-                </p>
+              <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary-700">
+                    Forecast Overview
+                  </p>
 
-                <h2 className="mt-1 text-lg font-extrabold text-text-primary">
-                  Mission prediction summary
-                </h2>
+                  <h2 className="mt-1 text-lg font-extrabold text-text-primary">
+                    Mission prediction summary
+                  </h2>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={downloadAnalyticsPDF}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-primary-800"
+                  >
+                    <FiDatabase size={15} />
+                    Download PDF
+                  </button>
+                </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

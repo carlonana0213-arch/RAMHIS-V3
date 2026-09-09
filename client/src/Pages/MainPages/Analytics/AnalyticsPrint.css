@@ -1,0 +1,141 @@
+@media print {
+  body {
+    background: white !important;
+  }
+
+  /*
+   * Hide navigation and interactive controls
+   */
+  nav,
+  aside,
+  header,
+  button,
+  select,
+  input {
+    display: none !important;
+  }
+
+  /*
+   * Remove application layout restrictions
+   */
+  html,
+  body,
+  #root {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /*
+   * Remove shadows and excessive borders
+   */
+  * {
+    box-shadow: none !important;
+  }
+
+  /*
+   * Keep cards together where possible
+   */
+  section,
+  .rounded-2xl {
+    break-inside: avoid;
+  }
+
+  /*
+   * Make the analytics content use the full page
+   */
+  .min-h-full {
+    min-height: auto !important;
+  }
+
+  /*
+   * Remove page padding
+   */
+  .px-4,
+  .px-5,
+  .px-6,
+  .px-8 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /*
+   * Improve print readability
+   */
+  p,
+  td,
+  th {
+    color: black !important;
+  }
+}@media print {
+  body {
+    background: white !important;
+  }
+
+  /*
+   * Hide navigation and interactive controls
+   */
+  nav,
+  aside,
+  header,
+  button,
+  select,
+  input {
+    display: none !important;
+  }
+
+  /*
+   * Remove application layout restrictions
+   */
+  html,
+  body,
+  #root {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /*
+   * Remove shadows and excessive borders
+   */
+  * {
+    box-shadow: none !important;
+  }
+
+  /*
+   * Keep cards together where possible
+   */
+  section,
+  .rounded-2xl {
+    break-inside: avoid;
+  }
+
+  /*
+   * Make the analytics content use the full page
+   */
+  .min-h-full {
+    min-height: auto !important;
+  }
+
+  /*
+   * Remove page padding
+   */
+  .px-4,
+  .px-5,
+  .px-6,
+  .px-8 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /*
+   * Improve print readability
+   */
+  p,
+  td,
+  th {
+    color: black !important;
+  }
+}
