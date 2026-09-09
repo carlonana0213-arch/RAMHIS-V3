@@ -13,9 +13,12 @@ import {
   getAuditLocations,
 } from "../../../Services/auditLogService";
 
+import { getAllUsers } from "../../../Services/adminService";
+
 function AuditLog() {
   const [logs, setLogs] = useState([]);
   const [locations, setLocations] = useState([]);
+  const [users, setUsers] = useState([]);
 
   const [search, setSearch] = useState("");
   const [moduleFilter, setModuleFilter] = useState("All");
@@ -44,9 +47,17 @@ function AuditLog() {
         location: locationFilter,
       });
 
-      setLogs(Array.isArray(result?.data) ? result.data : []);
+      setLogs(
+        Array.isArray(result?.data)
+          ? result.data
+          : [],
+      );
     } catch (error) {
-      console.error("Failed to load audit logs:", error);
+      console.error(
+        "Failed to load audit logs:",
+        error,
+      );
+
       setLogs([]);
     } finally {
       setLoading(false);
@@ -55,7 +66,8 @@ function AuditLog() {
 
   const loadLocations = async () => {
     try {
-      const result = await getAuditLocations();
+      const result =
+        await getAuditLocations();
 
       setLocations(
         Array.isArray(result?.data)
@@ -72,8 +84,31 @@ function AuditLog() {
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      const result =
+        await getAllUsers();
+
+      setUsers(
+        Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray(result)
+            ? result
+            : [],
+      );
+    } catch (error) {
+      console.error(
+        "Failed to load users:",
+        error,
+      );
+
+      setUsers([]);
+    }
+  };
+
   useEffect(() => {
     loadLocations();
+    loadUsers();
   }, []);
 
   useEffect(() => {
@@ -81,7 +116,8 @@ function AuditLog() {
       loadLogs();
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () =>
+      clearTimeout(timer);
   }, [
     search,
     moduleFilter,
@@ -93,7 +129,11 @@ function AuditLog() {
 
     const date = new Date(dateValue);
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(
+        date.getTime(),
+      )
+    ) {
       return "-";
     }
 
@@ -112,7 +152,11 @@ function AuditLog() {
 
     const date = new Date(dateValue);
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(
+        date.getTime(),
+      )
+    ) {
       return "-";
     }
 
@@ -153,42 +197,77 @@ function AuditLog() {
     }
   };
 
+  // Resolve the actual user name from the existing users list.
+  const getLogUser = (log) => {
+    if (
+      log.userId &&
+      users.length > 0
+    ) {
+      const matchedUser =
+        users.find(
+          (user) =>
+            String(user._id) ===
+            String(log.userId),
+        );
+
+      if (matchedUser?.name) {
+        return matchedUser.name;
+      }
+
+      if (matchedUser?.full_name) {
+        return matchedUser.full_name;
+      }
+    }
+
+    if (
+      log.userName &&
+      log.userName !== "System"
+    ) {
+      return log.userName;
+    }
+
+    return "System";
+  };
+
   return (
     <div className="min-h-screen w-full bg-slate-50 p-5 sm:p-6 lg:p-8">
       <div className="mx-auto w-full max-w-[1700px]">
 
-{/* =====================================================
-    PAGE HEADER
-====================================================== */}
+        {/* =====================================================
+            PAGE HEADER
+        ====================================================== */}
 
-<div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-  <div className="flex items-start gap-3">
-    <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-      <FaClipboardList size={21} />
-    </div>
+        <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="mt-4.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+              <FaClipboardList size={21} />
+            </div>
 
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-        System Administration
-      </p>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                System Administration
+              </p>
 
-      <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
-        Audit Log
-      </h1>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+                Audit Log
+              </h1>
 
-      <p className="mt-1 text-sm text-text-muted">
-        Monitor system activities and administrative actions.
-      </p>
-    </div>
-  </div>
+              <p className="mt-1 text-sm text-text-muted">
+                Monitor system activities and administrative actions.
+              </p>
+            </div>
+          </div>
 
-  <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
-    <div className="flex items-center gap-2">
-      <FaUserShield size={14} />
-      <span>Administrator Audit Trail</span>
-    </div>
-  </div>
-</div>
+          <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+            <div className="flex items-center gap-2">
+              <FaUserShield size={14} />
+              <span>
+                Administrator Audit Trail
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* =====================================================
             SEARCH & FILTERS
         ====================================================== */}
@@ -213,6 +292,7 @@ function AuditLog() {
           </div>
 
           <div className="grid gap-4 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
+
             {/* SEARCH */}
 
             <div className="relative">
@@ -226,7 +306,9 @@ function AuditLog() {
                 placeholder="Search by user, action, location, or details..."
                 value={search}
                 onChange={(e) =>
-                  setSearch(e.target.value)
+                  setSearch(
+                    e.target.value,
+                  )
                 }
                 className="w-full rounded-xl border border-border bg-slate-50 py-3 pl-11 pr-4 text-sm text-text-primary outline-none transition placeholder:text-text-subtle focus:border-primary-400 focus:bg-surface focus:ring-4 focus:ring-primary-100"
               />
@@ -238,20 +320,24 @@ function AuditLog() {
               <select
                 value={moduleFilter}
                 onChange={(e) =>
-                  setModuleFilter(e.target.value)
+                  setModuleFilter(
+                    e.target.value,
+                  )
                 }
                 className="w-full appearance-none rounded-xl border border-border bg-slate-50 px-4 py-3 text-sm font-medium text-text-primary outline-none transition focus:border-primary-400 focus:bg-surface focus:ring-4 focus:ring-primary-100"
               >
-                {moduleFilters.map((item) => (
-                  <option
-                    key={item}
-                    value={item}
-                  >
-                    {item === "All"
-                      ? "All Modules"
-                      : item}
-                  </option>
-                ))}
+                {moduleFilters.map(
+                  (item) => (
+                    <option
+                      key={item}
+                      value={item}
+                    >
+                      {item === "All"
+                        ? "All Modules"
+                        : item}
+                    </option>
+                  ),
+                )}
               </select>
             </div>
 
@@ -291,6 +377,7 @@ function AuditLog() {
         ====================================================== */}
 
         <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+
           {/* TABLE HEADER */}
 
           <div className="flex flex-col gap-4 border-b border-border px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -326,9 +413,22 @@ function AuditLog() {
           {/* TABLE */}
 
           <div className="w-full overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-left">
+            <table className="w-full min-w-[1050px] table-fixed text-left">
+
+              {/* FIXED COLUMN WIDTHS */}
+
+              <colgroup>
+                <col className="w-[18%]" />
+                <col className="w-[25%]" />
+                <col className="w-[15%]" />
+                <col className="w-[13%]" />
+                <col className="w-[10%]" />
+                <col className="w-[19%]" />
+              </colgroup>
+
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-border">
+
                   <th className="whitespace-nowrap px-5 py-4 text-xs font-extrabold uppercase tracking-[0.12em] text-text-subtle">
                     User
                   </th>
@@ -352,17 +452,22 @@ function AuditLog() {
                   <th className="whitespace-nowrap px-5 py-4 text-xs font-extrabold uppercase tracking-[0.12em] text-text-subtle">
                     Location
                   </th>
+
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-border-soft">
-                {/* LOADING */}
+
+                {/* ==================================================
+                    LOADING
+                ================================================== */}
 
                 {loading &&
                   Array.from({
                     length: 7,
                   }).map((_, index) => (
                     <tr key={index}>
+
                       <td className="px-5 py-5">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 animate-pulse rounded-xl bg-slate-100" />
@@ -396,10 +501,13 @@ function AuditLog() {
                       <td className="px-5 py-5">
                         <div className="h-3 w-28 animate-pulse rounded bg-slate-200" />
                       </td>
+
                     </tr>
                   ))}
 
-                {/* EMPTY */}
+                {/* ==================================================
+                    EMPTY
+                ================================================== */}
 
                 {!loading &&
                   logs.length === 0 && (
@@ -409,6 +517,7 @@ function AuditLog() {
                         className="px-6 py-20 text-center"
                       >
                         <div className="mx-auto flex max-w-sm flex-col items-center">
+
                           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-text-subtle">
                             <FaClipboardList
                               size={26}
@@ -425,18 +534,22 @@ function AuditLog() {
                             current search or filter
                             settings.
                           </p>
+
                         </div>
                       </td>
                     </tr>
                   )}
 
-                {/* LOG DATA */}
+                {/* ==================================================
+                    LOG DATA
+                ================================================== */}
 
                 {!loading &&
                   logs.length > 0 &&
                   logs.map((log) => {
+
                     const userName =
-                      log.userName || "System";
+                      getLogUser(log);
 
                     const userInitial =
                       userName
@@ -448,35 +561,43 @@ function AuditLog() {
                         key={log._id}
                         className="group transition-colors hover:bg-slate-50/70"
                       >
+
                         {/* USER */}
 
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
+
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-sm font-extrabold text-primary-700 transition group-hover:bg-primary-100">
                               {userInitial}
                             </div>
 
                             <div className="min-w-0">
-                              <p className="max-w-[180px] truncate text-sm font-bold text-text-primary">
+
+                              <p className="truncate text-sm font-bold text-text-primary">
                                 {userName}
                               </p>
 
                               <p className="mt-0.5 text-xs text-text-muted">
-                                {log.userRole || "-"}
+                                {log.userRole ||
+                                  "-"}
                               </p>
+
                             </div>
+
                           </div>
                         </td>
 
                         {/* ACTIVITY */}
 
-                        <td className="max-w-[340px] px-5 py-4">
+                        <td className="px-5 py-4">
                           <p className="text-sm font-bold text-text-primary">
-                            {log.action || "-"}
+                            {log.action ||
+                              "-"}
                           </p>
 
                           <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-muted">
-                            {log.description || "-"}
+                            {log.description ||
+                              "-"}
                           </p>
                         </td>
 
@@ -488,7 +609,8 @@ function AuditLog() {
                               log.module,
                             )}`}
                           >
-                            {log.module || "System"}
+                            {log.module ||
+                              "System"}
                           </span>
                         </td>
 
@@ -496,14 +618,16 @@ function AuditLog() {
 
                         <td className="whitespace-nowrap px-5 py-4">
                           <div className="flex items-center gap-2 text-sm font-medium text-text-secondary">
+
                             <FaCalendarAlt
-                              className="text-text-subtle"
+                              className="shrink-0 text-text-subtle"
                               size={12}
                             />
 
                             {formatDate(
                               log.createdAt,
                             )}
+
                           </div>
                         </td>
 
@@ -518,18 +642,25 @@ function AuditLog() {
                         {/* LOCATION */}
 
                         <td className="px-5 py-4">
-                          <div className="flex items-center gap-2 whitespace-nowrap text-sm font-medium text-text-secondary">
+                          <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-text-secondary">
+
                             <FaMapMarkerAlt
-                              className="text-text-subtle"
+                              className="shrink-0 text-text-subtle"
                               size={12}
                             />
 
-                            {log.location || "System"}
+                            <span className="truncate">
+                              {log.location ||
+                                "System"}
+                            </span>
+
                           </div>
                         </td>
+
                       </tr>
                     );
                   })}
+
               </tbody>
             </table>
           </div>
