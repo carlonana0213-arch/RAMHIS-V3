@@ -26,6 +26,7 @@ function Account() {
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [accountMessage, setAccountMessage] = useState("");
 
   const [showPasswordModal, setShowPasswordModal] =
     useState(false);
@@ -162,7 +163,7 @@ function Account() {
     } catch (err) {
       console.error("ACCOUNT UPDATE ERROR:", err);
 
-      setError(
+      setAccountMessage(
         err.message ||
           "Failed to update account information.",
       );
@@ -194,73 +195,112 @@ function Account() {
     setShowConfirmPassword(false);
   };
 
-  const handlePasswordUpdate = async () => {
-    if (
-      !passwordData.password ||
-      !passwordData.confirmPassword
-    ) {
-      setError("Please fill in both password fields.");
-      return;
-    }
+const handlePasswordUpdate = async () => {
+  if (!passwordData.password || !passwordData.confirmPassword) {
+    setAccountMessage("Please fill in both password fields.");
+    setError("Please fill in both password fields.");
+    return;
+  }
 
-    if (
-      passwordData.password !==
-      passwordData.confirmPassword
-    ) {
-      setError("Passwords do not match.");
-      return;
-    }
+  const passwordRequirements =
+    "Password does not meet the requirements:\n" +
+    "At least 8 characters\n" +
+    "At least 1 uppercase letter\n" +
+    "At least 1 lowercase letter\n" +
+    "At least 1 number\n" +
+    "At least 1 special character";
 
-    if (passwordData.password.length < 6) {
-      setError(
-        "Password must contain at least 6 characters.",
-      );
-      return;
-    }
+  const accountPasswordError =
+    "Password does not meet the requirements.";
 
-    try {
-      setSaving(true);
-      setError("");
+  if (passwordData.password.length < 8) {
+    setAccountMessage(accountPasswordError);
+    setError(passwordRequirements);
+    return;
+  }
 
-      const token = localStorage.getItem("token");
+  if (!/[A-Z]/.test(passwordData.password)) {
+    setAccountMessage(accountPasswordError);
+    setError(passwordRequirements);
+    return;
+  }
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/auth/me`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            password: passwordData.password,
-          }),
+  if (!/[a-z]/.test(passwordData.password)) {
+    setAccountMessage(accountPasswordError);
+    setError(passwordRequirements);
+    return;
+  }
+
+  if (!/[0-9]/.test(passwordData.password)) {
+    setAccountMessage(accountPasswordError);
+    setError(passwordRequirements);
+    return;
+  }
+
+  if (
+    !/[!@#$%^&*(),.?":{}|<>_\-\\[\]/`~+=;']/.test(
+      passwordData.password
+    )
+  ) {
+    setAccountMessage(accountPasswordError);
+    setError(passwordRequirements);
+    return;
+  }
+
+  if (passwordData.password !== passwordData.confirmPassword) {
+    setAccountMessage("Passwords do not match.");
+    setError("Passwords do not match.");
+    return;
+  }
+
+  try {
+    setSaving(true);
+    setError("");
+    setAccountMessage("");
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${API_BASE_URL}/api/auth/me`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(
-          result.message ||
-            result.msg ||
-            "Failed to update password.",
-        );
+        body: JSON.stringify({
+          password: passwordData.password,
+        }),
       }
+    );
 
-      closePasswordModal();
+    const result = await res.json();
 
-      setMessage("Password updated successfully.");
-    } catch (err) {
-      console.error("PASSWORD UPDATE ERROR:", err);
-
-      setError(
-        err.message || "Failed to update password.",
+    if (!res.ok) {
+      throw new Error(
+        result.message ||
+          result.msg ||
+          "Failed to update password."
       );
-    } finally {
-      setSaving(false);
     }
-  };
+
+    closePasswordModal();
+
+    setMessage("Password updated successfully.");
+  } catch (err) {
+    console.error("PASSWORD UPDATE ERROR:", err);
+
+    setAccountMessage(
+      err.message || "Failed to update password."
+    );
+
+    setError(
+      err.message || "Failed to update password."
+    );
+  } finally {
+    setSaving(false);
+  }
+};
 
   // ============================================================
   // HELPERS
@@ -412,7 +452,7 @@ function Account() {
             SUCCESS / ERROR MESSAGE
         ======================================================= */}
 
-        {(message || error) && (
+        {(message || accountMessage) && (
           <div
             className={`mb-6 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium ${
               message
@@ -426,7 +466,7 @@ function Account() {
               <AlertCircle size={18} />
             )}
 
-            <span>{message || error}</span>
+            <span>{message || accountMessage}</span>
           </div>
         )}
 
@@ -1012,7 +1052,7 @@ function Account() {
                     className="mt-0.5 shrink-0"
                   />
 
-                  <span>{error}</span>
+                  <span className="whitespace-pre-line">{error}</span>
                 </div>
               )}
             </div>
