@@ -160,7 +160,7 @@ async function processOperation(operation) {
     // -------------------------------------------------
     // CONFLICT DETECTION
     // -------------------------------------------------
-
+    /*
     if (
       operation.entityType === "patient" &&
       operation.method === "PUT" &&
@@ -212,6 +212,16 @@ async function processOperation(operation) {
         return;
       }
     }
+    */
+    console.log("[PATIENT CONFLICT DEBUG] About to sync:", {
+      entityType: operation.entityType,
+      method: operation.method,
+      entityKey: operation.entityKey,
+      operationId: operation.operationId,
+      baseUpdatedAt: operation.baseUpdatedAt,
+      snapshotUpdatedAt: operation.baseSnapshot?.updatedAt,
+      requestSync: requestPayload?._sync,
+    });
 
     const response = await apiFetch(operation.url, {
       method: operation.method,
@@ -227,7 +237,49 @@ async function processOperation(operation) {
       `[Offline Sync] Failed operation ${operation.operationId}:`,
       error,
     );
+    if (operation.entityType === "patient" && error?.status === 409) {
+      const conflictData = error?.data;
 
+      console.warn(
+        `[Offline Sync] Backend conflict detected for patient ${operation.entityKey}.`,
+        conflictData,
+      );
+
+      await db.offlineOutbox.update(operation.operationId, {
+        status: "conflict",
+        error: "Synchronization conflict requires review.",
+        updatedAt: new Date().toISOString(),
+      });
+
+      await createOfflineConflict({
+        entityType: "patient",
+        entityKey: operation.entityKey,
+        operationId: operation.operationId,
+
+        localData: operation.payload,
+
+        serverData:
+          conflictData?.serverData ||
+          conflictData?.candidates?.find(
+            (candidate) => candidate.source === "server",
+          )?.data ||
+          null,
+      });
+
+      window.dispatchEvent(
+        new CustomEvent("offline-conflict-created", {
+          detail: {
+            entityType: "patient",
+            entityKey: operation.entityKey,
+            operationId: operation.operationId,
+            conflictId: conflictData?.conflictId || null,
+            candidates: conflictData?.candidates || [],
+          },
+        }),
+      );
+
+      return;
+    }
     // ---------------------------------------------------------
     // BACKEND CONFLICT
     // ---------------------------------------------------------

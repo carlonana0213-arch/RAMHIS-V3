@@ -130,6 +130,7 @@ export const updatePatient = async (id, data) => {
       method: "PUT",
       url: `${API}/${id}`,
       payload: data,
+      baseSnapshot: existingPatient.serverSnapshot || existingPatient,
     });
 
     return updatedPatient;

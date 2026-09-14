@@ -93,7 +93,7 @@ export async function cachePatientQueue(patients) {
 
         _syncStatus: "synced",
 
-        updatedAt: new Date().toISOString(),
+        updatedAt: patient.updatedAt || new Date().toISOString(),
       });
     }
   });

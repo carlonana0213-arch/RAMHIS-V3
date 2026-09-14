@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import ConflictManager from "../../../Components/common/ConflictManager";
 
+import { getPendingOfflineConflicts } from "../../../Services/offlineRepository";
+
+import {
+  getPatientConflicts,
+  resolveConflict,
+  markLocalConflictResolved,
+} from "../../../Services/conflictService";
 import { Users } from "lucide-react";
 
 import {
   cachePatientQueueForOffline,
   getPatientQueue,
   getPatientQueueSummary,
+  getPatientById,
 } from "../../../Services/patientService";
 
 import { getCurrentMission } from "../../../Services/eventService";
@@ -66,7 +75,9 @@ export default function Patients() {
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [selectedPatient, setSelectedPatient] = useState(null);
-
+  const [patientConflict, setPatientConflict] = useState(null);
+  const [conflictPatient, setConflictPatient] = useState(null);
+  const [checkingConflict, setCheckingConflict] = useState(false);
   /*
   |--------------------------------------------------------------------------
   | DEBOUNCE SEARCH
@@ -244,6 +255,37 @@ export default function Patients() {
     [currentPage, search, departmentFilter],
   );
 
+  useEffect(() => {
+    const loadExistingPatientConflict = async () => {
+      if (!navigator.onLine) {
+        return;
+      }
+
+      try {
+        const conflicts = await getPendingOfflineConflicts();
+
+        const conflict = conflicts.find(
+          (item) => item.status === "pending" && item.entityType === "patient",
+        );
+
+        if (!conflict) {
+          return;
+        }
+
+        const patient = await getPatientById(conflict.entityKey);
+
+        setConflictPatient(patient);
+        setPatientConflict(conflict);
+      } catch (error) {
+        console.warn(
+          "[Patient Conflict UI] No existing patient conflict loaded:",
+          error,
+        );
+      }
+    };
+
+    loadExistingPatientConflict();
+  }, []);
   /*
   |--------------------------------------------------------------------------
   | PREPARE OFFLINE CACHE
@@ -260,12 +302,112 @@ export default function Patients() {
     });
   }, []);
 
+  useEffect(() => {
+    const handleConflictCreated = async (event) => {
+      const detail = event?.detail;
+
+      if (detail?.entityType !== "patient") {
+        return;
+      }
+
+      const patientId = detail.entityKey;
+
+      if (!patientId) {
+        return;
+      }
+
+      try {
+        console.info("[Patient Conflict UI] Conflict created:", patientId);
+
+        const conflicts = await getPendingOfflineConflicts();
+
+        const localConflict = conflicts.find(
+          (conflict) =>
+            conflict.status === "pending" &&
+            conflict.entityType === "patient" &&
+            String(conflict.entityKey) === String(patientId),
+        );
+
+        if (!localConflict) {
+          console.warn(
+            "[Patient Conflict UI] Local conflict record not found.",
+          );
+
+          return;
+        }
+
+        let patient = null;
+
+        try {
+          patient = await getPatientById(patientId);
+        } catch (error) {
+          console.warn("[Patient Conflict UI] Failed to load patient:", error);
+        }
+
+        // Close the normal patient modal so the conflict
+        // manager is visible above everything.
+        setSelectedPatient(null);
+
+        setConflictPatient(patient);
+        setPatientConflict(localConflict);
+      } catch (error) {
+        console.error(
+          "[Patient Conflict UI] Failed to prepare conflict:",
+          error,
+        );
+      }
+    };
+
+    window.addEventListener("offline-conflict-created", handleConflictCreated);
+
+    return () => {
+      window.removeEventListener(
+        "offline-conflict-created",
+        handleConflictCreated,
+      );
+    };
+  }, []);
   /*
   |--------------------------------------------------------------------------
   | LOAD DEPARTMENT SUMMARY
   |--------------------------------------------------------------------------
   */
+  const handlePatientConflictResolution = async (
+    conflictId,
+    selectedOperationId,
+    resolvedData,
+  ) => {
+    if (!conflictId) {
+      throw new Error("Backend conflict ID is missing.");
+    }
 
+    if (!selectedOperationId) {
+      throw new Error("Conflict candidate operation ID is missing.");
+    }
+
+    try {
+      setCheckingConflict(true);
+
+      await resolveConflict(conflictId, selectedOperationId, resolvedData);
+
+      if (patientConflict?.conflictId) {
+        await markLocalConflictResolved(patientConflict.conflictId);
+      }
+
+      setPatientConflict(null);
+      setConflictPatient(null);
+
+      // Reload the patient list after resolution.
+      // Use your existing fetchQueue callback here.
+      await fetchQueue(true);
+    } catch (error) {
+      console.error("[Patient Conflict UI] Failed to resolve conflict:", error);
+
+      throw error;
+    } finally {
+      setCheckingConflict(false);
+    }
+  };
   const fetchQueueSummary = useCallback(async (silent = false) => {
     if (!silent) {
       setSummaryLoading(true);
@@ -565,6 +707,30 @@ export default function Patients() {
 
             await refreshPatientData();
           }}
+        />
+      )}
+
+      {patientConflict && conflictPatient && (
+        <ConflictManager
+          conflict={patientConflict}
+          patient={conflictPatient}
+          patientId={conflictPatient?._id || patientConflict?.entityKey}
+          onClose={() => {
+            setPatientConflict(null);
+            setConflictPatient(null);
+          }}
+          onResolveCandidate={async (
+            conflictId,
+            selectedOperationId,
+            resolvedData,
+          ) => {
+            await handlePatientConflictResolution(
+              conflictId,
+              selectedOperationId,
+              resolvedData,
+            );
+          }}
+          isResolving={checkingConflict}
         />
       )}
     </main>
