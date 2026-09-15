@@ -339,24 +339,66 @@ export const cachePatientQueueForOffline = async () => {
 
 export const getPatientQueueSummary = async () => {
   try {
-    const data = await apiFetch(`${API}/queue-summary`);
+    const result = await getPatientQueue({
+      page: 1,
+      limit: 1000,
+      search: "",
+      department: "All",
+    });
 
-    return {
-      Pediatrics: Number(data?.Pediatrics) || 0,
-      Ortho: Number(data?.Ortho) || 0,
-      Opta: Number(data?.Opta) || 0,
-      Dental: Number(data?.Dental) || 0,
-      Cardio: Number(data?.Cardio) || 0,
-      General: Number(data?.General) || 0,
+    const patients = Array.isArray(
+      result?.patients
+    )
+      ? result.patients
+      : Array.isArray(result)
+        ? result
+        : [];
+
+    const summary = {
+      Pediatrics: 0,
+      Ortho: 0,
+      Opta: 0,
+      Dental: 0,
+      Cardio: 0,
+      General: 0,
+      Neurology: 0,
+      Pathology: 0,
+      Circumcision: 0,
+      Surgery: 0,
+      PT: 0,
+      OBGyn: 0,
+      Ophthalmology: 0,
+      Dermatology: 0,
+      AdultMed: 0,
     };
+
+    patients.forEach((patient) => {
+      const department =
+        patient?.department;
+
+      if (
+        Object.prototype.hasOwnProperty.call(
+          summary,
+          department
+        )
+      ) {
+        summary[department] += 1;
+      }
+    });
+
+    return summary;
   } catch (error) {
-    if (!isNetworkError(error) && navigator.onLine) {
-      throw error;
-    }
+    console.error(
+      "Failed to load patient queue summary:",
+      error
+    );
 
-    const patients = await getCachedPatientQueue();
+    const patients =
+      await getCachedPatientQueue();
 
-    return summarizePatients(patients);
+    return summarizePatients(
+      patients
+    );
   }
 };
 

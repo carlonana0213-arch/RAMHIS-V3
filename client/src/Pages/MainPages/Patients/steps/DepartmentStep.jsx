@@ -30,10 +30,26 @@ const departments = [
   "Surgery",
   "PT",
   "OBGyn",
-  "Ophthalmology",
   "Dermatology",
   "AdultMed",
 ];
+
+const departmentValues = {
+  Pediatrics: "Pediatrics",
+  Ortho: "Ortho",
+  Opta: "Ophthalmology",
+  Dental: "Dental",
+  Cardio: "Cardio",
+  General: "General",
+  Neurology: "Neurology",
+  Pathology: "Pathology",
+  Circumcision: "Circumcision",
+  Surgery: "Surgery",
+  PT: "PT",
+  OBGyn: "OBGyn",
+  Dermatology: "Dermatology",
+  AdultMed: "AdultMed",
+};
 
 const departmentConfig = {
   Pediatrics: {
@@ -108,12 +124,6 @@ const departmentConfig = {
     iconColor: "text-pink-700",
   },
 
-  Ophthalmology: {
-    icon: FaEye,
-    iconBg: "bg-cyan-50",
-    iconColor: "text-cyan-700",
-  },
-
   Dermatology: {
     icon: FaAllergies,
     iconBg: "bg-orange-50",
@@ -131,8 +141,23 @@ const DepartmentStep = ({ form, setForm }) => {
   const selectDepartment = (department) => {
     setForm((prev) => ({
       ...prev,
-      department,
+      department:
+        departmentValues[department] ||
+        department,
     }));
+  };
+
+  const getDisplayDepartment = () => {
+    const entry = Object.entries(
+      departmentValues
+    ).find(
+      ([, value]) =>
+        value === form.department
+    );
+
+    return entry
+      ? entry[0]
+      : form.department;
   };
 
   const updateRemarks = (value) => {
@@ -212,7 +237,7 @@ const DepartmentStep = ({ form, setForm }) => {
 
             {form.department && (
               <span className="rounded-full bg-status-stable-bg px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-status-stable-text">
-                {form.department} Selected
+                {getDisplayDepartment()} Selected
               </span>
             )}
           </div>
@@ -222,9 +247,16 @@ const DepartmentStep = ({ form, setForm }) => {
         <div className="p-5 sm:p-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {departments.map((department) => {
-              const active = form.department === department;
+              const departmentValue =
+                departmentValues[department] ||
+                department;
 
-              const config = departmentConfig[department];
+              const active =
+                form.department ===
+                departmentValue;
+
+              const config =
+                departmentConfig[department];
 
               const Icon = config.icon;
 
@@ -232,7 +264,9 @@ const DepartmentStep = ({ form, setForm }) => {
                 <button
                   key={department}
                   type="button"
-                  onClick={() => selectDepartment(department)}
+                  onClick={() =>
+                    selectDepartment(department)
+                  }
                   className={[
                     "group relative flex min-h-[120px] flex-col items-start rounded-2xl border p-4 text-left transition-all duration-200",
                     active
@@ -266,7 +300,9 @@ const DepartmentStep = ({ form, setForm }) => {
                     </span>
 
                     <span className="mt-1 block text-[11px] text-text-muted">
-                      {active ? "Currently selected" : "Select department"}
+                      {active
+                        ? "Currently selected"
+                        : "Select department"}
                     </span>
                   </div>
                 </button>

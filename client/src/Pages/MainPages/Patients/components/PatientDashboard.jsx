@@ -10,27 +10,68 @@ import {
   FaCut,
   FaSyringe,
   FaWalking,
+  FaUserMd,
   FaChild,
   FaAllergies,
-  FaUserMd,
 } from "react-icons/fa";
 
 const departments = [
-  "Pediatrics",
-  "Ortho",
-  "Opta",
-  "Dental",
-  "Cardio",
-  "General",
-  "Neurology",
-  "Pathology",
-  "Circumcision",
-  "Surgery",
-  "PT & Rehabilitation",
-  "OB-Gyn",
-  "Ophthalmology",
-  "Dermatology",
-  "Adult Medicine",
+  {
+    name: "Pediatrics",
+    key: "Pediatrics",
+  },
+  {
+    name: "Ortho",
+    key: "Ortho",
+  },
+  {
+    name: "Opta",
+    key: "Ophthalmology",
+  },
+  {
+    name: "Dental",
+    key: "Dental",
+  },
+  {
+    name: "Cardio",
+    key: "Cardio",
+  },
+  {
+    name: "General",
+    key: "General",
+  },
+  {
+    name: "Neurology",
+    key: "Neurology",
+  },
+  {
+    name: "Pathology",
+    key: "Pathology",
+  },
+  {
+    name: "Circumcision",
+    key: "Circumcision",
+  },
+  {
+    name: "Surgery",
+    key: "Surgery",
+  },
+  {
+    name: "PT & Rehabilitation",
+    key: "PT",
+  },
+  {
+    name: "OB-Gyn",
+    key: "OBGyn",
+  },
+  {
+    name: "Dermatology",
+    key: "Dermatology",
+  },
+  {
+    name: "Adult Medicine",
+    key: "AdultMed",
+  },
 ];
 
 const departmentConfig = {
@@ -106,12 +147,6 @@ const departmentConfig = {
     iconColor: "text-pink-600",
   },
 
-  Ophthalmology: {
-    icon: FaEye,
-    iconBg: "bg-cyan-100",
-    iconColor: "text-cyan-600",
-  },
-
   Dermatology: {
     icon: FaAllergies,
     iconBg: "bg-orange-100",
@@ -134,10 +169,10 @@ function DepartmentSkeleton() {
         <div className="mt-2 h-3 w-52 animate-pulse rounded bg-slate-200" />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {departments.map((department) => (
           <div
-            key={department}
+            key={department.name}
             className="animate-pulse rounded-2xl border border-border bg-surface p-4 shadow-sm"
           >
             <div className="h-10 w-10 rounded-xl bg-slate-200" />
@@ -160,19 +195,22 @@ export default function PatientDashboard({
     return <DepartmentSkeleton />;
   }
 
-  const getCount = (department) => {
-    return Number(summary?.[department]) || 0;
+  const getCount = (departmentKey) => {
+    return Number(
+      summary?.[departmentKey]
+    ) || 0;
   };
 
-  const totalActive = departments.reduce(
-    (total, department) =>
-      total + getCount(department),
-    0
-  );
+  const totalActive =
+    departments.reduce(
+      (total, department) =>
+        total +
+        getCount(department.key),
+      0
+    );
 
   return (
     <section>
-      {/* HEADER */}
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h2 className="text-sm font-bold text-text-primary">
@@ -180,59 +218,63 @@ export default function PatientDashboard({
           </h2>
 
           <p className="mt-0.5 text-xs text-text-muted">
-            Active patients currently assigned by department.
+            Active patients by department
           </p>
         </div>
 
-        <span className="rounded-full bg-primary-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary-700">
-          {totalActive} Active
+        <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700">
+          {totalActive} active
         </span>
       </div>
 
-      {/* DEPARTMENT CARDS */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {departments.map((department) => {
-          const config = departmentConfig[department];
-          const Icon = config.icon;
-          const count = getCount(department);
+          const config =
+            departmentConfig[
+              department.name
+            ];
+
+          const Icon =
+            config.icon;
+
+          const count =
+            getCount(
+              department.key
+            );
 
           return (
             <div
-              key={department}
-              className="group rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              key={department.name}
+              className={[
+                "group rounded-2xl border border-border bg-surface p-4",
+                "shadow-sm transition duration-200",
+                "hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md",
+              ].join(" ")}
             >
-              {/* ICON */}
               <div
-                className={`flex h-10 w-10 items-center justify-center rounded-xl ${config.iconBg} ${config.iconColor}`}
+                className={[
+                  "flex h-10 w-10 items-center justify-center rounded-xl",
+                  config.iconBg,
+                  config.iconColor,
+                ].join(" ")}
               >
                 <Icon size={17} />
               </div>
 
-              {/* DEPARTMENT */}
-              <p className="mt-4 text-xs font-semibold text-text-secondary">
-                {department}
-              </p>
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-text-muted">
+                  {department.name}
+                </p>
 
-              {/* COUNT */}
-              <p className="mt-1 text-3xl font-bold leading-none text-primary-900">
-                {count}
-              </p>
+                <p className="mt-1 text-2xl font-bold tracking-tight text-text-primary">
+                  {count}
+                </p>
 
-              {/* PATIENT LABEL */}
-              <div className="mt-3 flex items-center gap-1.5">
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    count > 0
-                      ? "bg-emerald-500"
-                      : "bg-slate-300"
-                  }`}
-                />
-
-                <span className="text-[10px] text-text-muted">
+                <p className="mt-1 text-[11px] text-text-subtle">
                   {count === 1
-                    ? "1 patient"
-                    : `${count} patients`}
-                </span>
+                    ? "patient"
+                    : "patients"}
+                </p>
               </div>
             </div>
           );
