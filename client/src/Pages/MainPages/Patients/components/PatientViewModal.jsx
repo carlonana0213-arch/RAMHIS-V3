@@ -812,14 +812,63 @@ export default function PatientViewModal({ patient, onClose }) {
                     }
                   />
 
-                  <Field
-                    label="Department"
-                    value={isEditing ? editForm?.department : department}
-                    editing={isEditing}
-                    onChange={(event) =>
-                      handleRootFieldChange("department", event.target.value)
-                    }
-                  />
+                  {isEditing ? (
+                    <div className="min-w-0 rounded-2xl border border-border-soft bg-surface-muted p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-subtle">
+                        Department
+                      </p>
+
+                      <div className="relative mt-2">
+                        <select
+                          value={editForm?.department || ""}
+                          onChange={(event) =>
+                            handleRootFieldChange(
+                              "department",
+                              event.target.value,
+                            )
+                          }
+                          className="w-full appearance-none rounded-xl border border-border bg-surface px-3 py-2.5 pr-10 text-sm font-semibold text-text-primary outline-none transition focus:border-primary-400 focus:ring-4 focus:ring-primary-100"
+                        >
+                          <option value="">Select Department</option>
+                          <option value="Pediatrics">Pediatrics</option>
+                          <option value="Ortho">Ortho</option>
+                          <option value="Ophthalmology">Opta</option>
+                          <option value="Dental">Dental</option>
+                          <option value="Cardio">Cardio</option>
+                          <option value="General">General</option>
+                          <option value="Neurology">Neurology</option>
+                          <option value="Pathology">Pathology</option>
+                          <option value="Circumcision">Circumcision</option>
+                          <option value="Surgery">Surgery</option>
+                          <option value="PT">PT & Rehabilitation</option>
+                          <option value="OBGyn">OB-Gyn</option>
+                          <option value="Dermatology">Dermatology</option>
+                          <option value="AdultMed">Adult Medicine</option>
+                        </select>
+
+                        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <Field
+                      label="Department"
+                      value={department}
+                    />
+                  )}
 
                   <Field
                     label="Insurance"
