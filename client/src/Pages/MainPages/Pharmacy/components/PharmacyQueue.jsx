@@ -9,6 +9,7 @@ import {
   ListOrdered,
   AlertTriangle,
   XCircle,
+  Package,
 } from "lucide-react";
 
 import { apiFetch } from "../../../../Services/api";
@@ -36,24 +37,54 @@ function PharmacyQueue() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
 
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [expandedPatients, setExpandedPatients] = useState({});
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const loadPrescriptions = async () => {
     try {
       setLoading(true);
 
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(ITEMS_PER_PAGE),
+        filter,
+      });
+
+      if (debouncedSearch) {
+        params.set("search", debouncedSearch);
+      }
+
       const data = await apiFetch(
-        `${API_BASE_URL}/api/prescriptions/pending`,
+        `${API_BASE_URL}/api/prescriptions/queue?${params.toString()}`,
       );
 
-      setPrescriptions(Array.isArray(data) ? data : []);
+      setPrescriptions(
+        Array.isArray(data?.prescriptions) ? data.prescriptions : [],
+      );
+
+      setTotalPages(Math.max(1, Number(data?.totalPages) || 1));
+
+      setTotalRecords(Number(data?.total) || 0);
     } catch (error) {
       console.error("Failed to load prescription queue:", error);
 
-      setAlertMessage(
-        error.message || "Failed to load prescription queue.",
-      );
+      setPrescriptions([]);
+      setTotalPages(1);
+      setTotalRecords(0);
+
+      setAlertMessage(error.message || "Failed to load prescription queue.");
     } finally {
       setLoading(false);
     }
@@ -61,7 +92,11 @@ function PharmacyQueue() {
 
   useEffect(() => {
     loadPrescriptions();
-  }, []);
+  }, [currentPage, filter, debouncedSearch]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, filter]);
 
   const handleMarkAsGiven = async (prescriptionId, itemId) => {
     try {
@@ -78,25 +113,16 @@ function PharmacyQueue() {
 
       setAlertMessage("Prescription marked as given.");
     } catch (error) {
-      console.error(
-        "Failed to mark prescription as given:",
-        error,
-      );
+      console.error("Failed to mark prescription as given:", error);
 
       setConfirmState(null);
 
-      setAlertMessage(
-        error.message ||
-          "Failed to mark prescription as given.",
-      );
+      setAlertMessage(error.message || "Failed to mark prescription as given.");
     }
   };
 
   const getPatientName = (prescription) => {
-    return (
-      prescription?.patient?.generalInfo?.name ||
-      "Unknown Patient"
-    );
+    return prescription?.patient?.generalInfo?.name || "Unknown Patient";
   };
 
   const getMedicineName = (medicine) => {
@@ -131,145 +157,69 @@ function PharmacyQueue() {
   };
 
   const pendingCount = useMemo(() => {
-    return prescriptions
-      .flatMap(
-        (prescription) =>
-          prescription.items || [],
-      )
-      .filter((item) => !item.isGiven).length;
-  }, [prescriptions]);
+    if (filter !== "Pending") return 0;
+
+    return prescriptions.reduce(
+      (total, prescription) =>
+        total + (prescription.filteredItems?.length || 0),
+      0,
+    );
+  }, [prescriptions, filter]);
 
   const givenCount = useMemo(() => {
-    return prescriptions
-      .flatMap(
-        (prescription) =>
-          prescription.items || [],
-      )
-      .filter((item) => item.isGiven).length;
-  }, [prescriptions]);
+    if (filter !== "Given") return 0;
 
-  const filteredPrescriptions = useMemo(() => {
-    const searchTerm =
-      search.trim().toLowerCase();
-
-    return prescriptions
-      .map((prescription) => {
-        const filteredItems =
-          (prescription.items || []).filter(
-            (item) => {
-              const patientName =
-                getPatientName(
-                  prescription,
-                ).toLowerCase();
-
-              const medicineName =
-                getMedicineName(
-                  item.medicine,
-                ).toLowerCase();
-
-              const matchesSearch =
-                !searchTerm ||
-                patientName.includes(
-                  searchTerm,
-                ) ||
-                medicineName.includes(
-                  searchTerm,
-                );
-
-              const matchesFilter =
-                filter === "Pending"
-                  ? !item.isGiven
-                  : item.isGiven;
-
-              return (
-                matchesSearch &&
-                matchesFilter
-              );
-            },
-          );
-
-        return {
-          ...prescription,
-          filteredItems,
-        };
-      })
-      .filter(
-        (prescription) =>
-          prescription.filteredItems.length > 0,
-      );
-  }, [prescriptions, search, filter]);
+    return prescriptions.reduce(
+      (total, prescription) =>
+        total + (prescription.filteredItems?.length || 0),
+      0,
+    );
+  }, [prescriptions, filter]);
 
   const groupedByPatient = useMemo(() => {
-  const map = new Map();
+    const map = new Map();
 
-  filteredPrescriptions.forEach((prescription) => {
-    const patientId =
-      prescription?.patient?._id ||
-      prescription?.patient?.id ||
-      prescription?.patientId ||
-      getPatientName(prescription);
+    prescriptions.forEach((prescription) => {
+      const patientId =
+        prescription?.patient?._id ||
+        prescription?.patient?.id ||
+        prescription?.patientId ||
+        getPatientName(prescription);
 
-    const patientName =
-      getPatientName(prescription);
+      const patientName = getPatientName(prescription);
 
-    const itemsWithPrescriptionData =
-      prescription.filteredItems.map((item) => ({
-        ...item,
-        prescriptionId: prescription._id,
-        doctorName:
-          prescription.doctor?.name ||
-          "Unknown Doctor",
-      }));
-
-    if (!map.has(patientId)) {
-      map.set(patientId, {
-        patientId,
-        patientName,
-        items: itemsWithPrescriptionData,
-      });
-    } else {
-      map.get(patientId).items.push(
-        ...itemsWithPrescriptionData,
+      const itemsWithPrescriptionData = (prescription.filteredItems || []).map(
+        (item) => ({
+          ...item,
+          prescriptionId: prescription._id,
+          doctorName: prescription.doctor?.name || "Unknown Doctor",
+        }),
       );
-    }
-  });
 
-  return Array.from(map.values());
-}, [filteredPrescriptions]);
+      if (!map.has(patientId)) {
+        map.set(patientId, {
+          patientId,
+          patientName,
+          items: itemsWithPrescriptionData,
+        });
+      } else {
+        map.get(patientId).items.push(...itemsWithPrescriptionData);
+      }
+    });
+
+    return Array.from(map.values());
+  }, [prescriptions]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, filter]);
+  }, [debouncedSearch, filter]);
 
-  
-
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      groupedByPatient.length /
-        ITEMS_PER_PAGE,
-    ),
-  );
-
-  const startIndex =
-    (currentPage - 1) * ITEMS_PER_PAGE;
-
-  const displayedGroups =
-    groupedByPatient.slice(
-      startIndex,
-      startIndex + ITEMS_PER_PAGE,
-    );
+  const displayedGroups = groupedByPatient;
 
   const startDisplay =
-    groupedByPatient.length === 0
-      ? 0
-      : startIndex + 1;
+    totalRecords === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1;
 
-  const endDisplay = Math.min(
-    startIndex + ITEMS_PER_PAGE,
-    groupedByPatient.length,
-  );
+  const endDisplay = Math.min(currentPage * ITEMS_PER_PAGE, totalRecords);
 
   const togglePatient = (id) => {
     setExpandedPatients((previous) => ({
@@ -307,10 +257,7 @@ function PharmacyQueue() {
     );
   };
 
-  const renderAction = (
-    prescription,
-    item,
-  ) => {
+  const renderAction = (prescription, item) => {
     if (item.isGiven) {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-status-stable-bg px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-status-stable-text">
@@ -320,13 +267,9 @@ function PharmacyQueue() {
       );
     }
 
-    const stock = Number(
-      item.medicine?.quantity ?? 0,
-    );
+    const stock = Number(item.medicine?.quantity ?? 0);
 
-    const requiredQuantity = Number(
-      item.quantity ?? 0,
-    );
+    const requiredQuantity = Number(item.quantity ?? 0);
 
     if (stock <= 0) {
       return (
@@ -348,277 +291,241 @@ function PharmacyQueue() {
       <Button
         size="sm"
         onClick={() =>
-  setConfirmState({
-    message:
-      "Mark this prescription as given?",
-    onConfirm: () =>
-      handleMarkAsGiven(
-        prescription._id,
-        item._id,
-      ),
-  })
-}
+          setConfirmState({
+            message: "Mark this prescription as given?",
+            onConfirm: () => handleMarkAsGiven(prescription._id, item._id),
+          })
+        }
       >
         Mark as Given
       </Button>
     );
   };
 
-return (
-  <div className="min-h-full w-full px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
-    <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-5">
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 400);
 
-      {/* HEADER */}
-      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-3">
-          <div className="mt-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
-            <ListOrdered size={21} />
-          </div>
+    return () => clearTimeout(timer);
+  }, [search]);
 
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
-              Medicine Distribution
-            </p>
-
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
-              Pharmacy Queue
-            </h1>
-
-            <p className="mt-1 text-sm text-text-muted">
-              Manage prescription fulfillment and medicine distribution.
-            </p>
-          </div>
-        </div>
-
-        <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
-          {pendingCount.toLocaleString()} Pending
-        </div>
-      </header>
-
-      {/* STAT CARDS */}
-      <div className="grid gap-4 sm:grid-cols-2">
-
-        <div
-          className={`${dashboardCardVariants.base} relative overflow-hidden rounded-[20px] border-0 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.05)]`}
-        >
-          <div className="flex items-start justify-between gap-4">
+  return (
+    <div className="min-h-full w-full px-4 py-5 pb-6 text-text-primary sm:px-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+      <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-5">
+        {/* HEADER */}
+        <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <div className="mt-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
+              <ListOrdered size={21} />
+            </div>
 
             <div>
-              <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-                Prescriptions in Queue
-              </span>
-
-              <p className="mt-3 text-3xl font-bold tracking-tight text-primary-900">
-                {pendingCount.toLocaleString()}
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                Medicine Distribution
               </p>
 
-              <p className="mt-2 text-xs text-text-subtle">
-                Waiting to be released
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-primary-900">
+                Pharmacy Queue
+              </h1>
+
+              <p className="mt-1 text-sm text-text-muted">
+                Manage prescription fulfillment and medicine distribution.
               </p>
             </div>
+          </div>
 
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-status-watch-bg text-status-watch-text">
-              <Clock3 size={19} />
+          <div className="shrink-0 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700">
+            {pendingCount.toLocaleString()} Pending
+          </div>
+        </header>
+
+        {/* STAT CARDS */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div
+            className={`${dashboardCardVariants.base} relative overflow-hidden rounded-[20px] border-0 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.05)]`}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                  Prescriptions in Queue
+                </span>
+
+                <p className="mt-3 text-3xl font-bold tracking-tight text-primary-900">
+                  {pendingCount.toLocaleString()}
+                </p>
+
+                <p className="mt-2 text-xs text-text-subtle">
+                  Waiting to be released
+                </p>
+              </div>
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-status-watch-bg text-status-watch-text">
+                <Clock3 size={19} />
+              </div>
             </div>
+          </div>
 
+          <div
+            className={`${dashboardCardVariants.base} relative overflow-hidden rounded-[20px] border-0 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.05)]`}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                  Prescriptions Given
+                </span>
+
+                <p className="mt-3 text-3xl font-bold tracking-tight text-primary-900">
+                  {givenCount.toLocaleString()}
+                </p>
+
+                <p className="mt-2 text-xs text-text-subtle">
+                  Successfully released
+                </p>
+              </div>
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-status-stable-bg text-status-stable-text">
+                <CheckCircle2 size={19} />
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* SEARCH + FILTER */}
         <div
-          className={`${dashboardCardVariants.base} relative overflow-hidden rounded-[20px] border-0 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.05)]`}
+          className={`${dashboardCardVariants.base} flex flex-col gap-4 rounded-[20px] border-0 p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] lg:flex-row lg:items-center lg:justify-between`}
         >
-          <div className="flex items-start justify-between gap-4">
+          <div className="relative w-full lg:max-w-md">
+            <Search
+              size={17}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-text-subtle"
+            />
 
-            <div>
-              <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-                Prescriptions Given
-              </span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search patient or medicine..."
+              className="w-full rounded-xl border border-border-soft bg-surface px-4 py-3 pl-11 text-sm text-text-primary outline-none transition placeholder:text-text-subtle focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
+            />
+          </div>
 
-              <p className="mt-3 text-3xl font-bold tracking-tight text-primary-900">
-                {givenCount.toLocaleString()}
-              </p>
+          <div className="flex w-full rounded-xl bg-surface-muted p-1 sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setFilter("Pending")}
+              className={`flex-1 rounded-lg px-5 py-2.5 text-xs font-bold transition sm:flex-none ${
+                filter === "Pending"
+                  ? "bg-surface text-primary-700 shadow-sm"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Pending
+            </button>
 
-              <p className="mt-2 text-xs text-text-subtle">
-                Successfully released
-              </p>
-            </div>
-
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-status-stable-bg text-status-stable-text">
-              <CheckCircle2 size={19} />
-            </div>
-
+            <button
+              type="button"
+              onClick={() => setFilter("Given")}
+              className={`flex-1 rounded-lg px-5 py-2.5 text-xs font-bold transition sm:flex-none ${
+                filter === "Given"
+                  ? "bg-surface text-primary-700 shadow-sm"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Given
+            </button>
           </div>
         </div>
 
-      </div>
+        {/* QUEUE TABLE */}
+        <div
+          className={`${dashboardCardVariants.base} overflow-hidden rounded-[20px] border-0 shadow-[0_4px_20px_rgba(0,0,0,0.05)]`}
+        >
+          {/* TABLE HEADER */}
+          <div className="flex flex-col gap-3 border-b border-border-soft px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                Prescription Records
+              </span>
 
-      {/* SEARCH + FILTER */}
-      <div
-        className={`${dashboardCardVariants.base} flex flex-col gap-4 rounded-[20px] border-0 p-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)] lg:flex-row lg:items-center lg:justify-between`}
-      >
+              <h3 className="text-lg font-bold tracking-tight text-primary-900">
+                {filter === "Pending"
+                  ? "Prescriptions in Queue"
+                  : "Released Prescriptions"}
+              </h3>
 
-        <div className="relative w-full lg:max-w-md">
+              <p className="mt-1 text-xs text-text-muted">
+                {groupedByPatient.length.toLocaleString()} patient
+                {groupedByPatient.length === 1 ? "" : "s"} found
+              </p>
+            </div>
 
-          <Search
-            size={17}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-text-subtle"
-          />
-
-          <input
-            type="text"
-            value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
-            placeholder="Search patient or medicine..."
-            className="w-full rounded-xl border border-border-soft bg-surface px-4 py-3 pl-11 text-sm text-text-primary outline-none transition placeholder:text-text-subtle focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10"
-          />
-
-        </div>
-
-        <div className="flex w-full rounded-xl bg-surface-muted p-1 sm:w-auto">
-
-          <button
-            type="button"
-            onClick={() =>
-              setFilter("Pending")
-            }
-            className={`flex-1 rounded-lg px-5 py-2.5 text-xs font-bold transition sm:flex-none ${
-              filter === "Pending"
-                ? "bg-surface text-primary-700 shadow-sm"
-                : "text-text-muted hover:text-text-primary"
-            }`}
-          >
-            Pending
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              setFilter("Given")
-            }
-            className={`flex-1 rounded-lg px-5 py-2.5 text-xs font-bold transition sm:flex-none ${
-              filter === "Given"
-                ? "bg-surface text-primary-700 shadow-sm"
-                : "text-text-muted hover:text-text-primary"
-            }`}
-          >
-            Given
-          </button>
-
-        </div>
-
-      </div>
-
-      {/* QUEUE TABLE */}
-      <div
-        className={`${dashboardCardVariants.base} overflow-hidden rounded-[20px] border-0 shadow-[0_4px_20px_rgba(0,0,0,0.05)]`}
-      >
-
-        {/* TABLE HEADER */}
-        <div className="flex flex-col gap-3 border-b border-border-soft px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
-
-          <div>
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
-              Prescription Records
+            <span
+              className={`${dashboardBadgeVariants.base} ${
+                filter === "Pending"
+                  ? dashboardBadgeVariants.overview
+                  : dashboardBadgeVariants.stable
+              } self-start sm:self-auto`}
+            >
+              {filter}
             </span>
-
-            <h3 className="text-lg font-bold tracking-tight text-primary-900">
-              {filter === "Pending"
-                ? "Prescriptions in Queue"
-                : "Released Prescriptions"}
-            </h3>
-
-            <p className="mt-1 text-xs text-text-muted">
-  {groupedByPatient.length.toLocaleString()}{" "}
-  patient
-  {groupedByPatient.length === 1 ? "" : "s"} found
-</p>
           </div>
 
-          <span
-            className={`${dashboardBadgeVariants.base} ${
-              filter === "Pending"
-                ? dashboardBadgeVariants.overview
-                : dashboardBadgeVariants.stable
-            } self-start sm:self-auto`}
-          >
-            {filter}
-          </span>
+          {loading ? (
+            <TableSkeleton rows={8} columns={7} />
+          ) : groupedByPatient.length === 0 ? (
+            /* EMPTY STATE */
+            <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted text-text-subtle">
+                <Package size={25} />
+              </div>
 
-        </div>
+              <h4 className="mt-5 text-base font-bold text-text-primary">
+                No prescriptions found
+              </h4>
 
-        {loading ? (
-          <TableSkeleton
-            rows={8}
-            columns={7}
-          />
-        ) : groupedByPatient.length === 0 ? (
-
-          /* EMPTY STATE */
-          <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted text-text-subtle">
-              <Package size={25} />
+              <p className="mt-2 max-w-sm text-sm leading-6 text-text-muted">
+                {search
+                  ? "Try changing your search or use a different keyword."
+                  : filter === "Pending"
+                    ? "There are currently no pending prescriptions waiting for release."
+                    : "No prescriptions have been marked as given yet."}
+              </p>
             </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1050px]">
+                  <thead>
+                    <tr className="border-b border-border-soft bg-surface-muted">
+                      {[
+                        "Patient",
+                        "Medicine",
+                        "Dosage",
+                        "Quantity",
+                        "Prescribed By",
+                        "Stock",
+                      ].map((column) => (
+                        <th
+                          key={column}
+                          className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted"
+                        >
+                          {column}
+                        </th>
+                      ))}
 
-            <h4 className="mt-5 text-base font-bold text-text-primary">
-              No prescriptions found
-            </h4>
-
-            <p className="mt-2 max-w-sm text-sm leading-6 text-text-muted">
-              {search
-                ? "Try changing your search or use a different keyword."
-                : filter === "Pending"
-                  ? "There are currently no pending prescriptions waiting for release."
-                  : "No prescriptions have been marked as given yet."}
-            </p>
-
-          </div>
-
-        ) : (
-          <>
-
-            <div className="overflow-x-auto">
-
-              <table className="w-full min-w-[1050px]">
-
-                <thead>
-                  <tr className="border-b border-border-soft bg-surface-muted">
-
-                    {[
-                      "Patient",
-                      "Medicine",
-                      "Dosage",
-                      "Quantity",
-                      "Prescribed By",
-                      "Stock",
-                    ].map((column) => (
-                      <th
-                        key={column}
-                        className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted"
-                      >
-                        {column}
+                      <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">
+                        Action
                       </th>
-                    ))}
+                    </tr>
+                  </thead>
 
-                    <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">
-                      Action
-                    </th>
+                  <tbody className="divide-y divide-border-soft">
+                    {displayedGroups.map((group) => {
+                      const items = group.items;
+                      const patientName = group.patientName;
 
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-border-soft">
-
-                  {displayedGroups.map((group) => {
-  const items = group.items;
-  const patientName = group.patientName;
-
-                      
-
-                      const hasMultiple =
-                        items.length > 1;
+                      const hasMultiple = items.length > 1;
 
                       /* SINGLE MEDICINE */
                       if (!hasMultiple) {
@@ -629,7 +536,6 @@ return (
                             key={`${group.patientId}-${item._id}`}
                             className="transition-colors hover:bg-slate-50/80"
                           >
-
                             <td className="px-6 py-5">
                               <p className="font-semibold text-text-primary">
                                 {patientName}
@@ -637,11 +543,8 @@ return (
                             </td>
 
                             <td className="px-6 py-5">
-
                               <div className="font-medium text-text-primary">
-                                {getMedicineName(
-                                  item.medicine,
-                                )}
+                                {getMedicineName(item.medicine)}
                               </div>
 
                               {item.directions && (
@@ -649,12 +552,10 @@ return (
                                   {item.directions}
                                 </p>
                               )}
-
                             </td>
 
                             <td className="px-6 py-5 text-sm text-text-secondary">
-                              {item.medicine?.dosage ??
-                                "-"}
+                              {item.medicine?.dosage ?? "-"}
                             </td>
 
                             <td className="px-6 py-5">
@@ -664,69 +565,40 @@ return (
                             </td>
 
                             <td className="px-6 py-5 text-sm text-text-secondary">
-                              {items[0]?.doctorName ||
-  "Unknown Doctor"}
+                              {items[0]?.doctorName || "Unknown Doctor"}
                             </td>
 
                             <td className="px-6 py-5">
-                              {renderStockBadge(
-                                item.medicine,
-                              )}
+                              {renderStockBadge(item.medicine)}
                             </td>
 
                             <td className="px-6 py-5 text-right">
-                              {renderAction(
-  { _id: item.prescriptionId },
-  item,
-)}
+                              {renderAction({ _id: item.prescriptionId }, item)}
                             </td>
-
                           </tr>
                         );
                       }
 
                       /* MULTIPLE MEDICINES */
-                      const isExpanded =
-                        !!expandedPatients[
-                          group.patientId
-                        ];
+                      const isExpanded = !!expandedPatients[group.patientId];
 
                       return (
-                        <tr
-                          key={group.patientId}
-                          className="bg-surface"
-                        >
-                          <td
-                            colSpan={7}
-                            className="p-0"
-                          >
-
+                        <tr key={group.patientId} className="bg-surface">
+                          <td colSpan={7} className="p-0">
                             <button
                               type="button"
-                              onClick={() =>
-                                togglePatient(
-                                  group.patientId,
-                                )
-                              }
+                              onClick={() => togglePatient(group.patientId)}
                               className="flex w-full items-center gap-4 px-6 py-5 text-left transition hover:bg-slate-50/80"
                             >
-
                               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700">
-
                                 {isExpanded ? (
-                                  <ChevronDown
-                                    size={17}
-                                  />
+                                  <ChevronDown size={17} />
                                 ) : (
-                                  <ChevronRight
-                                    size={17}
-                                  />
+                                  <ChevronRight size={17} />
                                 )}
-
                               </div>
 
                               <div className="min-w-0 flex-1">
-
                                 <p className="font-semibold text-text-primary">
                                   {patientName}
                                 </p>
@@ -734,191 +606,132 @@ return (
                                 <p className="mt-1 text-xs text-text-muted">
                                   {items.length} medicines prescribed
                                 </p>
-
                               </div>
 
                               <div className="hidden text-right sm:block">
-
                                 <span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-text-subtle">
                                   Prescribed by
                                 </span>
 
                                 <span className="mt-1 block text-sm font-medium text-text-secondary">
-                                  {items[0]?.doctorName ||
-  "Unknown Doctor"}
+                                  {items[0]?.doctorName || "Unknown Doctor"}
                                 </span>
-
                               </div>
-
                             </button>
 
                             {isExpanded && (
-
                               <div className="border-t border-border-soft bg-surface-muted/60">
+                                {items.map((item) => (
+                                  <div
+                                    key={item._id}
+                                    className="grid gap-4 border-b border-border-soft px-6 py-5 last:border-b-0 md:grid-cols-[1fr_auto_auto_auto]"
+                                  >
+                                    <div className="pl-12">
+                                      <p className="font-semibold text-text-primary">
+                                        {getMedicineName(item.medicine)}
+                                      </p>
 
-                                {items.map(
-                                  (item) => (
-
-                                    <div
-                                      key={item._id}
-                                      className="grid gap-4 border-b border-border-soft px-6 py-5 last:border-b-0 md:grid-cols-[1fr_auto_auto_auto]"
-                                    >
-
-                                      <div className="pl-12">
-
-                                        <p className="font-semibold text-text-primary">
-                                          {getMedicineName(
-                                            item.medicine,
-                                          )}
+                                      {item.directions && (
+                                        <p className="mt-1 text-xs text-text-muted">
+                                          {item.directions}
                                         </p>
-
-                                        {item.directions && (
-                                          <p className="mt-1 text-xs text-text-muted">
-                                            {item.directions}
-                                          </p>
-                                        )}
-
-                                      </div>
-
-                                      <div className="flex items-center gap-2">
-
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-subtle">
-                                          Qty
-                                        </span>
-
-                                        <span className="font-semibold text-primary-900">
-                                          {item.quantity}
-                                        </span>
-
-                                      </div>
-
-                                      <div>
-                                        {renderStockBadge(
-                                          item.medicine,
-                                        )}
-                                      </div>
-
-                                      <div className="flex justify-end">
-                                        {renderAction(
-  { _id: item.prescriptionId },
-  item,
-)}
-                                      </div>
-
+                                      )}
                                     </div>
 
-                                  ),
-                                )}
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-subtle">
+                                        Qty
+                                      </span>
 
+                                      <span className="font-semibold text-primary-900">
+                                        {item.quantity}
+                                      </span>
+                                    </div>
+
+                                    <div>{renderStockBadge(item.medicine)}</div>
+
+                                    <div className="flex justify-end">
+                                      {renderAction(
+                                        { _id: item.prescriptionId },
+                                        item,
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-
                             )}
-
                           </td>
                         </tr>
                       );
-                    },
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-            {/* PAGINATION */}
-            <div className="flex flex-col gap-4 border-t border-border-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-
-              <p className="text-xs text-text-muted">
-                Showing{" "}
-
-                <span className="font-semibold text-text-secondary">
-                  {startDisplay}
-                </span>
-
-                {" "}to{" "}
-
-                <span className="font-semibold text-text-secondary">
-                  {endDisplay}
-                </span>
-
-                {" "}of{" "}
-
-                <span className="font-semibold text-text-secondary">
-                  {groupedByPatient.length}
-                </span>
-
-                {" "}records
-              </p>
-
-              <div className="flex items-center gap-2">
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={currentPage === 1}
-                  onClick={() =>
-                    setCurrentPage(
-                      (page) => page - 1,
-                    )
-                  }
-                >
-                  Previous
-                </Button>
-
-                <div className="flex h-9 min-w-[72px] items-center justify-center rounded-xl border border-border-soft bg-surface px-3 text-xs font-bold text-primary-900">
-                  {currentPage} / {totalPages}
-                </div>
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={
-                    currentPage === totalPages
-                  }
-                  onClick={() =>
-                    setCurrentPage(
-                      (page) => page + 1,
-                    )
-                  }
-                >
-                  Next
-                </Button>
-
+                    })}
+                  </tbody>
+                </table>
               </div>
 
-            </div>
+              {/* PAGINATION */}
+              <div className="flex flex-col gap-4 border-t border-border-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-text-muted">
+                  Showing{" "}
+                  <span className="font-semibold text-text-secondary">
+                    {startDisplay}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-semibold text-text-secondary">
+                    {endDisplay}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-semibold text-text-secondary">
+                    {totalRecords.toLocaleString()}
+                  </span>{" "}
+                  records
+                </p>
 
-          </>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((page) => page - 1)}
+                  >
+                    Previous
+                  </Button>
+
+                  <div className="flex h-9 min-w-[72px] items-center justify-center rounded-xl border border-border-soft bg-surface px-3 text-xs font-bold text-primary-900">
+                    {currentPage} / {totalPages}
+                  </div>
+
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((page) => page + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* CONFIRM MODAL */}
+        {confirmState && (
+          <ConfirmModal
+            message={confirmState.message}
+            onConfirm={confirmState.onConfirm}
+            onCancel={() => setConfirmState(null)}
+          />
         )}
 
+        {/* ALERT MODAL */}
+        {alertMessage && (
+          <AlertModal
+            message={alertMessage}
+            onClose={() => setAlertMessage("")}
+          />
+        )}
       </div>
-
-      {/* CONFIRM MODAL */}
-      {confirmState && (
-        <ConfirmModal
-          message={confirmState.message}
-          onConfirm={
-            confirmState.onConfirm
-          }
-          onCancel={() =>
-            setConfirmState(null)
-          }
-        />
-      )}
-
-      {/* ALERT MODAL */}
-      {alertMessage && (
-        <AlertModal
-          message={alertMessage}
-          onClose={() =>
-            setAlertMessage("")
-          }
-        />
-      )}
-
     </div>
-  </div>
   );
 }
 
