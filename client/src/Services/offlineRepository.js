@@ -154,12 +154,21 @@ export async function saveOfflinePatient(patient) {
     throw new Error("Offline patient requires an ID.");
   }
 
+  const key = patientKey(ownerKey, patient._id);
+
+  const existing = await db.offlinePatients.get(key);
+
   await db.offlinePatients.put({
+    ...(existing || {}),
     ...patient,
-    key: patientKey(ownerKey, patient._id),
+
+    key,
     ownerKey,
     serverId: patient._id,
-    updatedAt: new Date().toISOString(),
+
+    serverSnapshot: patient.serverSnapshot || existing?.serverSnapshot || null,
+
+    updatedAt: patient.updatedAt || new Date().toISOString(),
   });
 
   return patient;
